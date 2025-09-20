@@ -1,0 +1,217 @@
+import type { SettingsData } from "./types"
+
+export const defaultSettings: SettingsData = {
+  discounts: {
+    customerDiscountMax: 25,
+    inventoryDiscountMax: 40,
+    bundleDiscountMax: 30,
+    volumeDiscountMax: 20,
+    requireApproval: true,
+    stackDiscounts: false,
+  },
+  pricing: {
+    minimumMargin: 15,
+    bulkThreshold: 500,
+    premiumMarkup: 35,
+    currency: "usd",
+  },
+  expiration: {
+    warningDays: 30,
+    criticalDays: 7,
+    warningDiscount: 15,
+    criticalDiscount: 35,
+    autoApply: true,
+    emailNotifications: false,
+  },
+  markets: {
+    primaryMarket: "massachusetts",
+    taxRate: 6.25,
+    activeMarkets: ["massachusetts", "california"],
+  },
+  notifications: {
+    emailAlerts: true,
+    lowMarginThreshold: 10,
+    failedTestAlerts: true,
+    approvalRequests: true,
+    dailyReports: false,
+    weeklyReports: true,
+    reportEmail: "",
+    approvalEmail: "",
+  },
+  testing: {
+    defaultScenarios: ["volume-pricing", "expiration-discount", "margin-validation"],
+    autoValidation: true,
+    testSchedule: "daily",
+    successThreshold: 95,
+    maxTestDuration: 30,
+    retryFailedTests: true,
+    notifyOnFailure: true,
+  },
+  integrations: {
+    apiConnections: {
+      enabled: false,
+      baseUrl: "",
+      apiKey: "",
+      timeout: 30,
+      retryAttempts: 3,
+    },
+    webhooks: {
+      enabled: false,
+      endpoints: [],
+      secretKey: "",
+    },
+    externalDataSources: {
+      inventorySync: false,
+      priceFeeds: false,
+      marketData: false,
+      syncInterval: "hourly",
+    },
+  },
+  analytics: {
+    dashboardPreferences: {
+      defaultView: "overview",
+      refreshInterval: 300,
+      showAdvancedMetrics: false,
+      customWidgets: ["pricing-trends", "margin-analysis"],
+    },
+    reportScheduling: {
+      enabled: false,
+      frequency: "weekly",
+      recipients: [],
+      includeCharts: true,
+      format: "pdf",
+    },
+    dataExport: {
+      autoExport: false,
+      exportFormat: "csv",
+      retentionDays: 90,
+      includeRawData: false,
+    },
+  },
+  userManagement: {
+    roleBasedPermissions: {
+      enabled: false,
+      defaultRole: "viewer",
+      requireApproval: true,
+    },
+    teamAccess: {
+      maxUsers: 10,
+      sessionTimeout: 480,
+      requireMFA: false,
+      allowGuestAccess: false,
+    },
+    approvalWorkflows: {
+      enabled: true,
+      approvalLevels: 2,
+      escalationTime: 24,
+      notifyApprovers: true,
+    },
+  },
+  security: {
+    authentication: {
+      sessionTimeout: 480,
+      maxLoginAttempts: 5,
+      lockoutDuration: 30,
+      requirePasswordChange: true,
+      passwordChangeInterval: 90,
+    },
+    accessControl: {
+      enableIPWhitelist: false,
+      allowedIPs: [],
+      requireSSL: true,
+      enableAuditLog: true,
+    },
+    dataProtection: {
+      encryptSensitiveData: true,
+      dataRetentionDays: 365,
+      enableBackups: true,
+      backupFrequency: "daily",
+    },
+  },
+  performance: {
+    systemMonitoring: {
+      enableMonitoring: true,
+      cpuThreshold: 80,
+      memoryThreshold: 85,
+      diskThreshold: 90,
+      responseTimeThreshold: 2000,
+    },
+    autoScaling: {
+      enabled: false,
+      minInstances: 1,
+      maxInstances: 10,
+      scaleUpThreshold: 75,
+      scaleDownThreshold: 25,
+    },
+    resourceManagement: {
+      maxConcurrentRequests: 1000,
+      requestTimeout: 30,
+      cacheEnabled: true,
+      cacheTTL: 300,
+    },
+  },
+  enterprise: {
+    multiTenant: {
+      enabled: false,
+      organizationName: "",
+      customDomain: "",
+      whiteLabeling: {
+        enabled: false,
+        logoUrl: "",
+        primaryColor: "#3b82f6",
+        secondaryColor: "#64748b",
+        customCSS: "",
+      },
+      tenantIsolation: {
+        dataIsolation: true,
+        resourceIsolation: false,
+        networkIsolation: false,
+      },
+    },
+    automation: {
+      customRuleEngine: {
+        enabled: false,
+        maxRules: 100,
+        allowComplexLogic: false,
+        enableScheduledRules: false,
+      },
+      aiMlPreferences: {
+        enabled: false,
+        preferredProvider: "openai",
+        modelVersion: "gpt-4",
+        confidenceThreshold: 0.8,
+        autoRetraining: false,
+        dataPrivacy: "strict",
+      },
+      workflowAutomation: {
+        enabled: false,
+        maxWorkflows: 50,
+        allowExternalTriggers: false,
+        enableConditionalLogic: false,
+      },
+    },
+    disasterRecovery: {
+      backupStrategy: {
+        enabled: true,
+        frequency: "daily",
+        retentionPeriod: 30,
+        offSiteBackup: false,
+        encryptBackups: true,
+      },
+      failoverConfiguration: {
+        enabled: false,
+        primaryRegion: "us-east-1",
+        secondaryRegion: "us-west-2",
+        autoFailover: false,
+        failoverThreshold: 5,
+        recoveryTimeObjective: 60,
+      },
+      businessContinuity: {
+        emergencyContacts: [],
+        escalationProcedure: "",
+        communicationPlan: "",
+        testSchedule: "quarterly",
+      },
+    },
+  },
+}

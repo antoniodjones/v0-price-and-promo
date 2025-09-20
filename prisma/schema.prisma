@@ -1,0 +1,208 @@
+// Prisma schema for GTI Pricing & Promotions Engine
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  tier      Tier
+  market    String
+  status    Status   @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  discountAssignments CustomerDiscountAssignment[]
+
+  @@map("customers")
+}
+
+model Product {
+  id             String   @id @default(cuid())
+  name           String
+  sku            String   @unique
+  category       String
+  subCategory    String
+  brand          String
+  thcPercentage  Float
+  basePrice      Float
+  expirationDate DateTime
+  batchId        String
+  status         Status   @default(ACTIVE)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  bundleItems BundleItem[]
+
+  @@map("products")
+}
+
+model CustomerDiscount {
+  id           String              @id @default(cuid())
+  name         String
+  type         DiscountType
+  value        Float
+  level        DiscountLevel
+  target       String
+  markets      String[]
+  startDate    DateTime
+  endDate      DateTime
+  status       PromotionStatus     @default(ACTIVE)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  // Relations
+  assignments CustomerDiscountAssignment[]
+
+  @@map("customer_discounts")
+}
+
+model CustomerDiscountAssignment {
+  id                 String           @id @default(cuid())
+  customerId         String
+  customerDiscountId String
+  customerTier       Tier
+  createdAt          DateTime         @default(now())
+
+  // Relations
+  customer         Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerDiscount CustomerDiscount @relation(fields: [customerDiscountId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, customerDiscountId])
+  @@map("customer_discount_assignments")
+}
+
+model InventoryDiscount {
+  id            String        @id @default(cuid())
+  name          String
+  type          InventoryType
+  triggerValue  Float
+  discountType  DiscountType
+  discountValue Float
+  scope         DiscountScope
+  scopeValue    String?
+  status        Status        @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("inventory_discounts")
+}
+
+model BogoPromotion {
+  id           String          @id @default(cuid())
+  name         String
+  type         BogoType
+  triggerLevel DiscountLevel
+  triggerValue String
+  rewardType   RewardType
+  rewardValue  Float
+  startDate    DateTime
+  endDate      DateTime
+  status       PromotionStatus @default(ACTIVE)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@map("bogo_promotions")
+}
+
+model BundleDeal {
+  id            String          @id @default(cuid())
+  name          String
+  type          BundleType
+  discountType  DiscountType
+  discountValue Float
+  minQuantity   Int
+  startDate     DateTime
+  endDate       DateTime
+  status        PromotionStatus @default(ACTIVE)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  items BundleItem[]
+
+  @@map("bundle_deals")
+}
+
+model BundleItem {
+  id           String     @id @default(cuid())
+  bundleDealId String
+  productId    String
+  quantity     Int        @default(1)
+  createdAt    DateTime   @default(now())
+
+  // Relations
+  bundleDeal BundleDeal @relation(fields: [bundleDealId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([bundleDealId, productId])
+  @@map("bundle_items")
+}
+
+// Enums
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+enum PromotionStatus {
+  ACTIVE
+  INACTIVE
+  SCHEDULED
+}
+
+enum Tier {
+  A
+  B
+  C
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum DiscountLevel {
+  ITEM
+  BRAND
+  CATEGORY
+  SUBCATEGORY
+}
+
+enum DiscountScope {
+  ALL
+  CATEGORY
+  BRAND
+}
+
+enum InventoryType {
+  EXPIRATION
+  THC
+}
+
+enum BogoType {
+  TRADITIONAL
+  PERCENTAGE
+  FIXED
+}
+
+enum RewardType {
+  FREE
+  PERCENTAGE
+  FIXED
+}
+
+enum BundleType {
+  FIXED
+  CATEGORY
+  MIX_MATCH
+  TIERED
+}
