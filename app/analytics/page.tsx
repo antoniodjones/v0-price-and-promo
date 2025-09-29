@@ -11,6 +11,7 @@ import { DiscountAnalytics } from "@/components/analytics/discount-analytics"
 import { RebateReports } from "@/components/analytics/rebate-reports"
 import { PerformanceMetrics } from "@/components/analytics/performance-metrics"
 import { CustomerInsights } from "@/components/analytics/customer-insights"
+import { AdvancedAnalyticsDashboard } from "@/components/analytics/advanced-analytics-dashboard"
 
 export default function AnalyticsPage() {
   const [selectedMarket, setSelectedMarket] = useState("all")
@@ -166,13 +167,18 @@ export default function AnalyticsPage() {
       </Card>
 
       {/* Analytics Tabs */}
-      <Tabs defaultValue="discount-analysis" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="advanced" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="advanced">Advanced Analytics</TabsTrigger>
           <TabsTrigger value="discount-analysis">Discount Analysis</TabsTrigger>
           <TabsTrigger value="rebate-reports">Rebate Reports</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="customer-insights">Customer Insights</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="advanced" className="space-y-4">
+          <AdvancedAnalyticsDashboard />
+        </TabsContent>
 
         <TabsContent value="discount-analysis" className="space-y-4">
           <DiscountAnalytics selectedMarket={selectedMarket} dateRange={dateRange} />

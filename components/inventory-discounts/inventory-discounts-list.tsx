@@ -1,27 +1,43 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Search, MoreHorizontal, Edit, Trash2, Clock, Zap, Package, AlertTriangle } from "lucide-react"
+import { Search, MoreHorizontal, Edit, Trash2, Clock, Zap, Package, AlertTriangle, Loader2 } from "lucide-react"
 
-// Mock data for automated discount rules
-const mockAutoDiscounts = [
+interface InventoryDiscount {
+  id: string
+  name: string
+  type: "expiration" | "thc"
+  triggerValue: number
+  discountType: "percentage" | "fixed"
+  discountValue: number
+  scope: "all" | "category" | "brand"
+  scopeValue?: string
+  status: "active" | "scheduled" | "paused" | "expired"
+  createdAt: string
+  updatedAt: string
+  batchesAffected?: number
+  totalSavings?: number
+  lastTriggered?: string
+}
+
+const mockAutoDiscounts: InventoryDiscount[] = [
   {
     id: "auto-1",
     name: "30-Day Expiration Auto Discount",
     type: "expiration",
-    trigger: "30 days prior to expiration",
-    level: "Global",
-    target: "All Products",
+    triggerValue: 30,
     discountType: "percentage",
     discountValue: 20,
-    startDate: "2025-10-01",
+    scope: "all",
     status: "active",
+    createdAt: "2025-10-01T00:00:00Z",
+    updatedAt: "2025-10-21T00:00:00Z",
     batchesAffected: 23,
     totalSavings: 8450.0,
     lastTriggered: "2 hours ago",
@@ -30,13 +46,14 @@ const mockAutoDiscounts = [
     id: "auto-2",
     name: "Low THC Flower Discount",
     type: "thc",
-    trigger: "THC below 15%",
-    level: "Category",
-    target: "Flower",
+    triggerValue: 15,
     discountType: "percentage",
     discountValue: 10,
-    startDate: "2025-09-15",
+    scope: "category",
+    scopeValue: "Flower",
     status: "active",
+    createdAt: "2025-09-15T00:00:00Z",
+    updatedAt: "2025-10-20T00:00:00Z",
     batchesAffected: 12,
     totalSavings: 3240.0,
     lastTriggered: "1 day ago",
@@ -45,13 +62,14 @@ const mockAutoDiscounts = [
     id: "auto-3",
     name: "Premium Brand 14-Day Expiration",
     type: "expiration",
-    trigger: "14 days prior to expiration",
-    level: "Brand",
-    target: "Premium Cannabis Co",
+    triggerValue: 14,
     discountType: "percentage",
     discountValue: 30,
-    startDate: "2025-10-01",
+    scope: "brand",
+    scopeValue: "Premium Cannabis Co",
     status: "active",
+    createdAt: "2025-10-01T00:00:00Z",
+    updatedAt: "2025-10-21T00:00:00Z",
     batchesAffected: 8,
     totalSavings: 5670.0,
     lastTriggered: "6 hours ago",
@@ -60,13 +78,14 @@ const mockAutoDiscounts = [
     id: "auto-4",
     name: "Holiday Concentrates THC Boost",
     type: "thc",
-    trigger: "THC below 70%",
-    level: "Category",
-    target: "Concentrates",
-    discountType: "dollar",
+    triggerValue: 70,
+    discountType: "fixed",
     discountValue: 15,
-    startDate: "2025-11-01",
+    scope: "category",
+    scopeValue: "Concentrates",
     status: "scheduled",
+    createdAt: "2025-11-01T00:00:00Z",
+    updatedAt: "2025-11-01T00:00:00Z",
     batchesAffected: 0,
     totalSavings: 0,
     lastTriggered: "Never",
@@ -112,14 +131,85 @@ const getTypeColor = (type: string) => {
 
 export function InventoryDiscountsList() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [discounts] = useState(mockAutoDiscounts)
+  const [discounts, setDiscounts] = useState<InventoryDiscount[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const filteredDiscounts = discounts.filter(
-    (discount) =>
-      discount.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      discount.target.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      discount.trigger.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  useEffect(() => {
+    const fetchDiscounts = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const response = await fetch("/api/discounts/inventory")
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch inventory discounts: ${response.status} ${response.statusText}`)
+        }
+
+        const result = await response.json()
+
+        if (result.success) {
+          const validatedDiscounts = Array.isArray(result.data) ? result.data : []
+          setDiscounts(validatedDiscounts)
+        } else {
+          throw new Error(result.message || "Failed to fetch inventory discounts")
+        }
+      } catch (err) {
+        console.error("Error fetching inventory discounts:", err)
+        setError(err instanceof Error ? err.message : "An error occurred")
+        setDiscounts(mockAutoDiscounts)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDiscounts()
+  }, [])
+
+  const filteredDiscounts = discounts.filter((discount) => {
+    if (!discount || !searchTerm) return true
+
+    const searchLower = (searchTerm || "").toLowerCase()
+    const name = (discount.name || "").toLowerCase()
+    const scopeValue = (discount.scopeValue || "").toLowerCase()
+    const type = (discount.type || "").toLowerCase()
+
+    return name.includes(searchLower) || scopeValue.includes(searchLower) || type.includes(searchLower)
+  })
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Automated Discount Rules</CardTitle>
+          <CardDescription>Inventory-based automatic discounting rules and their performance</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2">Loading inventory discounts...</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error && discounts.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Automated Discount Rules</CardTitle>
+          <CardDescription>Inventory-based automatic discounting rules and their performance</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8 text-red-600">
+            <span>Error loading inventory discounts: {error}</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
@@ -127,7 +217,11 @@ export function InventoryDiscountsList() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Automated Discount Rules</CardTitle>
-            <CardDescription>Inventory-based automatic discounting rules and their performance</CardDescription>
+            <CardDescription>
+              {error
+                ? "Showing cached data due to connection issues"
+                : "Inventory-based automatic discounting rules and their performance"}
+            </CardDescription>
           </div>
           <div className="flex items-center space-x-2">
             <div className="relative">
@@ -143,99 +237,115 @@ export function InventoryDiscountsList() {
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Rule Name</TableHead>
-              <TableHead>Type & Trigger</TableHead>
-              <TableHead>Level & Target</TableHead>
-              <TableHead>Discount</TableHead>
-              <TableHead>Performance</TableHead>
-              <TableHead>Last Triggered</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredDiscounts.map((discount) => (
-              <TableRow key={discount.id}>
-                <TableCell>
-                  <div className="font-medium">{discount.name}</div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center space-x-2">
-                    {getTypeIcon(discount.type)}
-                    <div>
-                      <Badge variant="outline" className={getTypeColor(discount.type)}>
-                        {discount.type === "expiration" ? "Expiration" : "THC Level"}
-                      </Badge>
-                      <div className="text-xs text-muted-foreground mt-1">{discount.trigger}</div>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <div className="text-sm font-medium">{discount.level}</div>
-                    <div className="text-xs text-muted-foreground">{discount.target}</div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="font-medium">
-                    {discount.discountType === "percentage"
-                      ? `${discount.discountValue}%`
-                      : `$${discount.discountValue}`}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {discount.discountType === "percentage" ? "Percentage" : "Dollar amount"}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="text-sm font-medium">{discount.batchesAffected} batches</div>
-                  <div className="text-xs text-muted-foreground">${discount.totalSavings.toLocaleString()} saved</div>
-                </TableCell>
-                <TableCell>
-                  <div className="text-sm">{discount.lastTriggered}</div>
-                  {discount.lastTriggered !== "Never" && discount.lastTriggered.includes("hours") && (
-                    <div className="flex items-center space-x-1 mt-1">
-                      <div className="w-2 h-2 bg-gti-bright-green rounded-full animate-pulse"></div>
-                      <span className="text-xs text-gti-bright-green">Recently active</span>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(discount.status)}>{discount.status}</Badge>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit Rule
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Package className="mr-2 h-4 w-4" />
-                        View Affected Batches
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <AlertTriangle className="mr-2 h-4 w-4" />
-                        Pause Rule
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+        {filteredDiscounts.length === 0 ? (
+          <div className="flex items-center justify-center py-8 text-muted-foreground">
+            <span>No inventory discounts found. Create your first automated discount rule.</span>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Rule Name</TableHead>
+                <TableHead>Type & Trigger</TableHead>
+                <TableHead>Scope & Target</TableHead>
+                <TableHead>Discount</TableHead>
+                <TableHead>Performance</TableHead>
+                <TableHead>Last Updated</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredDiscounts.map((discount) => (
+                <TableRow key={discount.id}>
+                  <TableCell>
+                    <div className="font-medium">{discount.name || "Unnamed Rule"}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      {getTypeIcon(discount.type)}
+                      <div>
+                        <Badge variant="outline" className={getTypeColor(discount.type)}>
+                          {discount.type === "expiration" ? "Expiration" : "THC Level"}
+                        </Badge>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {discount.type === "expiration"
+                            ? `${discount.triggerValue || 0} days before expiry`
+                            : `THC ${discount.triggerValue || 0}%+`}
+                        </div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="text-sm font-medium capitalize">{discount.scope || "all"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {discount.scope === "all" ? "All Products" : discount.scopeValue || "Not specified"}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">
+                      {discount.discountType === "percentage"
+                        ? `${discount.discountValue || 0}%`
+                        : `$${discount.discountValue || 0}`}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {discount.discountType === "percentage" ? "Percentage" : "Dollar amount"}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm font-medium">{discount.batchesAffected || 0} batches</div>
+                    <div className="text-xs text-muted-foreground">
+                      ${(discount.totalSavings || 0).toLocaleString()} saved
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      {discount.updatedAt ? new Date(discount.updatedAt).toLocaleDateString() : "Unknown"}
+                    </div>
+                    {discount.status === "active" && (
+                      <div className="flex items-center space-x-1 mt-1">
+                        <div className="w-2 h-2 bg-gti-bright-green rounded-full animate-pulse"></div>
+                        <span className="text-xs text-gti-bright-green">Active</span>
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(discount.status)}>{discount.status || "unknown"}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit Rule
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Package className="mr-2 h-4 w-4" />
+                          View Affected Batches
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <AlertTriangle className="mr-2 h-4 w-4" />
+                          Pause Rule
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   )

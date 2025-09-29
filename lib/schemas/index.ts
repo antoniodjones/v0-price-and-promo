@@ -4,7 +4,7 @@ import { z } from "zod"
 export const StatusSchema = z.enum(["active", "inactive"])
 export const CustomerTierSchema = z.enum(["A", "B", "C"])
 export const DiscountTypeSchema = z.enum(["percentage", "fixed"])
-export const DiscountLevelSchema = z.enum(["item", "brand", "category", "subcategory"])
+export const DiscountLevelSchema = z.enum(["brand", "category", "subcategory", "size", "batch"])
 
 // Customer schemas
 export const CustomerSchema = z.object({
@@ -21,24 +21,24 @@ export const CustomerSchema = z.object({
 export const CreateCustomerSchema = CustomerSchema.omit({ id: true, createdAt: true, updatedAt: true })
 export const UpdateCustomerSchema = CreateCustomerSchema.partial()
 
-// Product schemas
+// Product schemas - Updated to match database structure
 export const ProductSchema = z.object({
-  id: z.string().cuid().optional(),
+  id: z.string().uuid().optional(),
   name: z.string().min(1, "Product name is required").max(200, "Name must be less than 200 characters"),
   sku: z.string().min(1, "SKU is required").max(50, "SKU must be less than 50 characters"),
   category: z.string().min(1, "Category is required"),
-  subCategory: z.string().min(1, "Sub-category is required"),
   brand: z.string().min(1, "Brand is required"),
-  thcPercentage: z.number().min(0, "THC percentage cannot be negative").max(100, "THC percentage cannot exceed 100%"),
-  basePrice: z.number().positive("Base price must be positive"),
-  expirationDate: z.string().datetime("Invalid expiration date format"),
-  batchId: z.string().min(1, "Batch ID is required"),
-  status: StatusSchema.default("active"),
-  createdAt: z.string().datetime().optional(),
-  updatedAt: z.string().datetime().optional(),
+  price: z.number().positive("Price must be positive"),
+  cost: z.number().min(0, "Cost cannot be negative"),
+  inventory_count: z.number().int().min(0, "Inventory count cannot be negative"),
+  thc_percentage: z.number().min(0, "THC percentage cannot be negative").max(100, "THC percentage cannot exceed 100%"),
+  expiration_date: z.string().datetime("Invalid expiration date format"),
+  batch_id: z.string().min(1, "Batch ID is required"),
+  created_at: z.string().datetime().optional(),
+  updated_at: z.string().datetime().optional(),
 })
 
-export const CreateProductSchema = ProductSchema.omit({ id: true, createdAt: true, updatedAt: true })
+export const CreateProductSchema = ProductSchema.omit({ id: true, created_at: true, updated_at: true })
 export const UpdateProductSchema = CreateProductSchema.partial()
 
 // Customer discount schemas
@@ -52,8 +52,9 @@ export const CustomerDiscountSchema = z
     target: z.string().min(1, "Target is required"),
     customerTiers: z.array(CustomerTierSchema).min(1, "At least one customer tier is required"),
     markets: z.array(z.string().min(1)).min(1, "At least one market is required"),
+    customerIds: z.array(z.string().cuid()).optional(), // Added optional customerIds field
     startDate: z.string().datetime("Invalid start date format"),
-    endDate: z.string().datetime("Invalid end date format"),
+    endDate: z.string().datetime("Invalid end date format").nullable(), // Allow null endDate
     status: z.enum(["active", "inactive", "scheduled"]).default("active"),
     createdAt: z.string().datetime().optional(),
     updatedAt: z.string().datetime().optional(),
@@ -72,9 +73,12 @@ export const CustomerDiscountSchema = z
   )
   .refine(
     (data) => {
-      const startDate = new Date(data.startDate)
-      const endDate = new Date(data.endDate)
-      return endDate > startDate
+      if (data.endDate) {
+        const startDate = new Date(data.startDate)
+        const endDate = new Date(data.endDate)
+        return endDate > startDate
+      }
+      return true
     },
     {
       message: "End date must be after start date",
@@ -243,6 +247,68 @@ export const PaginationSchema = z.object({
   limit: z.number().int().positive().max(100).default(10),
 })
 
+// Promotional discount schemas (for Ref#1 requirements)
+export const PromotionalDiscountSchema = z
+  .object({
+    id: z.string().cuid().optional(),
+    name: z.string().min(1, "Promotion name is required").max(100, "Name must be less than 100 characters"),
+    type: DiscountTypeSchema, // percentage or fixed
+    value: z.number().positive("Discount value must be positive"),
+    level: z.enum(["item", "brand", "category", "subcategory", "size", "batch"]),
+    target: z.string().min(1, "Target is required"),
+    targetName: z.string().min(1, "Target name is required"),
+    batchIds: z.array(z.string()).optional(), // For batch-level targeting
+    specificPrice: z.number().positive().optional(), // For specific price override
+    startDate: z.string().datetime("Invalid start date format"),
+    endDate: z.string().datetime("Invalid end date format"),
+    status: z.enum(["active", "inactive", "scheduled"]).default("active"),
+    isLiquidation: z.boolean().default(false), // Flag for liquidation promotions
+    createdAt: z.string().datetime().optional(),
+    updatedAt: z.string().datetime().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.type === "percentage" && data.value > 100) {
+        return false
+      }
+      return true
+    },
+    {
+      message: "Percentage discount cannot exceed 100%",
+      path: ["value"],
+    },
+  )
+  .refine(
+    (data) => {
+      const startDate = new Date(data.startDate)
+      const endDate = new Date(data.endDate)
+      return endDate > startDate
+    },
+    {
+      message: "End date must be after start date",
+      path: ["endDate"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.level === "batch" && (!data.batchIds || data.batchIds.length === 0)) {
+        return false
+      }
+      return true
+    },
+    {
+      message: "Batch IDs are required for batch-level promotions",
+      path: ["batchIds"],
+    },
+  )
+
+export const CreatePromotionalDiscountSchema = PromotionalDiscountSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+})
+export const UpdatePromotionalDiscountSchema = CreatePromotionalDiscountSchema.partial()
+
 // Type exports
 export type Customer = z.infer<typeof CustomerSchema>
 export type CreateCustomer = z.infer<typeof CreateCustomerSchema>
@@ -270,3 +336,7 @@ export type UpdateBundleDeal = z.infer<typeof UpdateBundleDealSchema>
 
 export type PricingRequest = z.infer<typeof PricingRequestSchema>
 export type PaginationParams = z.infer<typeof PaginationSchema>
+
+export type PromotionalDiscount = z.infer<typeof PromotionalDiscountSchema>
+export type CreatePromotionalDiscount = z.infer<typeof CreatePromotionalDiscountSchema>
+export type UpdatePromotionalDiscount = z.infer<typeof UpdatePromotionalDiscountSchema>

@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator"
 import { Check, Tag, Package, Percent, DollarSign, Calendar, Users, AlertCircle } from "lucide-react"
 import { format } from "date-fns"
 import type { DiscountFormData } from "../customer-discount-wizard"
+import { useEffect } from "react"
 
 interface DiscountReviewStepProps {
   formData: DiscountFormData
@@ -30,17 +31,19 @@ export function DiscountReviewStep({ formData, updateFormData }: DiscountReviewS
   }
 
   // Auto-generate name if empty
-  if (!formData.name && formData.targetName && formData.discountValue && formData.customers.length > 0) {
-    updateFormData({ name: generateDefaultName() })
-  }
+  useEffect(() => {
+    if (!formData.name && formData.targetName && formData.discountValue && formData.customers.length > 0) {
+      updateFormData({ name: generateDefaultName() })
+    }
+  }, [formData.targetName, formData.discountValue, formData.customers.length, formData.name, updateFormData])
 
   const getLevelIcon = () => {
     switch (formData.level) {
-      case "brand":
+      case "customer":
+        return <Users className="h-4 w-4 text-gti-bright-green" />
+      case "tier":
         return <Tag className="h-4 w-4 text-gti-bright-green" />
-      case "category":
-      case "subcategory":
-      case "size":
+      case "market":
         return <Package className="h-4 w-4 text-gti-bright-green" />
       default:
         return <Package className="h-4 w-4 text-gti-bright-green" />

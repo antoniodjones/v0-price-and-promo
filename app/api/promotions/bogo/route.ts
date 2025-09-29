@@ -1,7 +1,7 @@
 // BOGO promotions management API endpoints
 
 import { type NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/api/database"
+import { getBogoPromotions, createBogoPromotion } from "@/lib/api/database"
 import { createApiResponse, handleApiError, validateRequiredFields } from "@/lib/api/utils"
 
 export async function GET(request: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type")
     const triggerLevel = searchParams.get("triggerLevel")
 
-    const promotions = await db.getBogoPromotions()
+    const promotions = await getBogoPromotions()
 
     // Apply filters
     let filteredPromotions = promotions
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(createApiResponse(null, "End date must be after start date", false), { status: 400 })
     }
 
-    const promotion = await db.createBogoPromotion({
+    const promotion = await createBogoPromotion({
       name: body.name,
       type: body.type,
       triggerLevel: body.triggerLevel,

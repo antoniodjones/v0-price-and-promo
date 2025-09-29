@@ -12,6 +12,9 @@ import { ArrowLeft, ArrowRight, Plus, Trash2, X } from "lucide-react"
 
 interface VolumePricingWizardProps {
   onClose: () => void
+  editMode?: boolean
+  initialData?: any
+  ruleId?: string
 }
 
 interface TierRow {
@@ -23,22 +26,38 @@ interface TierRow {
   cTierDiscount: number
 }
 
-export function VolumePricingWizard({ onClose }: VolumePricingWizardProps) {
+export function VolumePricingWizard({ onClose, editMode = false, initialData, ruleId }: VolumePricingWizardProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [formData, setFormData] = useState({
-    pricingType: "",
-    ruleLevel: "",
-    targetSelection: "",
-    ruleName: "",
-    startDate: "",
-    endDate: "",
+    pricingType: initialData?.strategy === "volume" ? "volume" : "",
+    ruleLevel: initialData?.ruleLevel || "",
+    targetSelection: initialData?.targetSelection || "",
+    ruleName: initialData?.name || "",
+    startDate: initialData?.startDate || "",
+    endDate: initialData?.endDate || "",
   })
 
-  const [tiers, setTiers] = useState<TierRow[]>([
-    { id: "1", minQuantity: 50, maxQuantity: 75, aTierDiscount: 4.0, bTierDiscount: 3.0, cTierDiscount: 2.0 },
-    { id: "2", minQuantity: 76, maxQuantity: 99, aTierDiscount: 5.0, bTierDiscount: 4.0, cTierDiscount: 3.0 },
-    { id: "3", minQuantity: 100, maxQuantity: null, aTierDiscount: 6.0, bTierDiscount: 5.0, cTierDiscount: 4.0 },
-  ])
+  // Initialize tiers from existing data or use defaults
+  const [tiers, setTiers] = useState<TierRow[]>(() => {
+    if (initialData?.tiers && Array.isArray(initialData.tiers)) {
+      return initialData.tiers.map((tier: any, index: number) => ({
+        id: (index + 1).toString(),
+        minQuantity: tier.minQuantity || 0,
+        maxQuantity: tier.maxQuantity,
+        aTierDiscount: tier.aTierDiscount || 0,
+        bTierDiscount: tier.bTierDiscount || 0,
+        cTierDiscount: tier.cTierDiscount || 0,
+      }))
+    }
+    return [
+      { id: "1", minQuantity: 50, maxQuantity: 75, aTierDiscount: 4.0, bTierDiscount: 3.0, cTierDiscount: 2.0 },
+      { id: "2", minQuantity: 76, maxQuantity: 99, aTierDiscount: 5.0, bTierDiscount: 4.0, cTierDiscount: 3.0 },
+      { id: "3", minQuantity: 100, maxQuantity: null, aTierDiscount: 6.0, bTierDiscount: 5.0, cTierDiscount: 4.0 },
+    ]
+  })
+
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const totalSteps = 6
   const progress = (currentStep / totalSteps) * 100
@@ -61,6 +80,77 @@ export function VolumePricingWizard({ onClose }: VolumePricingWizardProps) {
 
   const updateTier = (id: string, field: keyof TierRow, value: number | null) => {
     setTiers(tiers.map((tier) => (tier.id === id ? { ...tier, [field]: value } : tier)))
+  }
+
+  const handleCreateRule = async () => {
+    console.log(`[v0] VolumePricingWizard: Starting rule ${editMode ? "update" : "creation"}`, {
+      formData,
+      tiers,
+      ruleId,
+    })
+
+    if (!formData.ruleName.trim()) {
+      setSaveError("Rule name is required")
+      return
+    }
+
+    setIsSaving(true)
+    setSaveError(null)
+
+    try {
+      // Transform wizard data to API format
+      const apiData = {
+        market: initialData?.market || "Massachusetts", // Use existing market or default
+        strategy: "volume",
+        name: formData.ruleName,
+        ruleLevel: formData.ruleLevel,
+        targetSelection: formData.targetSelection,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        tiers: tiers.map((tier) => ({
+          minQuantity: tier.minQuantity,
+          maxQuantity: tier.maxQuantity,
+          aTierDiscount: tier.aTierDiscount,
+          bTierDiscount: tier.bTierDiscount,
+          cTierDiscount: tier.cTierDiscount,
+        })),
+        customerGroups: ["A", "B", "C"],
+        status: "active",
+      }
+
+      console.log(`[v0] VolumePricingWizard: Sending API request for ${editMode ? "update" : "create"}`, apiData)
+
+      const url = editMode && ruleId ? `/api/pricing/market/${ruleId}` : "/api/pricing/market"
+      const method = editMode ? "PUT" : "POST"
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(apiData),
+      })
+
+      const result = await response.json()
+      console.log("[v0] VolumePricingWizard: API response", { response: response.status, result })
+
+      if (!response.ok) {
+        throw new Error(result.message || `Failed to ${editMode ? "update" : "create"} rule`)
+      }
+
+      console.log(`[v0] VolumePricingWizard: Rule ${editMode ? "updated" : "created"} successfully`, result.data)
+
+      // Close the wizard on success
+      onClose()
+
+      // Trigger a page refresh to show the updated rule
+      window.location.reload()
+    } catch (error) {
+      console.error(`[v0] VolumePricingWizard: Error ${editMode ? "updating" : "creating"} rule`, error)
+      setSaveError(error instanceof Error ? error.message : `Failed to ${editMode ? "update" : "create"} rule`)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const renderStep = () => {
@@ -298,8 +388,16 @@ export function VolumePricingWizard({ onClose }: VolumePricingWizardProps) {
         return (
           <div className="space-y-6">
             <div>
-              <Label className="text-base font-medium">Review & Create</Label>
-              <p className="text-sm text-gray-600 mb-4">Review your volume pricing configuration before creating</p>
+              <Label className="text-base font-medium">{editMode ? "Review & Update" : "Review & Create"}</Label>
+              <p className="text-sm text-gray-600 mb-4">
+                Review your volume pricing configuration before {editMode ? "updating" : "creating"}
+              </p>
+
+              {saveError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">{saveError}</p>
+                </div>
+              )}
 
               <div className="space-y-4">
                 <Card>
@@ -370,7 +468,9 @@ export function VolumePricingWizard({ onClose }: VolumePricingWizardProps) {
             Cancel
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Volume Pricing Wizard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {editMode ? "Edit Volume Pricing Rule" : "Volume Pricing Wizard"}
+            </h1>
             <p className="text-gray-600 mt-2">
               Step {currentStep} of {totalSteps}
             </p>
@@ -405,8 +505,18 @@ export function VolumePricingWizard({ onClose }: VolumePricingWizardProps) {
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         ) : (
-          <Button onClick={onClose} className="bg-gti-dark-green hover:bg-gti-medium-green">
-            Create Volume Pricing Rule
+          <Button
+            onClick={handleCreateRule}
+            className="bg-gti-dark-green hover:bg-gti-medium-green"
+            disabled={isSaving}
+          >
+            {isSaving
+              ? editMode
+                ? "Updating..."
+                : "Creating..."
+              : editMode
+                ? "Update Volume Pricing Rule"
+                : "Create Volume Pricing Rule"}
           </Button>
         )}
       </div>

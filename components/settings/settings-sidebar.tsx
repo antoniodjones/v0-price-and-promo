@@ -11,6 +11,7 @@ const iconMap: Record<string, string> = {
   MapPin: "📍",
   Bell: "🔔",
   TestTube: "🧪",
+  CheckSquare: "✅",
   Plug: "🔌",
   BarChart3: "📈",
   Users: "👥",

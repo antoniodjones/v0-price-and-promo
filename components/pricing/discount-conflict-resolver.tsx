@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { AlertTriangle, CheckCircle, XCircle, TrendingUp, Info } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { AlertTriangle, CheckCircle, XCircle, TrendingUp, Info, Loader2, Search } from "lucide-react"
 
 interface DiscountConflict {
   id: string
@@ -132,8 +134,80 @@ const getPriorityColor = (priority: number) => {
 }
 
 export function DiscountConflictResolver() {
-  const [conflicts] = useState<DiscountConflict[]>(mockConflicts)
+  const [conflicts, setConflicts] = useState<DiscountConflict[]>([])
   const [resolvedConflicts, setResolvedConflicts] = useState<string[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [customerId, setCustomerId] = useState("")
+  const [productId, setProductId] = useState("")
+  const [market, setMarket] = useState("")
+
+  const validateDiscounts = async () => {
+    if (!customerId || !productId || !market) {
+      setError("Please provide Customer ID, Product ID, and Market")
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await fetch("/api/discounts/validate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customerId,
+          productId,
+          market,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to validate discounts")
+      }
+
+      const result = await response.json()
+
+      if (result.success) {
+        // Transform API response to match our conflict interface
+        if (result.data.applicableDiscounts.length > 1) {
+          const conflict: DiscountConflict = {
+            id: `conflict-${Date.now()}`,
+            productName: result.data.product.name,
+            sku: result.data.product.sku,
+            basePrice: result.data.originalPrice,
+            conflictingDiscounts: result.data.applicableDiscounts.map((discount: any, index: number) => ({
+              id: discount.id,
+              name: discount.name,
+              type: discount.discountType === "customer" ? "Customer" : "Inventory",
+              value: discount.value || discount.discountValue,
+              valueType:
+                discount.type === "percentage" || discount.discountType === "percentage" ? "percentage" : "dollar",
+              priority: discount.priority,
+              savings: (result.data.originalPrice * (discount.value || discount.discountValue)) / 100,
+              reason:
+                discount.discountType === "customer"
+                  ? `${discount.level} level discount`
+                  : `${discount.type} based discount`,
+            })),
+            recommendedDiscount: result.data.bestDiscount?.id || "",
+            resolution: "pending",
+          }
+          setConflicts([conflict])
+        } else {
+          setConflicts([])
+        }
+      } else {
+        throw new Error(result.message || "Failed to validate discounts")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const resolveConflict = (conflictId: string, selectedDiscountId: string) => {
     setResolvedConflicts((prev) => [...prev, conflictId])
@@ -155,6 +229,69 @@ export function DiscountConflictResolver() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
+            <Search className="h-5 w-5 text-blue-500" />
+            <span>Discount Validation</span>
+          </CardTitle>
+          <CardDescription>Enter customer, product, and market details to check for discount conflicts</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="customerId">Customer ID</Label>
+              <Input
+                id="customerId"
+                placeholder="e.g., customer-1"
+                value={customerId}
+                onChange={(e) => setCustomerId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="productId">Product ID</Label>
+              <Input
+                id="productId"
+                placeholder="e.g., product-1"
+                value={productId}
+                onChange={(e) => setProductId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="market">Market</Label>
+              <Input
+                id="market"
+                placeholder="e.g., california"
+                value={market}
+                onChange={(e) => setMarket(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center justify-between">
+            {error && (
+              <Alert className="flex-1 mr-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <Button
+              onClick={validateDiscounts}
+              disabled={loading}
+              className="bg-gti-bright-green hover:bg-gti-medium-green text-white"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Validating...
+                </>
+              ) : (
+                "Validate Discounts"
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
             <span>Discount Conflict Resolution</span>
           </CardTitle>
@@ -167,7 +304,9 @@ export function DiscountConflictResolver() {
             <Alert>
               <CheckCircle className="h-4 w-4" />
               <AlertDescription>
-                All discount conflicts have been resolved. The system is applying the best available deals.
+                {conflicts.length === 0
+                  ? "No conflicts detected. Use the validation form above to check for discount conflicts."
+                  : "All discount conflicts have been resolved. The system is applying the best available deals."}
               </AlertDescription>
             </Alert>
           ) : (

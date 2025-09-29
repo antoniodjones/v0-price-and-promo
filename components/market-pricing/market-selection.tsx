@@ -16,9 +16,15 @@ interface MarketSelectionProps {
   markets: Market[]
   selectedMarket: string
   onMarketSelect: (marketId: string) => void
+  onConfigureStrategy?: () => void
 }
 
-export function MarketSelection({ markets, selectedMarket, onMarketSelect }: MarketSelectionProps) {
+export function MarketSelection({
+  markets,
+  selectedMarket,
+  onMarketSelect,
+  onConfigureStrategy,
+}: MarketSelectionProps) {
   const getStrategyIcon = (strategy: Market["strategy"]) => {
     switch (strategy) {
       case "volume":
@@ -85,7 +91,14 @@ export function MarketSelection({ markets, selectedMarket, onMarketSelect }: Mar
 
             {selectedMarket === market.id && (
               <div className="mt-3 pt-3 border-t border-gray-200">
-                <Button size="sm" className="w-full bg-gti-dark-green hover:bg-gti-medium-green">
+                <Button
+                  size="sm"
+                  className="w-full bg-gti-dark-green hover:bg-gti-medium-green"
+                  onClick={() => {
+                    console.log("[v0] Configure Strategy button clicked for market:", market.id)
+                    onConfigureStrategy?.()
+                  }}
+                >
                   <Settings className="h-4 w-4 mr-2" />
                   Configure Strategy
                 </Button>

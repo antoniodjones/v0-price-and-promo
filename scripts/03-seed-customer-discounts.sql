@@ -1,0 +1,9 @@
+-- Seed customer discounts with realistic pricing rules
+INSERT INTO customer_discounts (id, name, level, target, type, value, customer_tiers, markets, start_date, end_date, status, created_at, updated_at) VALUES
+('770e8400-e29b-41d4-a716-446655440001', 'Premium Cannabis - Dispensary ABC 8%', 'Brand', 'Premium Cannabis Co', 'percentage', 8.0, ARRAY['Dispensary ABC'], ARRAY[]::text[], '2025-10-01', NULL, 'active', NOW(), NOW()),
+('770e8400-e29b-41d4-a716-446655440002', 'Gummies $5 Off - Elite & Premium', 'Sub-category', 'Edibles > Gummies', 'fixed', 5.0, ARRAY['Elite Cannabis Co', 'Premium Dispensary LLC'], ARRAY[]::text[], '2025-10-01', '2025-12-31', 'active', NOW(), NOW()),
+('770e8400-e29b-41d4-a716-446655440003', '1oz Flower Bulk Discount', 'Size', 'Flower > 1oz', 'percentage', 12.0, ARRAY['High Volume Buyer'], ARRAY[]::text[], '2025-09-15', NULL, 'active', NOW(), NOW()),
+('770e8400-e29b-41d4-a716-446655440004', 'Holiday Concentrates Promo', 'Category', 'Concentrates', 'percentage', 15.0, ARRAY['VIP Dispensary', 'Premium Partners'], ARRAY[]::text[], '2025-11-01', '2025-12-31', 'scheduled', NOW(), NOW()),
+('770e8400-e29b-41d4-a716-446655440005', 'A-Tier Volume Discount', 'Global', 'All Products', 'percentage', 10.0, ARRAY['Elite Cannabis Co', 'Premium Dispensary LLC', 'VIP Dispensary', 'Premium Partners'], ARRAY[]::text[], '2025-01-01', NULL, 'active', NOW(), NOW()),
+('770e8400-e29b-41d4-a716-446655440006', 'Illinois Market Special', 'Global', 'All Products', 'percentage', 5.0, ARRAY[]::text[], ARRAY['Illinois'], '2025-01-01', '2025-12-31', 'active', NOW(), NOW()),
+('770e8400-e29b-41d4-a716-446655440007', 'Vape Cartridge Bundle', 'Category', 'Vapes', 'percentage', 8.0, ARRAY['High Volume Buyer', 'Green Leaf Collective'], ARRAY[]::text[], '2025-10-01', '2025-11-30', 'active', NOW(), NOW());

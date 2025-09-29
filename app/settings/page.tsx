@@ -14,6 +14,7 @@ const ExpirationSettings = lazy(() => import("@/components/settings/sections/exp
 const MarketSettings = lazy(() => import("@/components/settings/sections/market-settings"))
 const NotificationSettings = lazy(() => import("@/components/settings/sections/notification-settings"))
 const TestingSettings = lazy(() => import("@/components/settings/sections/testing-settings"))
+const TaskPlanningSettings = lazy(() => import("@/components/settings/sections/task-planning-settings"))
 const IntegrationSettings = lazy(() => import("@/components/settings/sections/integration-settings"))
 const AnalyticsSettings = lazy(() => import("@/components/settings/sections/analytics-settings"))
 const UserSettings = lazy(() => import("@/components/settings/sections/user-settings"))
@@ -43,6 +44,7 @@ export default function SettingsPage() {
       markets: <MarketSettings settings={settings} updateSetting={updateSetting} />,
       notifications: <NotificationSettings settings={settings} updateSetting={updateSetting} />,
       testing: <TestingSettings settings={settings} updateSetting={updateSetting} />,
+      "task-planning": <TaskPlanningSettings settings={settings} updateSetting={updateSetting} />,
       integrations: <IntegrationSettings settings={settings} updateSetting={updateSetting} />,
       analytics: <AnalyticsSettings settings={settings} updateSetting={updateSetting} />,
       users: <UserSettings settings={settings} updateSetting={updateSetting} />,

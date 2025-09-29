@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tag, Package, Layers, Ruler } from "lucide-react"
+import { Users, Award, Globe } from "lucide-react"
 import type { DiscountFormData } from "../customer-discount-wizard"
 
 interface DiscountLevelStepProps {
@@ -11,41 +11,34 @@ interface DiscountLevelStepProps {
 
 const discountLevels = [
   {
-    id: "brand" as const,
-    name: "Brand Level",
-    description: "Apply discount to all products from a specific brand",
-    icon: Tag,
-    example: "8% off all Premium Cannabis Co products",
+    id: "customer" as const,
+    name: "Customer Level",
+    description: "Apply discount to specific individual customers",
+    icon: Users,
+    example: "15% off for VIP customer John Smith",
     color: "bg-gti-bright-green",
   },
   {
-    id: "category" as const,
-    name: "Category Level",
-    description: "Apply discount to all products in a category",
-    icon: Package,
-    example: "5% off all Flower products",
+    id: "tier" as const,
+    name: "Tier Level",
+    description: "Apply discount to customers in a specific tier",
+    icon: Award,
+    example: "10% off for all Gold tier customers",
     color: "bg-gti-medium-green",
   },
   {
-    id: "subcategory" as const,
-    name: "Sub-Category Level",
-    description: "Apply discount to products in a specific sub-category",
-    icon: Layers,
-    example: "$5 off all Gummies in Edibles category",
+    id: "market" as const,
+    name: "Market Level",
+    description: "Apply discount to customers in a specific market/region",
+    icon: Globe,
+    example: "8% off for all Bay Area customers",
     color: "bg-gti-light-green",
-  },
-  {
-    id: "size" as const,
-    name: "Size Level",
-    description: "Apply discount to specific product sizes",
-    icon: Ruler,
-    example: "12% off all 1oz Flower products",
-    color: "bg-gti-purple",
   },
 ]
 
 export function DiscountLevelStep({ formData, updateFormData }: DiscountLevelStepProps) {
   const handleLevelSelect = (level: typeof formData.level) => {
+    console.log("[v0] Level selected:", level)
     updateFormData({
       level,
       // Reset dependent fields when level changes

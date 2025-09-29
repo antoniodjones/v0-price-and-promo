@@ -24,6 +24,7 @@ export interface Customer {
   tier: "A" | "B" | "C"
   market: string
   status: "active" | "inactive"
+  totalPurchases?: number // Added totalPurchases field to match database schema
   createdAt: string
   updatedAt: string
 }
@@ -51,10 +52,11 @@ export interface CustomerDiscount {
   name: string
   type: "percentage" | "fixed"
   value: number
-  level: "item" | "brand" | "category" | "subcategory"
+  level: "customer" | "tier" | "market" // Updated to match wizard levels
   target: string
   customerTiers: string[]
   markets: string[]
+  customerIds?: string[] // Added optional customerIds for individual customer assignments
   startDate: string
   endDate: string
   status: "active" | "inactive" | "scheduled"

@@ -132,7 +132,7 @@ const mockAuditEntries: AuditEntry[] = [
 ]
 
 const getTypeColor = (type: string) => {
-  switch (type.toLowerCase()) {
+  switch ((type || "").toLowerCase()) {
     case "customer":
       return "bg-blue-100 text-blue-800 border-blue-200"
     case "expiration":
@@ -154,10 +154,10 @@ export function PricingAuditTrail() {
 
   const filteredEntries = entries.filter(
     (entry) =>
-      entry.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.productSku.toLowerCase().includes(searchTerm.toLowerCase()),
+      (entry.orderId || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (entry.customerName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (entry.productName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (entry.productSku || "").toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const formatTimestamp = (timestamp: string) => {

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Package, Layers, TrendingUp, Shuffle } from "lucide-react"
+import { useEffect } from "react"
 
 interface BundleTypeStepProps {
   data: any
@@ -44,16 +45,31 @@ const bundleTypes = [
 ]
 
 export function BundleTypeStep({ data, onChange }: BundleTypeStepProps) {
+  useEffect(() => {
+    console.log("[v0] BundleTypeStep: Component mounted with data:", data)
+  }, [])
+
+  useEffect(() => {
+    console.log("[v0] BundleTypeStep: Data changed:", data)
+  }, [data])
+
+  console.log("[v0] BundleTypeStep: Rendering component")
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 min-h-screen bg-background">
+      <div className="mb-4">
+        <h2 className="text-2xl font-bold text-foreground">Create Bundle Deal</h2>
+        <p className="text-muted-foreground">Configure your bundle deal settings</p>
+      </div>
+
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="name">Bundle Name *</Label>
           <Input
             id="name"
             placeholder="e.g., Flower Power Bundle"
-            value={data.name}
-            onChange={(e) => onChange({ name: e.target.value })}
+            value={data.name || ""}
+            onChange={(e) => onChange({ ...data, name: e.target.value })}
           />
         </div>
 
@@ -62,8 +78,8 @@ export function BundleTypeStep({ data, onChange }: BundleTypeStepProps) {
           <Textarea
             id="description"
             placeholder="Brief description of the bundle offer..."
-            value={data.description}
-            onChange={(e) => onChange({ description: e.target.value })}
+            value={data.description || ""}
+            onChange={(e) => onChange({ ...data, description: e.target.value })}
             rows={3}
           />
         </div>
@@ -71,7 +87,7 @@ export function BundleTypeStep({ data, onChange }: BundleTypeStepProps) {
 
       <div className="space-y-4">
         <Label>Bundle Type *</Label>
-        <RadioGroup value={data.bundleType} onValueChange={(value) => onChange({ bundleType: value })}>
+        <RadioGroup value={data.bundleType} onValueChange={(value) => onChange({ ...data, bundleType: value })}>
           <div className="grid gap-4 md:grid-cols-2">
             {bundleTypes.map((type) => (
               <div key={type.id}>

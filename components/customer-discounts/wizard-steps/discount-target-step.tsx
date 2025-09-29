@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Package, Tag, Layers } from "lucide-react"
+import { Search, Package, Users, Award, Globe } from "lucide-react"
 import type { DiscountFormData } from "../customer-discount-wizard"
 
 interface DiscountTargetStepProps {
@@ -14,29 +14,23 @@ interface DiscountTargetStepProps {
 
 // Mock data - in real app this would come from API
 const mockTargets = {
-  brand: [
-    { id: "brand-1", name: "Premium Cannabis Co", productCount: 47 },
-    { id: "brand-2", name: "Incredibles", productCount: 23 },
-    { id: "brand-3", name: "Green Thumb", productCount: 89 },
-    { id: "brand-4", name: "Rise", productCount: 156 },
+  customer: [
+    { id: "customer-1", name: "Premium Cannabis Co", type: "Individual Customer", productCount: 47 },
+    { id: "customer-2", name: "Incredibles Retail", type: "Business Customer", productCount: 23 },
+    { id: "customer-3", name: "Green Thumb Dispensary", type: "Wholesale Customer", productCount: 89 },
+    { id: "customer-4", name: "Rise Collective", type: "Premium Customer", productCount: 156 },
   ],
-  category: [
-    { id: "cat-1", name: "Flower", productCount: 234 },
-    { id: "cat-2", name: "Edibles", productCount: 89 },
-    { id: "cat-3", name: "Concentrates", productCount: 67 },
-    { id: "cat-4", name: "Vapes", productCount: 45 },
+  tier: [
+    { id: "tier-1", name: "Premium Tier", type: "High-value customers", productCount: 234 },
+    { id: "tier-2", name: "Standard Tier", type: "Regular customers", productCount: 89 },
+    { id: "tier-3", name: "Basic Tier", type: "New customers", productCount: 67 },
+    { id: "tier-4", name: "VIP Tier", type: "Exclusive customers", productCount: 45 },
   ],
-  subcategory: [
-    { id: "sub-1", name: "Gummies", parent: "Edibles", productCount: 34 },
-    { id: "sub-2", name: "Chocolates", parent: "Edibles", productCount: 23 },
-    { id: "sub-3", name: "Beverages", parent: "Edibles", productCount: 12 },
-    { id: "sub-4", name: "Disposables", parent: "Vapes", productCount: 28 },
-  ],
-  size: [
-    { id: "size-1", name: "1oz", category: "Flower", productCount: 89 },
-    { id: "size-2", name: "500mg", category: "Edibles", productCount: 45 },
-    { id: "size-3", name: "1000mg", category: "Edibles", productCount: 34 },
-    { id: "size-4", name: "2g", category: "Concentrates", productCount: 23 },
+  market: [
+    { id: "market-1", name: "California", type: "State Market", productCount: 1234 },
+    { id: "market-2", name: "Bay Area", type: "Regional Market", productCount: 456 },
+    { id: "market-3", name: "Los Angeles", type: "City Market", productCount: 789 },
+    { id: "market-4", name: "San Diego", type: "City Market", productCount: 321 },
   ],
 }
 
@@ -51,6 +45,7 @@ export function DiscountTargetStep({ formData, updateFormData }: DiscountTargetS
   const filteredTargets = getTargets().filter((target) => target.name.toLowerCase().includes(searchTerm.toLowerCase()))
 
   const handleTargetSelect = (target: any) => {
+    console.log("[v0] Target selected:", target)
     updateFormData({
       targetId: target.id,
       targetName: target.name,
@@ -59,14 +54,12 @@ export function DiscountTargetStep({ formData, updateFormData }: DiscountTargetS
 
   const getLevelIcon = () => {
     switch (formData.level) {
-      case "brand":
-        return <Tag className="h-4 w-4" />
-      case "category":
-        return <Package className="h-4 w-4" />
-      case "subcategory":
-        return <Layers className="h-4 w-4" />
-      case "size":
-        return <Package className="h-4 w-4" />
+      case "customer":
+        return <Users className="h-4 w-4" />
+      case "tier":
+        return <Award className="h-4 w-4" />
+      case "market":
+        return <Globe className="h-4 w-4" />
       default:
         return <Package className="h-4 w-4" />
     }
@@ -74,14 +67,12 @@ export function DiscountTargetStep({ formData, updateFormData }: DiscountTargetS
 
   const getLevelTitle = () => {
     switch (formData.level) {
-      case "brand":
-        return "Select Brand"
-      case "category":
-        return "Select Category"
-      case "subcategory":
-        return "Select Sub-Category"
-      case "size":
-        return "Select Size"
+      case "customer":
+        return "Select Customer"
+      case "tier":
+        return "Select Tier"
+      case "market":
+        return "Select Market"
       default:
         return "Select Target"
     }
@@ -123,12 +114,11 @@ export function DiscountTargetStep({ formData, updateFormData }: DiscountTargetS
                   {getLevelIcon()}
                   <div>
                     <p className="font-medium">{target.name}</p>
-                    {"parent" in target && <p className="text-xs text-muted-foreground">{target.parent}</p>}
-                    {"category" in target && <p className="text-xs text-muted-foreground">{target.category}</p>}
+                    <p className="text-xs text-muted-foreground">{target.type}</p>
                   </div>
                 </div>
                 <Badge variant="secondary" className="text-xs">
-                  {target.productCount} products
+                  {target.productCount} items
                 </Badge>
               </div>
             </CardContent>
@@ -151,7 +141,7 @@ export function DiscountTargetStep({ formData, updateFormData }: DiscountTargetS
             <p className="text-sm font-medium text-gti-dark-green">Selected: {formData.targetName}</p>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Discount will apply to all products in this {formData.level}
+            Discount will apply to all items in this {formData.level}
           </p>
         </div>
       )}

@@ -102,6 +102,12 @@ export const navigationGroups: NavigationGroup[] = [
         description: "Authentication and access control",
       },
       {
+        id: "sso-api",
+        label: "SSO & API",
+        icon: "Key",
+        description: "Single Sign-On and API configuration",
+      },
+      {
         id: "performance",
         label: "Performance",
         icon: "Zap",

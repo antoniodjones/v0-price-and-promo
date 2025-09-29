@@ -6,8 +6,27 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Edit, Copy, Trash2, Play, Pause, Package, Calendar, DollarSign } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { BundleDealEditModal } from "./bundle-deal-edit-modal"
 
-const bundleDeals = [
+interface BundleDeal {
+  id: number
+  name: string
+  description: string
+  status: string
+  bundleType: string
+  products: string[]
+  discountType: string
+  discountValue: number | null
+  minQuantity: number
+  maxQuantity: number | null
+  startDate: string
+  endDate: string
+  totalSales: number
+  bundlesSold: number
+  avgOrderValue: number
+}
+
+const bundleDeals: BundleDeal[] = [
   {
     id: 1,
     name: "Flower Power Bundle",
@@ -79,7 +98,27 @@ const bundleDeals = [
 ]
 
 export function BundleDealsList() {
-  const [deals, setDeals] = useState(bundleDeals)
+  const [deals, setDeals] = useState<BundleDeal[]>(bundleDeals)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingBundleId, setEditingBundleId] = useState<string | null>(null)
+
+  const handleEditBundle = (bundleId: string) => {
+    try {
+      setEditingBundleId(bundleId)
+      setEditModalOpen(true)
+    } catch (error) {
+      console.error("Error opening edit modal:", error)
+    }
+  }
+
+  const handleEditSuccess = () => {
+    try {
+      // In a real app, this would refresh the data from the API
+      console.log("Bundle updated successfully, refreshing list...")
+    } catch (error) {
+      console.error("Error handling edit success:", error)
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -105,136 +144,153 @@ export function BundleDealsList() {
       case "tiered":
         return "Tiered Pricing"
       default:
-        return type
+        return type || "Unknown"
     }
   }
 
   const formatDiscount = (type: string, value: number | null) => {
     if (type === "tiered") return "Tiered"
-    if (type === "percentage") return `${value}% off`
-    if (type === "fixed") return `$${value} off`
+    if (type === "percentage") return `${value || 0}% off`
+    if (type === "fixed") return `$${value || 0} off`
     return "N/A"
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gti-dark-green">Bundle Campaigns</h2>
-        <Badge variant="outline" className="text-ada-secondary">
-          {deals.length} total bundles
-        </Badge>
+    <>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gti-dark-green">Bundle Campaigns</h2>
+          <Badge variant="outline" className="text-ada-secondary">
+            {deals.length} total bundles
+          </Badge>
+        </div>
+
+        <div className="grid gap-4">
+          {deals.map((deal) => (
+            <Card key={deal.id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <CardTitle className="text-lg text-gti-dark-green">{deal.name || "Unnamed Bundle"}</CardTitle>
+                      <Badge className={getStatusColor(deal.status)}>{deal.status || "unknown"}</Badge>
+                      <Badge variant="outline">{getBundleTypeLabel(deal.bundleType)}</Badge>
+                    </div>
+                    <p className="text-sm text-ada-secondary">{deal.description || "No description available"}</p>
+                  </div>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditBundle(deal.id.toString())}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Bundle
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Copy className="w-4 h-4 mr-2" />
+                        Duplicate
+                      </DropdownMenuItem>
+                      {deal.status === "active" ? (
+                        <DropdownMenuItem>
+                          <Pause className="w-4 h-4 mr-2" />
+                          Pause Bundle
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem>
+                          <Play className="w-4 h-4 mr-2" />
+                          Activate Bundle
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem className="text-red-600">
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Bundle
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-ada-secondary">
+                      <Package className="w-4 h-4" />
+                      Products
+                    </div>
+                    <div className="text-sm font-medium">
+                      {Array.isArray(deal.products) && deal.products.length > 0
+                        ? deal.products.slice(0, 2).join(", ") +
+                          (deal.products.length > 2 ? ` +${deal.products.length - 2} more` : "")
+                        : "No products specified"}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-ada-secondary">
+                      <DollarSign className="w-4 h-4" />
+                      Discount
+                    </div>
+                    <div className="text-sm font-medium">{formatDiscount(deal.discountType, deal.discountValue)}</div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-ada-secondary">
+                      <Calendar className="w-4 h-4" />
+                      Duration
+                    </div>
+                    <div className="text-sm font-medium">
+                      {deal.startDate ? new Date(deal.startDate).toLocaleDateString() : "Unknown"} -{" "}
+                      {deal.endDate ? new Date(deal.endDate).toLocaleDateString() : "Unknown"}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-sm text-ada-secondary">Performance</div>
+                    <div className="text-sm font-medium">{deal.bundlesSold || 0} bundles sold</div>
+                    <div className="text-xs text-ada-secondary">${(deal.totalSales || 0).toLocaleString()} revenue</div>
+                  </div>
+                </div>
+
+                {deal.bundleType === "tiered" && (
+                  <div className="mt-4 p-3 bg-muted rounded-lg">
+                    <div className="text-sm font-medium mb-2">Tiered Pricing Structure</div>
+                    <div className="grid gap-2 text-xs">
+                      <div className="flex justify-between">
+                        <span>2-3 items:</span>
+                        <span className="font-medium">10% off</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>4-5 items:</span>
+                        <span className="font-medium">15% off</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>6+ items:</span>
+                        <span className="font-medium">20% off</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
-      <div className="grid gap-4">
-        {deals.map((deal) => (
-          <Card key={deal.id} className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <CardTitle className="text-lg text-gti-dark-green">{deal.name}</CardTitle>
-                    <Badge className={getStatusColor(deal.status)}>{deal.status}</Badge>
-                    <Badge variant="outline">{getBundleTypeLabel(deal.bundleType)}</Badge>
-                  </div>
-                  <p className="text-sm text-ada-secondary">{deal.description}</p>
-                </div>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit Bundle
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Copy className="w-4 h-4 mr-2" />
-                      Duplicate
-                    </DropdownMenuItem>
-                    {deal.status === "active" ? (
-                      <DropdownMenuItem>
-                        <Pause className="w-4 h-4 mr-2" />
-                        Pause Bundle
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem>
-                        <Play className="w-4 h-4 mr-2" />
-                        Activate Bundle
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem className="text-red-600">
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete Bundle
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-ada-secondary">
-                    <Package className="w-4 h-4" />
-                    Products
-                  </div>
-                  <div className="text-sm font-medium">
-                    {deal.products.slice(0, 2).join(", ")}
-                    {deal.products.length > 2 && ` +${deal.products.length - 2} more`}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-ada-secondary">
-                    <DollarSign className="w-4 h-4" />
-                    Discount
-                  </div>
-                  <div className="text-sm font-medium">{formatDiscount(deal.discountType, deal.discountValue)}</div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-ada-secondary">
-                    <Calendar className="w-4 h-4" />
-                    Duration
-                  </div>
-                  <div className="text-sm font-medium">
-                    {new Date(deal.startDate).toLocaleDateString()} - {new Date(deal.endDate).toLocaleDateString()}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="text-sm text-ada-secondary">Performance</div>
-                  <div className="text-sm font-medium">{deal.bundlesSold} bundles sold</div>
-                  <div className="text-xs text-ada-secondary">${deal.totalSales.toLocaleString()} revenue</div>
-                </div>
-              </div>
-
-              {deal.bundleType === "tiered" && (
-                <div className="mt-4 p-3 bg-muted rounded-lg">
-                  <div className="text-sm font-medium mb-2">Tiered Pricing Structure</div>
-                  <div className="grid gap-2 text-xs">
-                    <div className="flex justify-between">
-                      <span>2-3 items:</span>
-                      <span className="font-medium">10% off</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>4-5 items:</span>
-                      <span className="font-medium">15% off</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>6+ items:</span>
-                      <span className="font-medium">20% off</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+      {editingBundleId && (
+        <BundleDealEditModal
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false)
+            setEditingBundleId(null)
+          }}
+          bundleId={editingBundleId}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+    </>
   )
 }

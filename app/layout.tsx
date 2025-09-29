@@ -1,43 +1,43 @@
 import type React from "react"
-import type { Metadata } from "next"
-import { Inter, JetBrains_Mono } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
-import { Suspense } from "react"
-import { AppLayout } from "@/components/layout/app-layout"
-import { ThemeProvider } from "@/components/theme/theme-provider"
 import "./globals.css"
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-geist-sans",
-})
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-})
-
-export const metadata: Metadata = {
-  title: "Pricing & Promotions",
-  description: "Enterprise-level pricing and promotions management for GTI wholesale operations",
-  generator: "v0.app",
-}
+import { ErrorContextProvider } from "@/components/error-prevention/error-context-provider"
+import { PageErrorBoundary } from "@/components/error/enhanced-error-boundary"
+import { ThemeProvider } from "@/components/theme/theme-provider"
+import { AppProvider } from "@/lib/context/app-context"
+import { AuthProvider } from "@/lib/context/auth-context"
+import { AppLayout } from "@/components/organisms/app-layout"
+import { Header } from "@/components/organisms/header"
+import { Sidebar } from "@/components/organisms/sidebar"
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en">
-      <body className={`font-sans ${inter.variable} ${jetbrainsMono.variable} antialiased`}>
-        <ThemeProvider defaultTheme="system" storageKey="gti-ui-theme">
-          <Suspense fallback={<div>Loading...</div>}>
-            <AppLayout>{children}</AppLayout>
-            <Analytics />
-          </Suspense>
-        </ThemeProvider>
+      <head>
+        <title>GTI Pricing Engine</title>
+      </head>
+      <body>
+        <PageErrorBoundary>
+          <ErrorContextProvider>
+            <ThemeProvider>
+              <AuthProvider>
+                <AppProvider>
+                  <AppLayout header={<Header />} sidebar={<Sidebar />}>
+                    {children}
+                  </AppLayout>
+                </AppProvider>
+              </AuthProvider>
+            </ThemeProvider>
+          </ErrorContextProvider>
+        </PageErrorBoundary>
       </body>
     </html>
   )
 }
+
+export const metadata = {
+      generator: 'v0.app'
+    };

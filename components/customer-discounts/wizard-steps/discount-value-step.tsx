@@ -14,6 +14,7 @@ interface DiscountValueStepProps {
 
 export function DiscountValueStep({ formData, updateFormData }: DiscountValueStepProps) {
   const handleDiscountTypeChange = (type: "percentage" | "dollar") => {
+    console.log("[v0] Discount type changed to:", type)
     updateFormData({
       discountType: type,
       discountValue: 0, // Reset value when type changes
@@ -22,6 +23,7 @@ export function DiscountValueStep({ formData, updateFormData }: DiscountValueSte
 
   const handleValueChange = (value: string) => {
     const numValue = Number.parseFloat(value) || 0
+    console.log("[v0] Discount value changed to:", numValue)
     updateFormData({ discountValue: numValue })
   }
 

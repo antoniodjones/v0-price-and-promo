@@ -21,9 +21,28 @@ const steps = [
   { id: 6, title: "Review", description: "Review and create bundle" },
 ]
 
+interface BundleData {
+  name: string
+  description: string
+  bundleType: string
+  products: any[]
+  categories: any[]
+  discountType: string
+  discountValue: number
+  tieredPricing: any[]
+  minQuantity: number
+  maxQuantity: number | null
+  customerTiers: any[]
+  markets: any[]
+  startDate: string
+  endDate: string
+  usageLimit: number | null
+  perCustomerLimit: number | null
+}
+
 export function BundleDealWizard() {
   const [currentStep, setCurrentStep] = useState(1)
-  const [bundleData, setBundleData] = useState({
+  const [bundleData, setBundleData] = useState<BundleData>({
     name: "",
     description: "",
     bundleType: "",
@@ -45,37 +64,54 @@ export function BundleDealWizard() {
   const progress = (currentStep / steps.length) * 100
 
   const handleNext = () => {
-    if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1)
+    try {
+      if (currentStep < steps.length) {
+        setCurrentStep(currentStep + 1)
+      }
+    } catch (error) {
+      console.error("Error navigating to next step:", error)
     }
   }
 
   const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
+    try {
+      if (currentStep > 1) {
+        setCurrentStep(currentStep - 1)
+      }
+    } catch (error) {
+      console.error("Error navigating to previous step:", error)
     }
   }
 
-  const handleDataChange = (data: any) => {
-    setBundleData({ ...bundleData, ...data })
+  const handleDataChange = (data: Partial<BundleData>) => {
+    try {
+      setBundleData({ ...bundleData, ...data })
+    } catch (error) {
+      console.error("Error updating bundle data:", error)
+    }
   }
 
   const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return <BundleTypeStep data={bundleData} onChange={handleDataChange} />
-      case 2:
-        return <BundleProductsStep data={bundleData} onChange={handleDataChange} />
-      case 3:
-        return <BundlePricingStep data={bundleData} onChange={handleDataChange} />
-      case 4:
-        return <BundleRulesStep data={bundleData} onChange={handleDataChange} />
-      case 5:
-        return <BundleDatesStep data={bundleData} onChange={handleDataChange} />
-      case 6:
-        return <BundleReviewStep data={bundleData} onChange={handleDataChange} />
-      default:
-        return null
+    try {
+      switch (currentStep) {
+        case 1:
+          return <BundleTypeStep data={bundleData} onChange={handleDataChange} />
+        case 2:
+          return <BundleProductsStep data={bundleData} onChange={handleDataChange} />
+        case 3:
+          return <BundlePricingStep data={bundleData} onChange={handleDataChange} />
+        case 4:
+          return <BundleRulesStep data={bundleData} onChange={handleDataChange} />
+        case 5:
+          return <BundleDatesStep data={bundleData} onChange={handleDataChange} />
+        case 6:
+          return <BundleReviewStep data={bundleData} onChange={handleDataChange} />
+        default:
+          return <div className="text-center py-8">Invalid step</div>
+      }
+    } catch (error) {
+      console.error("Error rendering step", currentStep, error)
+      return <div className="text-red-500 text-center py-8">Error loading step {currentStep}</div>
     }
   }
 
@@ -87,9 +123,11 @@ export function BundleDealWizard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <CardTitle className="text-gti-dark-green">
-                Step {currentStep} of {steps.length}: {steps[currentStep - 1].title}
+                Step {currentStep} of {steps.length}: {steps[currentStep - 1]?.title || "Unknown Step"}
               </CardTitle>
-              <p className="text-muted-foreground mt-1">{steps[currentStep - 1].description}</p>
+              <p className="text-muted-foreground mt-1">
+                {steps[currentStep - 1]?.description || "Step description unavailable"}
+              </p>
             </div>
             <div className="text-sm text-muted-foreground">{Math.round(progress)}% Complete</div>
           </div>

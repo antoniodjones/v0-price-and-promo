@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,28 +15,88 @@ interface BundleProductsStepProps {
 }
 
 const categories = [
-  { id: "flower", name: "Flower", icon: Leaf, count: 45 },
-  { id: "edibles", name: "Edibles", icon: Cookie, count: 32 },
-  { id: "concentrates", name: "Concentrates", icon: Droplets, count: 28 },
-  { id: "vapes", name: "Vapes", icon: Package, count: 19 },
-]
-
-const sampleProducts = [
-  { id: 1, name: "Blue Dream 1/8", category: "flower", price: 35.0, thc: 22.5 },
-  { id: 2, name: "OG Kush 1/4", category: "flower", price: 65.0, thc: 24.1 },
-  { id: 3, name: "Sour Diesel Pre-Roll", category: "flower", price: 12.0, thc: 19.8 },
-  { id: 4, name: "Gummy Bears 10mg", category: "edibles", price: 25.0, thc: 10 },
-  { id: 5, name: "Chocolate Bar 100mg", category: "edibles", price: 45.0, thc: 100 },
-  { id: 6, name: "Live Resin Cart", category: "vapes", price: 55.0, thc: 85.2 },
-  { id: 7, name: "Shatter 1g", category: "concentrates", price: 40.0, thc: 78.5 },
+  { id: "Flower", name: "Flower", icon: Leaf, count: 0 },
+  { id: "Edibles", name: "Edibles", icon: Cookie, count: 0 },
+  { id: "Concentrates", name: "Concentrates", icon: Droplets, count: 0 },
+  { id: "Vapes", name: "Vapes", icon: Package, count: 0 },
 ]
 
 export function BundleProductsStep({ data, onChange }: BundleProductsStepProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedProducts, setSelectedProducts] = useState(data.products || [])
   const [selectedCategories, setSelectedCategories] = useState(data.categories || [])
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
-  const filteredProducts = sampleProducts.filter((product) =>
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        console.log("[v0] BundleProductsStep: Starting to fetch products")
+        setLoading(true)
+        setError("")
+
+        const response = await fetch("/api/products")
+        console.log("[v0] BundleProductsStep: Response status:", response.status)
+        console.log("[v0] BundleProductsStep: Response ok:", response.ok)
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.log("[v0] BundleProductsStep: Error response text:", errorText)
+          throw new Error(`HTTP ${response.status}: ${errorText}`)
+        }
+
+        const contentType = response.headers.get("content-type")
+        console.log("[v0] BundleProductsStep: Content type:", contentType)
+
+        if (!contentType || !contentType.includes("application/json")) {
+          const responseText = await response.text()
+          console.log("[v0] BundleProductsStep: Non-JSON response:", responseText)
+          throw new Error(`Expected JSON response, got ${contentType}. Response: ${responseText.substring(0, 200)}`)
+        }
+
+        const data = await response.json()
+        console.log("[v0] BundleProductsStep: Parsed JSON data:", data)
+
+        let productsArray = []
+        if (data.data && Array.isArray(data.data)) {
+          productsArray = data.data
+        } else if (data.products && Array.isArray(data.products)) {
+          productsArray = data.products
+        } else if (Array.isArray(data)) {
+          productsArray = data
+        } else {
+          console.log("[v0] BundleProductsStep: Unexpected data structure:", data)
+          throw new Error("API returned unexpected data structure")
+        }
+
+        console.log("[v0] BundleProductsStep: Products array length:", productsArray.length)
+        setProducts(productsArray)
+
+        const categoryCounts = productsArray.reduce((acc: any, product: any) => {
+          const category = product.category
+          acc[category] = (acc[category] || 0) + 1
+          return acc
+        }, {})
+
+        console.log("[v0] BundleProductsStep: Category counts:", categoryCounts)
+
+        categories.forEach((cat) => {
+          cat.count = categoryCounts[cat.id] || 0
+        })
+      } catch (err) {
+        console.error("[v0] BundleProductsStep: Error fetching products:", err)
+        const errorMessage = err instanceof Error ? err.message : "Unknown error occurred"
+        setError(`Failed to load products: ${errorMessage}`)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProducts()
+  }, [])
+
+  const filteredProducts = products.filter((product: any) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
@@ -102,35 +162,39 @@ export function BundleProductsStep({ data, onChange }: BundleProductsStepProps) 
       {(data.bundleType === "category" || data.bundleType === "mix-match" || data.bundleType === "tiered") && (
         <div className="space-y-4">
           <Label>Product Categories</Label>
-          <div className="grid gap-3 md:grid-cols-2">
-            {categories.map((category) => (
-              <Card
-                key={category.id}
-                className={`cursor-pointer transition-all hover:shadow-md ${
-                  selectedCategories.includes(category.id) ? "ring-2 ring-gti-bright-green" : ""
-                }`}
-                onClick={() => handleCategoryToggle(category.id)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gti-light-green rounded-lg">
-                        <category.icon className="w-5 h-5 text-gti-dark-green" />
+          {loading ? (
+            <div className="text-center py-4 text-muted-foreground">Loading categories...</div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {categories.map((category) => (
+                <Card
+                  key={category.id}
+                  className={`cursor-pointer transition-all hover:shadow-md ${
+                    selectedCategories.includes(category.id) ? "ring-2 ring-gti-bright-green" : ""
+                  }`}
+                  onClick={() => handleCategoryToggle(category.id)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gti-light-green rounded-lg">
+                          <category.icon className="w-5 h-5 text-gti-dark-green" />
+                        </div>
+                        <div>
+                          <div className="font-medium">{category.name}</div>
+                          <div className="text-sm text-muted-foreground">{category.count} products</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-medium">{category.name}</div>
-                        <div className="text-sm text-muted-foreground">{category.count} products</div>
-                      </div>
+                      <Checkbox
+                        checked={selectedCategories.includes(category.id)}
+                        onChange={() => handleCategoryToggle(category.id)}
+                      />
                     </div>
-                    <Checkbox
-                      checked={selectedCategories.includes(category.id)}
-                      onChange={() => handleCategoryToggle(category.id)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -149,35 +213,51 @@ export function BundleProductsStep({ data, onChange }: BundleProductsStepProps) 
             />
           </div>
 
-          <div className="max-h-64 overflow-y-auto space-y-2">
-            {filteredProducts.map((product) => (
-              <Card
-                key={product.id}
-                className={`cursor-pointer transition-all hover:shadow-sm ${
-                  selectedProducts.some((p: any) => p.id === product.id) ? "ring-2 ring-gti-bright-green" : ""
-                }`}
-                onClick={() => handleProductToggle(product)}
-              >
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Checkbox
-                        checked={selectedProducts.some((p: any) => p.id === product.id)}
-                        onChange={() => handleProductToggle(product)}
-                      />
-                      <div>
-                        <div className="font-medium">{product.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          ${product.price} • {product.thc}% THC
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading products...</div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <div className="text-red-500 mb-2">⚠️ Error Loading Products</div>
+              <div className="text-sm text-muted-foreground mb-4">{error}</div>
+              <Button variant="outline" onClick={() => window.location.reload()} className="text-sm">
+                Retry
+              </Button>
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {searchTerm ? `No products found matching "${searchTerm}"` : "No products available"}
+            </div>
+          ) : (
+            <div className="max-h-64 overflow-y-auto space-y-2">
+              {filteredProducts.map((product: any) => (
+                <Card
+                  key={product.id}
+                  className={`cursor-pointer transition-all hover:shadow-sm ${
+                    selectedProducts.some((p: any) => p.id === product.id) ? "ring-2 ring-gti-bright-green" : ""
+                  }`}
+                  onClick={() => handleProductToggle(product)}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={selectedProducts.some((p: any) => p.id === product.id)}
+                          onChange={() => handleProductToggle(product)}
+                        />
+                        <div>
+                          <div className="font-medium">{product.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            ${product.price} • {product.thc_percentage}% THC • {product.sku}
+                          </div>
                         </div>
                       </div>
+                      <Badge variant="outline">{product.category}</Badge>
                     </div>
-                    <Badge variant="outline">{categories.find((c) => c.id === product.category)?.name}</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

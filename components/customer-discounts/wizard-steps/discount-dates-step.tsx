@@ -27,8 +27,17 @@ export function DiscountDatesStep({ formData, updateFormData }: DiscountDatesSte
 
   const handleNoEndDateChange = (checked: boolean) => {
     if (checked) {
+      const farFuture = new Date()
+      farFuture.setFullYear(farFuture.getFullYear() + 10) // 10 years from now
+      updateFormData({ endDate: farFuture })
+    } else {
+      // Reset to null when unchecked so user can pick a date
       updateFormData({ endDate: null })
     }
+  }
+
+  const isNoEndDateSelected = () => {
+    return formData.endDate && formData.endDate.getFullYear() > new Date().getFullYear() + 5
   }
 
   return (
@@ -120,17 +129,13 @@ export function DiscountDatesStep({ formData, updateFormData }: DiscountDatesSte
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="no-end-date"
-                  checked={formData.endDate === null}
-                  onCheckedChange={handleNoEndDateChange}
-                />
+                <Checkbox id="no-end-date" checked={isNoEndDateSelected()} onCheckedChange={handleNoEndDateChange} />
                 <Label htmlFor="no-end-date" className="text-sm">
                   No planned end date (runs indefinitely)
                 </Label>
               </div>
 
-              {formData.endDate !== null && (
+              {!isNoEndDateSelected() && (
                 <>
                   <Label htmlFor="end-date">Effective End Date</Label>
                   <Popover>
@@ -223,7 +228,12 @@ export function DiscountDatesStep({ formData, updateFormData }: DiscountDatesSte
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             Active from {format(formData.startDate, "PPP")}
-            {formData.endDate ? ` until ${format(formData.endDate, "PPP")}` : " with no planned end date"}
+            {/* Fixed the summary message logic to properly handle no end date scenario */}
+            {isNoEndDateSelected()
+              ? " with no planned end date"
+              : formData.endDate
+                ? ` until ${format(formData.endDate, "PPP")}`
+                : " (end date required)"}
           </p>
         </div>
       )}

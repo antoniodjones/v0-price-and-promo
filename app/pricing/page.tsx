@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PricingCalculator } from "@/components/pricing/pricing-calculator"
 import { DiscountConflictResolver } from "@/components/pricing/discount-conflict-resolver"
 import { PricingAuditTrail } from "@/components/pricing/pricing-audit-trail"
+import { PriceComparisonDashboard } from "@/components/pricing/price-comparison-dashboard"
 
 export default function PricingPage() {
   return (
@@ -14,14 +15,19 @@ export default function PricingPage() {
       </div>
 
       <Tabs defaultValue="calculator" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="calculator">Pricing Calculator</TabsTrigger>
+          <TabsTrigger value="comparison">Price Comparison</TabsTrigger>
           <TabsTrigger value="conflicts">Conflict Resolution</TabsTrigger>
           <TabsTrigger value="audit">Audit Trail</TabsTrigger>
         </TabsList>
 
         <TabsContent value="calculator" className="space-y-6">
           <PricingCalculator />
+        </TabsContent>
+
+        <TabsContent value="comparison" className="space-y-6">
+          <PriceComparisonDashboard />
         </TabsContent>
 
         <TabsContent value="conflicts" className="space-y-6">

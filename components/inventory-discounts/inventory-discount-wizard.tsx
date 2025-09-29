@@ -13,6 +13,8 @@ import { TriggerValueStep } from "./wizard-steps/trigger-value-step"
 import { AutoDiscountValueStep } from "./wizard-steps/auto-discount-value-step"
 import { AutoDiscountDatesStep } from "./wizard-steps/auto-discount-dates-step"
 import { AutoDiscountReviewStep } from "./wizard-steps/auto-discount-review-step"
+import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 export interface AutoDiscountFormData {
   triggerType: "expiration" | "thc" | ""
@@ -39,6 +41,7 @@ const steps = [
 
 export function InventoryDiscountWizard() {
   const [currentStep, setCurrentStep] = useState(1)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState<AutoDiscountFormData>({
     triggerType: "",
     level: "",
@@ -53,64 +56,161 @@ export function InventoryDiscountWizard() {
     name: "",
   })
 
+  const { toast } = useToast()
+  const router = useRouter()
+
   const updateFormData = (updates: Partial<AutoDiscountFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }))
+    try {
+      setFormData((prev) => ({ ...prev, ...updates }))
+    } catch (error) {
+      console.error("[v0] Error updating form data:", error)
+    }
   }
 
   const nextStep = () => {
-    if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1)
+    try {
+      if (currentStep < steps.length && canProceed()) {
+        setCurrentStep(currentStep + 1)
+      }
+    } catch (error) {
+      console.error("[v0] Error navigating to next step:", error)
     }
   }
 
   const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
+    try {
+      if (currentStep > 1) {
+        setCurrentStep(currentStep - 1)
+      }
+    } catch (error) {
+      console.error("[v0] Error navigating to previous step:", error)
     }
   }
 
   const canProceed = () => {
-    switch (currentStep) {
-      case 1:
-        return formData.triggerType !== ""
-      case 2:
-        return (
-          formData.level !== "" &&
-          (formData.level === "global" || (formData.targetId !== "" && formData.targetName !== ""))
-        )
-      case 3:
-        return formData.triggerValue > 0 && formData.triggerUnit !== ""
-      case 4:
-        return formData.discountType !== "" && formData.discountValue > 0
-      case 5:
-        return formData.startDate !== null
-      case 6:
-        return formData.name !== ""
-      default:
-        return false
+    try {
+      switch (currentStep) {
+        case 1:
+          return formData.triggerType !== ""
+        case 2:
+          return (
+            formData.level !== "" &&
+            (formData.level === "global" || (formData.targetId !== "" && formData.targetName !== ""))
+          )
+        case 3:
+          return formData.triggerValue > 0 && formData.triggerUnit !== ""
+        case 4:
+          return formData.discountType !== "" && formData.discountValue > 0
+        case 5:
+          return formData.startDate !== null
+        case 6:
+          return formData.name !== ""
+        default:
+          return false
+      }
+    } catch {
+      return false
     }
   }
 
   const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return <DiscountTriggerStep formData={formData} updateFormData={updateFormData} />
-      case 2:
-        return <DiscountScopeStep formData={formData} updateFormData={updateFormData} />
-      case 3:
-        return <TriggerValueStep formData={formData} updateFormData={updateFormData} />
-      case 4:
-        return <AutoDiscountValueStep formData={formData} updateFormData={updateFormData} />
-      case 5:
-        return <AutoDiscountDatesStep formData={formData} updateFormData={updateFormData} />
-      case 6:
-        return <AutoDiscountReviewStep formData={formData} updateFormData={updateFormData} />
-      default:
-        return null
+    try {
+      switch (currentStep) {
+        case 1:
+          return <DiscountTriggerStep formData={formData} updateFormData={updateFormData} />
+        case 2:
+          return <DiscountScopeStep formData={formData} updateFormData={updateFormData} />
+        case 3:
+          return <TriggerValueStep formData={formData} updateFormData={updateFormData} />
+        case 4:
+          return <AutoDiscountValueStep formData={formData} updateFormData={updateFormData} />
+        case 5:
+          return <AutoDiscountDatesStep formData={formData} updateFormData={updateFormData} />
+        case 6:
+          return <AutoDiscountReviewStep formData={formData} updateFormData={updateFormData} />
+        default:
+          return (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Invalid step</p>
+            </div>
+          )
+      }
+    } catch (error) {
+      console.error("[v0] Error rendering step:", error)
+      return (
+        <div className="text-center py-8 text-red-600">
+          <p>Error loading step content</p>
+        </div>
+      )
     }
   }
 
   const progress = (currentStep / steps.length) * 100
+
+  const handleSubmit = async () => {
+    if (!canProceed()) {
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      console.log("[v0] Creating inventory discount:", formData)
+
+      const discountData = {
+        name: formData.name || "Unnamed Inventory Discount",
+        type: formData.triggerType || "expiration",
+        triggerValue: formData.triggerValue || 30,
+        discountType: formData.discountType === "dollar" ? "fixed" : formData.discountType || "percentage",
+        discountValue: formData.discountValue || 0,
+        scope: formData.level === "global" ? "all" : formData.level || "all",
+        scopeValue: formData.level === "global" ? null : formData.targetId || null,
+        status: "active" as const,
+      }
+
+      const response = await fetch("/api/discounts/inventory", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(discountData),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.log("[v0] API error response:", errorText)
+
+        let errorMessage = "Failed to create inventory discount"
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData?.message || errorData?.error || errorMessage
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${errorText || "Unknown error"}`
+        }
+
+        throw new Error(errorMessage)
+      }
+
+      const result = await response.json()
+      console.log("[v0] Inventory discount created successfully:", result)
+
+      toast({
+        title: "Inventory Discount Created!",
+        description: `${formData.name || "Your discount rule"} has been created and is now active.`,
+      })
+
+      router.push("/inventory-discounts")
+    } catch (error) {
+      console.error("[v0] Error creating inventory discount:", error)
+      toast({
+        title: "Error Creating Discount",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -122,10 +222,10 @@ export function InventoryDiscountWizard() {
               <CardTitle>
                 Step {currentStep} of {steps.length}
               </CardTitle>
-              <CardDescription>{steps[currentStep - 1].description}</CardDescription>
+              <CardDescription>{steps[currentStep - 1]?.description || "Unknown step"}</CardDescription>
             </div>
             <Badge variant="outline" className="text-gti-dark-green border-gti-dark-green">
-              {steps[currentStep - 1].name}
+              {steps[currentStep - 1]?.name || "Unknown"}
             </Badge>
           </div>
           <Progress value={progress} className="mt-4" />
@@ -184,16 +284,12 @@ export function InventoryDiscountWizard() {
             </Button>
           ) : (
             <Button
-              onClick={() => {
-                // Handle form submission
-                console.log("Creating auto discount:", formData)
-                // In real app, this would call an API
-              }}
-              disabled={!canProceed()}
+              onClick={handleSubmit}
+              disabled={!canProceed() || isSubmitting}
               className="bg-gti-bright-green hover:bg-gti-medium-green text-white"
             >
               <Check className="mr-2 h-4 w-4" />
-              Create Auto Discount
+              {isSubmitting ? "Creating..." : "Create Auto Discount"}
             </Button>
           )}
         </div>

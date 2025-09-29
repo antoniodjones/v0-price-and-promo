@@ -87,14 +87,22 @@ interface BogoPromotionsListProps {
 export function BogoPromotionsList({ searchTerm }: BogoPromotionsListProps) {
   const [promotions, setPromotions] = useState<BogoPromotion[]>(mockPromotions)
 
-  const filteredPromotions = promotions.filter(
-    (promo) =>
-      promo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      promo.triggerProduct.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const filteredPromotions = promotions.filter((promo) => {
+    if (!promo || !searchTerm) return true
+
+    const searchLower = (searchTerm || "").toLowerCase()
+    const name = (promo.name || "").toLowerCase()
+    const triggerProduct = (promo.triggerProduct || "").toLowerCase()
+
+    return name.includes(searchLower) || triggerProduct.includes(searchLower)
+  })
 
   const togglePromotion = (id: string) => {
-    setPromotions((prev) => prev.map((promo) => (promo.id === id ? { ...promo, isActive: !promo.isActive } : promo)))
+    try {
+      setPromotions((prev) => prev.map((promo) => (promo.id === id ? { ...promo, isActive: !promo.isActive } : promo)))
+    } catch (error) {
+      console.error("Error toggling promotion:", error)
+    }
   }
 
   const getTypeIcon = (type: string) => {
@@ -132,10 +140,10 @@ export function BogoPromotionsList({ searchTerm }: BogoPromotionsListProps) {
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
                   {getTypeIcon(promotion.type)}
-                  <CardTitle className="text-lg">{promotion.name}</CardTitle>
+                  <CardTitle className="text-lg">{promotion.name || "Unnamed Promotion"}</CardTitle>
                 </div>
                 <Badge className={getTypeBadgeColor(promotion.type)}>
-                  {promotion.type.charAt(0).toUpperCase() + promotion.type.slice(1)} Level
+                  {(promotion.type || "item").charAt(0).toUpperCase() + (promotion.type || "item").slice(1)} Level
                 </Badge>
                 <Badge variant={promotion.isActive ? "default" : "secondary"}>
                   {promotion.isActive ? "Active" : "Inactive"}
@@ -171,8 +179,8 @@ export function BogoPromotionsList({ searchTerm }: BogoPromotionsListProps) {
               </div>
             </div>
             <CardDescription>
-              Buy {promotion.triggerProduct} → Get {promotion.rewardValue}
-              {promotion.rewardType === "percentage" ? "%" : "$"} off {promotion.rewardProduct}
+              Buy {promotion.triggerProduct || "Unknown Product"} → Get {promotion.rewardValue || 0}
+              {promotion.rewardType === "percentage" ? "%" : "$"} off {promotion.rewardProduct || "Unknown Product"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -180,25 +188,25 @@ export function BogoPromotionsList({ searchTerm }: BogoPromotionsListProps) {
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Campaign Period</p>
                 <p className="text-sm">
-                  {new Date(promotion.startDate).toLocaleDateString()} -{" "}
-                  {new Date(promotion.endDate).toLocaleDateString()}
+                  {promotion.startDate ? new Date(promotion.startDate).toLocaleDateString() : "Unknown"} -{" "}
+                  {promotion.endDate ? new Date(promotion.endDate).toLocaleDateString() : "Unknown"}
                 </p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Total Uses</p>
-                <p className="text-sm font-bold text-gti-dark-green">{promotion.performance.uses}</p>
+                <p className="text-sm font-bold text-gti-dark-green">{promotion.performance?.uses || 0}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Customer Savings</p>
                 <p className="text-sm font-bold text-gti-dark-green">
-                  ${promotion.performance.savings.toLocaleString()}
+                  ${(promotion.performance?.savings || 0).toLocaleString()}
                 </p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Conversion Rate</p>
                 <div className="flex items-center space-x-1">
                   <Percent className="h-3 w-3 text-gti-bright-green" />
-                  <p className="text-sm font-bold text-gti-dark-green">{promotion.performance.conversionRate}%</p>
+                  <p className="text-sm font-bold text-gti-dark-green">{promotion.performance?.conversionRate || 0}%</p>
                 </div>
               </div>
             </div>

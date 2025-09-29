@@ -7,9 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, TrendingUp, Users, DollarSign, Package } from "lucide-react"
 import { MarketPricingList } from "@/components/market-pricing/market-pricing-list"
 import { MarketSelection } from "@/components/market-pricing/market-selection"
+import { MarketConfigurationModal } from "@/components/market-pricing/market-configuration-modal"
 
 export default function MarketPricingPage() {
   const [selectedMarket, setSelectedMarket] = useState("massachusetts")
+  const [showConfigModal, setShowConfigModal] = useState(false)
 
   const markets = [
     { id: "massachusetts", name: "Massachusetts", strategy: "volume", status: "active" },
@@ -50,92 +52,130 @@ export default function MarketPricingPage() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-black">Market Pricing Strategy</h2>
-          <p className="text-muted-foreground mt-2">Configure volume or tiered pricing strategies by market</p>
-        </div>
-        <Button className="bg-gti-green hover:bg-gti-green/90">
-          <Plus className="h-4 w-4 mr-2" />
-          Configure Market
-        </Button>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-gti-green" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-              <p className="text-xs text-gray-600 mt-1">{stat.description}</p>
-              <p className="text-xs text-gti-green mt-1">{stat.trend}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Market Selection and Configuration */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <MarketSelection markets={markets} selectedMarket={selectedMarket} onMarketSelect={setSelectedMarket} />
+    <div className="min-h-full">
+      <div className="space-y-6 pb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-black">Market Pricing Strategy</h2>
+            <p className="text-muted-foreground mt-2">Configure volume or tiered pricing strategies by market</p>
+          </div>
+          <Button
+            className="bg-gti-green hover:bg-gti-green/90"
+            onClick={() => {
+              console.log("[v0] Configure Market button clicked")
+              setShowConfigModal(true)
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Configure Market
+          </Button>
         </div>
 
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="volume">Volume Pricing</TabsTrigger>
-              <TabsTrigger value="tiered">Tiered Pricing</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-4">
-              <MarketPricingList selectedMarket={selectedMarket} />
-            </TabsContent>
-
-            <TabsContent value="volume" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Volume-Based Pricing</CardTitle>
-                  <CardDescription>
-                    Configure quantity-based discounts for {markets.find((m) => m.id === selectedMarket)?.name}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Volume Pricing Configuration</h3>
-                    <p className="text-gray-600 mb-4">Set up quantity-based discount tiers</p>
-                    <Button className="bg-gti-green hover:bg-gti-green/90">Configure Volume Tiers</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="tiered" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Dollar-Based Tiered Pricing</CardTitle>
-                  <CardDescription>
-                    Configure dollar threshold-based discounts for {markets.find((m) => m.id === selectedMarket)?.name}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Tiered Pricing Configuration</h3>
-                    <p className="text-gray-600 mb-4">Set up dollar amount-based discount tiers</p>
-                    <Button className="bg-gti-green hover:bg-gti-green/90">Configure Dollar Tiers</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat) => (
+            <Card key={stat.title}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
+                <stat.icon className="h-4 w-4 text-gti-green" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+                <p className="text-xs text-gray-600 mt-1">{stat.description}</p>
+                <p className="text-xs text-gti-green mt-1">{stat.trend}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
+
+        {/* Market Selection and Configuration */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <MarketSelection
+              markets={markets}
+              selectedMarket={selectedMarket}
+              onMarketSelect={setSelectedMarket}
+              onConfigureStrategy={() => setShowConfigModal(true)}
+            />
+          </div>
+
+          <div className="lg:col-span-2">
+            <Tabs defaultValue="overview" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="volume">Volume Pricing</TabsTrigger>
+                <TabsTrigger value="tiered">Tiered Pricing</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="space-y-4">
+                <MarketPricingList selectedMarket={selectedMarket} />
+              </TabsContent>
+
+              <TabsContent value="volume" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Volume-Based Pricing</CardTitle>
+                    <CardDescription>
+                      Configure quantity-based discounts for {markets.find((m) => m.id === selectedMarket)?.name}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-8">
+                      <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Volume Pricing Configuration</h3>
+                      <p className="text-gray-600 mb-4">Set up quantity-based discount tiers</p>
+                      <Button
+                        className="bg-gti-green hover:bg-gti-green/90"
+                        onClick={() => {
+                          console.log("[v0] Configure Volume Tiers button clicked")
+                          setShowConfigModal(true)
+                        }}
+                      >
+                        Configure Volume Tiers
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="tiered" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Dollar-Based Tiered Pricing</CardTitle>
+                    <CardDescription>
+                      Configure dollar threshold-based discounts for{" "}
+                      {markets.find((m) => m.id === selectedMarket)?.name}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-8">
+                      <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Tiered Pricing Configuration</h3>
+                      <p className="text-gray-600 mb-4">Set up dollar amount-based discount tiers</p>
+                      <Button
+                        className="bg-gti-green hover:bg-gti-green/90"
+                        onClick={() => {
+                          console.log("[v0] Configure Dollar Tiers button clicked")
+                          setShowConfigModal(true)
+                        }}
+                      >
+                        Configure Dollar Tiers
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* Market Configuration Modal */}
+        <MarketConfigurationModal
+          isOpen={showConfigModal}
+          onClose={() => setShowConfigModal(false)}
+          selectedMarket={selectedMarket}
+          markets={markets}
+        />
       </div>
     </div>
   )

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { logError } from "./logger"
-import { createApiResponse } from "./api/utils"
 
 export class AppError extends Error {
   public statusCode: number
@@ -39,13 +38,21 @@ export class ForbiddenError extends AppError {
   }
 }
 
+function createErrorResponse(message: string, success = false) {
+  return {
+    success,
+    error: message,
+    data: null,
+  }
+}
+
 export function handleError(error: unknown, context?: string): NextResponse {
   // Log the error with context
   logError(`Error in ${context || "unknown context"}`, error)
 
   // Handle known error types
   if (error instanceof AppError) {
-    return NextResponse.json(createApiResponse(null, error.message, false), { status: error.statusCode })
+    return NextResponse.json(createErrorResponse(error.message), { status: error.statusCode })
   }
 
   // Handle Prisma errors
@@ -54,13 +61,13 @@ export function handleError(error: unknown, context?: string): NextResponse {
 
     switch (prismaError.code) {
       case "P2002":
-        return NextResponse.json(createApiResponse(null, "A record with this data already exists", false), {
+        return NextResponse.json(createErrorResponse("A record with this data already exists"), {
           status: 409,
         })
       case "P2025":
-        return NextResponse.json(createApiResponse(null, "Record not found", false), { status: 404 })
+        return NextResponse.json(createErrorResponse("Record not found"), { status: 404 })
       case "P2003":
-        return NextResponse.json(createApiResponse(null, "Foreign key constraint failed", false), { status: 400 })
+        return NextResponse.json(createErrorResponse("Foreign key constraint failed"), { status: 400 })
       default:
         logError("Unhandled Prisma error", prismaError)
     }
@@ -70,7 +77,7 @@ export function handleError(error: unknown, context?: string): NextResponse {
   if (error && typeof error === "object" && "issues" in error) {
     const zodError = error as any
     const message = zodError.issues.map((issue: any) => issue.message).join(", ")
-    return NextResponse.json(createApiResponse(null, `Validation error: ${message}`, false), { status: 400 })
+    return NextResponse.json(createErrorResponse(`Validation error: ${message}`), { status: 400 })
   }
 
   // Default error response
@@ -81,7 +88,7 @@ export function handleError(error: unknown, context?: string): NextResponse {
         ? error.message
         : "Unknown error"
 
-  return NextResponse.json(createApiResponse(null, message, false), { status: 500 })
+  return NextResponse.json(createErrorResponse(message), { status: 500 })
 }
 
 // Async error wrapper for API routes

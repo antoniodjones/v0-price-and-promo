@@ -1,7 +1,7 @@
 // Inventory discount management API endpoints
 
 import { type NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/api/database"
+import { getInventoryDiscounts, createInventoryDiscount } from "@/lib/api/database"
 import { createApiResponse, handleApiError, validateRequiredFields } from "@/lib/api/utils"
 
 export async function GET(request: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status")
     const scope = searchParams.get("scope")
 
-    const discounts = await db.getInventoryDiscounts()
+    const discounts = await getInventoryDiscounts()
 
     // Apply filters
     let filteredDiscounts = discounts
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const discount = await db.createInventoryDiscount({
+    const discount = await createInventoryDiscount({
       name: body.name,
       type: body.type,
       triggerValue: body.triggerValue,
