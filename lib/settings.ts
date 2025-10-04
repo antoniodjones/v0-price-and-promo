@@ -501,6 +501,8 @@ async function saveSettings(settings: SettingsData): Promise<boolean> {
   }
 }
 
+export { getSettings, saveSettings }
+
 // Validation function
 export function validateSettings(settings: Partial<SettingsData>): string[] {
   const errors: string[] = []

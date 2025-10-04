@@ -67,6 +67,7 @@ class Logger {
 
 const logger = new Logger()
 
+export { logger }
 export default logger
 
 // Helper functions for different log levels

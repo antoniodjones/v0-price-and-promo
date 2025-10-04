@@ -270,6 +270,42 @@ const logError = (message: string, error: any) => {
   console.error(`${message}:`, error)
 }
 
+export async function getVendorRebates() {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from("vendor_rebates")
+      .select("*")
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      // If table doesn't exist, return empty array
+      if (error.code === "42P01") {
+        console.warn("vendor_rebates table does not exist yet")
+        return []
+      }
+      throw error
+    }
+
+    return data || []
+  } catch (error) {
+    logError("Error fetching vendor rebates", error)
+    return []
+  }
+}
+
+export async function calculateRebateData() {
+  const rebates = await getVendorRebates()
+  return rebates.reduce(
+    (acc, rebate: any) => {
+      acc[rebate.product_id] = rebate.rebate_amount
+      return acc
+    },
+    {} as Record<string, number>,
+  )
+}
+
 export const db = {
   async getProducts(page = 1, limit = 20) {
     const supabase = await createClient()
@@ -791,6 +827,26 @@ export const db = {
     }
   },
 
+  async getPromotionPerformance(promotionId: string) {
+    const history = await this.getPromotionHistory()
+    const promotionHistory = history.filter((h) => h.promotion_id === promotionId)
+
+    const totalUsage = promotionHistory.reduce((sum, h) => sum + h.usage_count, 0)
+    const totalRevenue = promotionHistory.reduce((sum, h) => sum + h.revenue_impact, 0)
+    const totalCost = promotionHistory.reduce((sum, h) => sum + h.cost_impact, 0)
+    const netImpact = totalRevenue - totalCost
+
+    return {
+      promotionId,
+      totalUsage,
+      totalRevenue,
+      totalCost,
+      netImpact,
+      roi: totalCost > 0 ? (netImpact / totalCost) * 100 : 0,
+      history: promotionHistory,
+    }
+  },
+
   // Discount rules methods for tier management
   async getDiscountRules(filters?: {
     status?: string
@@ -1229,4 +1285,48 @@ export const db = {
       throw error
     }
   },
+}
+
+export async function getInventoryDiscounts() {
+  return db.getInventoryDiscounts()
+}
+
+export async function createInventoryDiscount(discountData: CreateInventoryDiscountData) {
+  return db.createInventoryDiscount(discountData)
+}
+
+export async function getBogoPromotions() {
+  return db.getBogoPromotions()
+}
+
+export async function createBogoPromotion(promotionData: CreateBogoPromotionData) {
+  return db.createBogoPromotion(promotionData)
+}
+
+export async function getBundleDeals() {
+  return db.getBundleDeals()
+}
+
+export async function createBundleDeal(bundleData: CreateBundleDealData) {
+  return db.createBundleDeal(bundleData)
+}
+
+export async function getPromotionHistory(filters?: {
+  type?: string
+  startDate?: Date
+  endDate?: Date
+}) {
+  return db.getPromotionHistory(filters)
+}
+
+export async function getPromotionHistoryStats(filters?: {
+  type?: string
+  startDate?: Date
+  endDate?: Date
+}) {
+  return db.getPromotionHistoryStats(filters)
+}
+
+export async function getPromotionPerformance(promotionId: string) {
+  return db.getPromotionPerformance(promotionId)
 }

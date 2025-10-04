@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { pricingCalculatorTests } from "@/tests/pricing-calculator.test"
-import { apiIntegrationTests } from "@/tests/api-integration.test"
+import { pricingCalculatorTests } from "@/tests/pricing-calculator.test.ts"
+import { apiIntegrationTests } from "@/tests/api-integration.test.ts"
 
 export async function POST(request: NextRequest) {
   try {

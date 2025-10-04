@@ -27,6 +27,8 @@ export function createApiResponse<T>(data?: T, message?: string, success = true)
   }
 }
 
+export const handleApiSuccess = createApiResponse
+
 export function createPaginatedResponse<T>(
   data: T[],
   page: number,
