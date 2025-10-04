@@ -164,7 +164,7 @@ export function ComprehensiveOverview() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-balance">GTI Pricing Engine</h1>
+          <h1 className="text-4xl font-bold text-balance">Promotions Engine</h1>
           <p className="text-muted-foreground text-lg mt-2">
             Comprehensive pricing analytics and promotion management platform
           </p>

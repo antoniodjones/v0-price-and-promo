@@ -2,9 +2,8 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Edit, Package, Calendar, DollarSign, BarChart3 } from "lucide-react"
+import { Package, Calendar, DollarSign, BarChart3 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 
 interface Product {
@@ -41,17 +40,11 @@ export function ProductDetailModal({ product, open, onOpenChange }: ProductDetai
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <DialogTitle className="text-2xl">{product.name}</DialogTitle>
-              <p className="text-muted-foreground mt-1">
-                {product.brand} • {product.category}
-              </p>
-            </div>
-            <Button size="sm" className="bg-gti-bright-green hover:bg-gti-light-green text-black">
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Product
-            </Button>
+          <div>
+            <DialogTitle className="text-2xl">{product.name}</DialogTitle>
+            <p className="text-muted-foreground mt-1">
+              {product.brand} • {product.category}
+            </p>
           </div>
         </DialogHeader>
 

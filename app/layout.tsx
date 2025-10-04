@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import type React from "react"
 import "./globals.css"
 import { ErrorContextProvider } from "@/components/error-prevention/error-context-provider"
@@ -9,6 +10,12 @@ import { AppLayout } from "@/components/organisms/app-layout"
 import { Header } from "@/components/organisms/header"
 import { Sidebar } from "@/components/organisms/sidebar"
 
+export const metadata: Metadata = {
+  title: "Promotions Engine",
+  description: "Pricing and Promotion Management System",
+    generator: 'v0.app'
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -16,9 +23,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <title>GTI Pricing Engine</title>
-      </head>
       <body>
         <PageErrorBoundary>
           <ErrorContextProvider>
@@ -37,7 +41,3 @@ export default function RootLayout({
     </html>
   )
 }
-
-export const metadata = {
-      generator: 'v0.app'
-    };

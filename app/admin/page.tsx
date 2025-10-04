@@ -33,6 +33,8 @@ import { ModuleManagementDashboard } from "@/components/admin/module-management-
 import { BusinessAdministrationDashboard } from "@/components/admin/business-administration-dashboard"
 import { UserManagementDashboard } from "@/components/admin/user-management-dashboard"
 import { AuditLoggingDashboard } from "@/components/admin/audit-logging-dashboard"
+import { ScriptRunner } from "@/components/admin/script-runner"
+import { CustomerManagementDashboard } from "@/components/admin/customer-management-dashboard"
 
 export default function AdminDashboard() {
   const [sources, setSources] = useState<PriceSource[]>([])
@@ -294,11 +296,13 @@ export default function AdminDashboard() {
               <TabsTrigger value="sources">Price Sources</TabsTrigger>
               <TabsTrigger value="modules">Module Management</TabsTrigger>
               <TabsTrigger value="business">Business Admin</TabsTrigger>
+              <TabsTrigger value="customers">Customers</TabsTrigger>
               <TabsTrigger value="users">User Management</TabsTrigger>
               <TabsTrigger value="audit">Audit Logging</TabsTrigger>
               <TabsTrigger value="products">Product Management</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="settings">System Settings</TabsTrigger>
+              <TabsTrigger value="scripts">Database Scripts</TabsTrigger>
             </TabsList>
 
             {/* Price Sources Tab */}
@@ -486,6 +490,11 @@ export default function AdminDashboard() {
               <BusinessAdministrationDashboard />
             </TabsContent>
 
+            {/* Customers Tab */}
+            <TabsContent value="customers" className="space-y-4">
+              <CustomerManagementDashboard />
+            </TabsContent>
+
             {/* User Management Tab */}
             <TabsContent value="users" className="space-y-4">
               <UserManagementDashboard />
@@ -606,6 +615,11 @@ export default function AdminDashboard() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Database Scripts Tab */}
+            <TabsContent value="scripts" className="space-y-4">
+              <ScriptRunner />
             </TabsContent>
           </Tabs>
         </div>

@@ -1,7 +1,6 @@
 // Revenue optimization analytics API
 
 import { type NextRequest, NextResponse } from "next/server"
-import { createApiResponse, handleApiError } from "@/lib/api/utils"
 
 // Mock revenue optimization data
 const revenueOptimizationData = {
@@ -62,14 +61,19 @@ const revenueOptimizationData = {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log("[v0] Revenue optimization API: Starting")
+
     const searchParams = request.nextUrl.searchParams
     const market = searchParams.get("market")
     const timeframe = searchParams.get("timeframe") || "6months"
+
+    console.log("[v0] Revenue optimization API: market =", market, "timeframe =", timeframe)
 
     const filteredData = { ...revenueOptimizationData }
 
     // Apply market filter
     if (market && market !== "all") {
+      console.log("[v0] Revenue optimization API: Filtering by market")
       filteredData.opportunities = filteredData.opportunities.filter(
         (opp) => opp.market.toLowerCase() === market.toLowerCase(),
       )
@@ -77,9 +81,10 @@ export async function GET(request: NextRequest) {
 
     // Adjust data based on timeframe
     if (timeframe === "3months") {
+      console.log("[v0] Revenue optimization API: Using 3 months timeframe")
       filteredData.trends = filteredData.trends.slice(-3)
     } else if (timeframe === "1year") {
-      // In a real implementation, you would fetch more historical data
+      console.log("[v0] Revenue optimization API: Using 1 year timeframe")
       filteredData.trends = [
         ...Array(6)
           .fill(null)
@@ -93,8 +98,23 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    return NextResponse.json(createApiResponse(filteredData, "Revenue optimization data retrieved successfully"))
+    console.log("[v0] Revenue optimization API: Returning response")
+
+    return NextResponse.json({
+      success: true,
+      data: filteredData,
+      message: "Revenue optimization data retrieved successfully",
+    })
   } catch (error) {
-    return handleApiError(error)
+    console.error("[v0] Revenue optimization API: Error caught", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to load revenue optimization data",
+        details: errorMessage,
+      },
+      { status: 500 },
+    )
   }
 }

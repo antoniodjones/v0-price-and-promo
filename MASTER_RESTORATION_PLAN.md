@@ -3,6 +3,20 @@
 ## Executive Summary
 This document consolidates all analysis and planning for the systematic restoration of the GTI Pricing Engine enterprise application. The application contains 438+ files with complex interdependencies that caused runtime failures. This plan uses Domain Driven Design, Clean Architecture, and Atomic Design principles to ensure safe, systematic restoration.
 
+## Root Node Plans
+
+### 📋 [Tier Management Build Plan](./tier_management_build.md)
+Comprehensive 8-week plan for implementing a sophisticated tier management system with A/B/C tier assignments per discount rule, enhanced pricing calculation engine, and management UI components.
+
+**Key Features:**
+- Per-rule tier assignments (customers can be in different tiers for different rules)
+- Three-tier system (A/B/C) with configurable discount values
+- Enhanced wizard UI for tier configuration and customer assignment
+- Tier-based pricing calculation engine
+- Audit trail and management dashboards
+
+**Status:** Planning Phase - Ready for Phase 1 implementation
+
 ## Critical Findings Summary
 
 ### Application Scale & Complexity

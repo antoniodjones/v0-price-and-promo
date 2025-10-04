@@ -12,10 +12,17 @@ interface MarketPricingEditModalProps {
   isOpen: boolean
   onClose: () => void
   ruleId: string
+  initialStep?: number
   onSuccess: () => void
 }
 
-export function MarketPricingEditModal({ isOpen, onClose, ruleId, onSuccess }: MarketPricingEditModalProps) {
+export function MarketPricingEditModal({
+  isOpen,
+  onClose,
+  ruleId,
+  initialStep = 1,
+  onSuccess,
+}: MarketPricingEditModalProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [ruleData, setRuleData] = useState<any>(null)
   const { toast } = useToast()
@@ -91,9 +98,21 @@ export function MarketPricingEditModal({ isOpen, onClose, ruleId, onSuccess }: M
         ) : (
           <>
             {ruleData?.strategy === "tiered" ? (
-              <TieredPricingWizard onClose={handleSuccess} editMode={true} initialData={ruleData} ruleId={ruleId} />
+              <TieredPricingWizard
+                onClose={handleSuccess}
+                editMode={true}
+                initialData={ruleData}
+                ruleId={ruleId}
+                initialStep={initialStep}
+              />
             ) : (
-              <VolumePricingWizard onClose={handleSuccess} editMode={true} initialData={ruleData} ruleId={ruleId} />
+              <VolumePricingWizard
+                onClose={handleSuccess}
+                editMode={true}
+                initialData={ruleData}
+                ruleId={ruleId}
+                initialStep={initialStep}
+              />
             )}
           </>
         )}

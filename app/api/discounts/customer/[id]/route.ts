@@ -1,83 +1,93 @@
-// Individual customer discount API endpoints
-
 import { type NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/api/database"
-import { createApiResponse, handleApiError } from "@/lib/api/utils"
+import { getCustomerDiscount, updateCustomerDiscount, deleteCustomerDiscount } from "@/lib/actions/customer-discounts"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const discounts = await db.getCustomerDiscounts()
-    const discount = discounts.find((d) => d.id === params.id)
+    console.log("[v0] Fetching discount with ID:", params.id)
+    const result = await getCustomerDiscount(params.id)
+    console.log("[v0] getCustomerDiscount result:", result)
 
-    if (!discount) {
-      return NextResponse.json(createApiResponse(null, "Customer discount not found", false), { status: 404 })
+    if (!result.success) {
+      console.log("[v0] Discount not found:", result.error)
+      return NextResponse.json(
+        { success: false, error: result.error || "Customer discount not found" },
+        { status: 404 },
+      )
     }
 
-    return NextResponse.json(createApiResponse(discount, "Customer discount retrieved successfully"))
+    const customerIds = result.data.assignments?.map((a: any) => a.customer_id) || []
+    console.log("[v0] Extracted customer IDs:", customerIds)
+
+    const responseData = {
+      ...result.data,
+      customer_ids: customerIds,
+    }
+    console.log("[v0] Returning discount data:", responseData)
+
+    return NextResponse.json({
+      success: true,
+      data: responseData,
+    })
   } catch (error) {
-    return handleApiError(error)
+    console.error("[v0] Error fetching customer discount:", error)
+    return NextResponse.json({ success: false, error: "Failed to fetch customer discount" }, { status: 500 })
   }
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const discounts = await db.getCustomerDiscounts()
-    const discount = discounts.find((d) => d.id === params.id)
-
-    if (!discount) {
-      return NextResponse.json(createApiResponse(null, "Customer discount not found", false), { status: 404 })
-    }
-
     const body = await request.json()
+
+    console.log("[v0] Updating discount:", params.id, body)
 
     // Validate fields if provided
     if (body.type && !["percentage", "fixed"].includes(body.type)) {
-      return NextResponse.json(createApiResponse(null, "Type must be 'percentage' or 'fixed'", false), { status: 400 })
-    }
-
-    if (body.level && !["item", "brand", "category", "subcategory"].includes(body.level)) {
-      return NextResponse.json(
-        createApiResponse(null, "Level must be 'item', 'brand', 'category', or 'subcategory'", false),
-        { status: 400 },
-      )
+      return NextResponse.json({ success: false, error: "Type must be 'percentage' or 'fixed'" }, { status: 400 })
     }
 
     if (body.value !== undefined) {
       if (typeof body.value !== "number" || body.value <= 0) {
-        return NextResponse.json(createApiResponse(null, "Value must be a positive number", false), { status: 400 })
+        return NextResponse.json({ success: false, error: "Value must be a positive number" }, { status: 400 })
       }
       if (body.type === "percentage" && body.value > 100) {
-        return NextResponse.json(createApiResponse(null, "Percentage discount cannot exceed 100%", false), {
-          status: 400,
-        })
+        return NextResponse.json({ success: false, error: "Percentage discount cannot exceed 100%" }, { status: 400 })
       }
     }
 
-    // In a real implementation, you would update the discount in the database
-    const updatedDiscount = {
-      ...discount,
-      ...body,
-      updatedAt: new Date().toISOString(),
+    const result = await updateCustomerDiscount(params.id, {
+      name: body.name,
+      value: body.value,
+      start_date: body.startDate,
+      end_date: body.endDate,
+      status: body.status,
+      customer_ids: body.customerIds,
+    })
+
+    if (!result.success) {
+      return NextResponse.json({ success: false, error: result.error }, { status: 500 })
     }
 
-    return NextResponse.json(createApiResponse(updatedDiscount, "Customer discount updated successfully"))
+    return NextResponse.json({ success: true, data: result.data, message: "Customer discount updated successfully" })
   } catch (error) {
-    return handleApiError(error)
+    console.error("[v0] Error updating customer discount:", error)
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : "Failed to update customer discount" },
+      { status: 500 },
+    )
   }
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const discounts = await db.getCustomerDiscounts()
-    const discount = discounts.find((d) => d.id === params.id)
+    const result = await deleteCustomerDiscount(params.id)
 
-    if (!discount) {
-      return NextResponse.json(createApiResponse(null, "Customer discount not found", false), { status: 404 })
+    if (!result.success) {
+      return NextResponse.json({ success: false, error: result.error }, { status: 500 })
     }
 
-    // In a real implementation, you would delete the discount from the database
-    return NextResponse.json(createApiResponse(null, "Customer discount deleted successfully"))
+    return NextResponse.json({ success: true, message: "Customer discount deleted successfully" })
   } catch (error) {
-    return handleApiError(error)
+    console.error("[v0] Error deleting customer discount:", error)
+    return NextResponse.json({ success: false, error: "Failed to delete customer discount" }, { status: 500 })
   }
 }

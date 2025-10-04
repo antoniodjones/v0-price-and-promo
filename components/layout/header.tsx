@@ -26,8 +26,7 @@ interface SearchResult {
   }>
   customers: Array<{
     id: string
-    name: string
-    email: string
+    business_legal_name: string
     company?: string
   }>
 }
@@ -47,17 +46,23 @@ export function Header() {
       return
     }
 
+    console.log("[v0] performSearch called with query:", query)
     setIsSearching(true)
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+      const url = `/api/search?q=${encodeURIComponent(query)}`
+      console.log("[v0] Fetching:", url)
+      const response = await fetch(url)
+      console.log("[v0] Response status:", response.status)
       const data = await response.json()
+      console.log("[v0] Response data:", data)
 
       if (data.success) {
         setSearchResults(data.data)
         setShowResults(true)
+        console.log("[v0] Search results set, showing dropdown")
       }
     } catch (error) {
-      console.error("Search error:", error)
+      console.error("[v0] Search error:", error)
     } finally {
       setIsSearching(false)
     }
@@ -144,10 +149,8 @@ export function Header() {
                       className="w-full text-left px-2 py-2 hover:bg-muted rounded-sm"
                       onClick={() => handleResultClick("customer", customer.id)}
                     >
-                      <div className="font-medium">{customer.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {customer.email} {customer.company && `• ${customer.company}`}
-                      </div>
+                      <div className="font-medium">{customer.business_legal_name}</div>
+                      <div className="text-sm text-muted-foreground">{customer.company && `${customer.company}`}</div>
                     </button>
                   ))}
                 </div>

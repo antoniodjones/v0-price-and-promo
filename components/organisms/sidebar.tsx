@@ -3,9 +3,26 @@
 import React from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Home, Calculator, Tag, Package, TrendingUp, Settings, ChevronRight, X } from "lucide-react"
+import {
+  Home,
+  Calculator,
+  Tag,
+  Package,
+  TrendingUp,
+  Settings,
+  ChevronRight,
+  X,
+  Calendar,
+  ClipboardList,
+  Trophy,
+  PackageOpen,
+  Zap,
+  Ticket,
+  Sparkles,
+} from "lucide-react"
 import { useAppContext } from "@/lib/context/app-context"
 import { useRouter, usePathname } from "next/navigation"
+import { PromotionsIcon } from "@/components/ui/promotions-icon"
 
 interface NavigationItem {
   id: string
@@ -30,13 +47,18 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
     href: "/",
   },
   {
+    id: "products",
+    label: "Products",
+    icon: Package,
+    href: "/products",
+  },
+  {
     id: "pricing",
     label: "Pricing Engine",
     icon: Calculator,
     children: [
-      { id: "pricing-calculator", label: "Price Calculator", icon: Calculator, href: "/pricing/calculator" },
-      { id: "pricing-history", label: "Price History", icon: TrendingUp, href: "/pricing/history" },
-      { id: "pricing-rules", label: "Pricing Rules", icon: Settings, href: "/pricing/rules" },
+      { id: "pricing-calculator", label: "Price Calculator", icon: Calculator, href: "/pricing" },
+      { id: "pricing-history", label: "Price History", icon: TrendingUp, href: "/price-tracking" },
     ],
   },
   {
@@ -44,15 +66,38 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
     label: "Discounts",
     icon: Tag,
     children: [
-      { id: "customer-discounts", label: "Customer Discounts", icon: Tag, href: "/discounts/customer" },
-      { id: "inventory-discounts", label: "Inventory Discounts", icon: Package, href: "/discounts/inventory" },
+      { id: "customer-discounts", label: "Customer Discounts", icon: Tag, href: "/customer-discounts" },
+      { id: "inventory-discounts", label: "Inventory Discounts", icon: Package, href: "/inventory-discounts" },
+      { id: "tier-management", label: "Tier Management", icon: Trophy, href: "/tier-management" },
     ],
+  },
+  {
+    id: "bundle-deals",
+    label: "Bundle Deals",
+    icon: PackageOpen,
+    href: "/bundle-deals",
+  },
+  {
+    id: "best-deal-logic",
+    label: "Best Deal Logic",
+    icon: Zap,
+    href: "/best-deal-logic",
   },
   {
     id: "promotions",
     label: "Promotions",
     icon: TrendingUp,
-    href: "/promotions",
+    children: [
+      { id: "promotions-overview", label: "Overview", icon: TrendingUp, href: "/promotions" },
+      { id: "promotions-history", label: "History", icon: Calendar, href: "/promotions/history" },
+      { id: "promo-codes", label: "Promo Codes", icon: Ticket, href: "/promo-codes" },
+    ],
+  },
+  {
+    id: "simulator",
+    label: "Promo Simulator",
+    icon: Sparkles,
+    href: "/simulator",
   },
   {
     id: "analytics",
@@ -64,7 +109,70 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
     id: "settings",
     label: "Settings",
     icon: Settings,
-    href: "/settings",
+    children: [
+      {
+        id: "business-rules",
+        label: "Business Rules",
+        icon: Settings,
+        children: [
+          { id: "discounts-settings", label: "Discounts", icon: Tag, href: "/settings?section=discounts" },
+          { id: "pricing-settings", label: "Pricing", icon: Calculator, href: "/settings?section=pricing" },
+          { id: "expiration-settings", label: "Expiration", icon: Calendar, href: "/settings?section=expiration" },
+          { id: "markets-settings", label: "Markets", icon: TrendingUp, href: "/settings?section=markets" },
+        ],
+      },
+      {
+        id: "operations",
+        label: "Operations",
+        icon: Settings,
+        children: [
+          { id: "documentation", label: "Documentation", icon: ClipboardList, href: "/settings?section=documentation" },
+          { id: "task-plan", label: "Task Plan", icon: ClipboardList, href: "/task-planning" },
+          {
+            id: "test-validation",
+            label: "Test Validation",
+            icon: ClipboardList,
+            href: "/settings?section=test-validation",
+          },
+          { id: "automation", label: "Automation", icon: Zap, href: "/settings?section=automation" },
+        ],
+      },
+      {
+        id: "system",
+        label: "System",
+        icon: Settings,
+        children: [
+          { id: "notifications", label: "Notifications", icon: Settings, href: "/settings?section=notifications" },
+          { id: "integrations", label: "Integrations", icon: Settings, href: "/settings?section=integrations" },
+          { id: "analytics-settings", label: "Analytics", icon: TrendingUp, href: "/settings?section=analytics" },
+          { id: "performance", label: "Performance", icon: Zap, href: "/settings?section=performance" },
+        ],
+      },
+      {
+        id: "security-access",
+        label: "Security & Access",
+        icon: Settings,
+        children: [
+          { id: "users", label: "Users", icon: Settings, href: "/settings?section=users" },
+          { id: "security", label: "Security", icon: Settings, href: "/settings?section=security" },
+          { id: "multi-tenant", label: "Multi-Tenant", icon: Settings, href: "/settings?section=multi-tenant" },
+        ],
+      },
+      {
+        id: "advanced",
+        label: "Advanced",
+        icon: Settings,
+        children: [
+          { id: "testing", label: "Testing", icon: ClipboardList, href: "/settings?section=testing" },
+          {
+            id: "disaster-recovery",
+            label: "Disaster Recovery",
+            icon: Settings,
+            href: "/settings?section=disaster-recovery",
+          },
+        ],
+      },
+    ],
   },
 ]
 
@@ -142,10 +250,8 @@ export function Sidebar({ className }: { className?: string }) {
       >
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">GTI</span>
-            </div>
-            <span className="font-semibold text-foreground">Navigation</span>
+            <PromotionsIcon size={32} />
+            <span className="text-xl font-semibold text-foreground">Promotions</span>
           </div>
 
           <Button variant="ghost" size="sm" className="lg:hidden" onClick={closeMobileSidebar}>
@@ -153,13 +259,9 @@ export function Sidebar({ className }: { className?: string }) {
           </Button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-1">{NAVIGATION_ITEMS.map((item) => renderNavigationItem(item))}</div>
+        <nav className="flex-1 overflow-y-auto px-4 pt-2 pb-4">
+          <div>{NAVIGATION_ITEMS.map((item) => renderNavigationItem(item))}</div>
         </nav>
-
-        <div className="border-t p-4">
-          <div className="text-xs text-muted-foreground text-center">Phase 2: Layout & Navigation</div>
-        </div>
       </div>
     </>
   )

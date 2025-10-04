@@ -5,8 +5,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { MoreHorizontal, Edit, Copy, Trash2, BarChart3, Calendar, Target, Percent } from "lucide-react"
+import {
+  MoreHorizontal,
+  Edit,
+  Copy,
+  Trash2,
+  BarChart3,
+  Calendar,
+  Target,
+  Percent,
+  Package,
+  DollarSign,
+} from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { BogoPromotionEditModal } from "./bogo-promotion-edit-modal"
 
 interface BogoPromotion {
   id: string
@@ -86,6 +98,9 @@ interface BogoPromotionsListProps {
 
 export function BogoPromotionsList({ searchTerm }: BogoPromotionsListProps) {
   const [promotions, setPromotions] = useState<BogoPromotion[]>(mockPromotions)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingPromotionId, setEditingPromotionId] = useState<string | null>(null)
+  const [editingStartStep, setEditingStartStep] = useState<number>(1)
 
   const filteredPromotions = promotions.filter((promo) => {
     if (!promo || !searchTerm) return true
@@ -131,100 +146,146 @@ export function BogoPromotionsList({ searchTerm }: BogoPromotionsListProps) {
     }
   }
 
-  return (
-    <div className="space-y-4">
-      {filteredPromotions.map((promotion) => (
-        <Card key={promotion.id} className="hover:shadow-md transition-shadow">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  {getTypeIcon(promotion.type)}
-                  <CardTitle className="text-lg">{promotion.name || "Unnamed Promotion"}</CardTitle>
-                </div>
-                <Badge className={getTypeBadgeColor(promotion.type)}>
-                  {(promotion.type || "item").charAt(0).toUpperCase() + (promotion.type || "item").slice(1)} Level
-                </Badge>
-                <Badge variant={promotion.isActive ? "default" : "secondary"}>
-                  {promotion.isActive ? "Active" : "Inactive"}
-                </Badge>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch checked={promotion.isActive} onCheckedChange={() => togglePromotion(promotion.id)} />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit Campaign
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Copy className="mr-2 h-4 w-4" />
-                      Duplicate
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <BarChart3 className="mr-2 h-4 w-4" />
-                      View Analytics
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-            <CardDescription>
-              Buy {promotion.triggerProduct || "Unknown Product"} → Get {promotion.rewardValue || 0}
-              {promotion.rewardType === "percentage" ? "%" : "$"} off {promotion.rewardProduct || "Unknown Product"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Campaign Period</p>
-                <p className="text-sm">
-                  {promotion.startDate ? new Date(promotion.startDate).toLocaleDateString() : "Unknown"} -{" "}
-                  {promotion.endDate ? new Date(promotion.endDate).toLocaleDateString() : "Unknown"}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Total Uses</p>
-                <p className="text-sm font-bold text-gti-dark-green">{promotion.performance?.uses || 0}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Customer Savings</p>
-                <p className="text-sm font-bold text-gti-dark-green">
-                  ${(promotion.performance?.savings || 0).toLocaleString()}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Conversion Rate</p>
-                <div className="flex items-center space-x-1">
-                  <Percent className="h-3 w-3 text-gti-bright-green" />
-                  <p className="text-sm font-bold text-gti-dark-green">{promotion.performance?.conversionRate || 0}%</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+  const handleEditPromotion = (promotionId: string) => {
+    setEditingPromotionId(promotionId)
+    setEditingStartStep(1)
+    setEditModalOpen(true)
+  }
 
-      {filteredPromotions.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Target className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No campaigns found</h3>
-            <p className="text-muted-foreground text-center">
-              {searchTerm ? "Try adjusting your search terms" : "Create your first BOGO campaign to get started"}
-            </p>
-          </CardContent>
-        </Card>
+  const handleQuickEdit = (promotionId: string, startStep: number) => {
+    setEditingPromotionId(promotionId)
+    setEditingStartStep(startStep)
+    setEditModalOpen(true)
+  }
+
+  const handleEditSuccess = () => {
+    console.log("BOGO promotion updated successfully")
+  }
+
+  return (
+    <>
+      <div className="space-y-4">
+        {filteredPromotions.map((promotion) => (
+          <Card key={promotion.id} className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    {getTypeIcon(promotion.type)}
+                    <CardTitle className="text-lg">{promotion.name || "Unnamed Promotion"}</CardTitle>
+                  </div>
+                  <Badge className={getTypeBadgeColor(promotion.type)}>
+                    {(promotion.type || "item").charAt(0).toUpperCase() + (promotion.type || "item").slice(1)} Level
+                  </Badge>
+                  <Badge variant={promotion.isActive ? "default" : "secondary"}>
+                    {promotion.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch checked={promotion.isActive} onCheckedChange={() => togglePromotion(promotion.id)} />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditPromotion(promotion.id)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit All
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleQuickEdit(promotion.id, 2)}>
+                        <Package className="mr-2 h-4 w-4" />
+                        Manage Trigger Products
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleQuickEdit(promotion.id, 3)}>
+                        <DollarSign className="mr-2 h-4 w-4" />
+                        Manage Reward Products
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleQuickEdit(promotion.id, 4)}>
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Manage Dates
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Copy className="mr-2 h-4 w-4" />
+                        Duplicate
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        View Analytics
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-red-600">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+              <CardDescription>
+                Buy {promotion.triggerProduct || "Unknown Product"} → Get {promotion.rewardValue || 0}
+                {promotion.rewardType === "percentage" ? "%" : "$"} off {promotion.rewardProduct || "Unknown Product"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Campaign Period</p>
+                  <p className="text-sm">
+                    {promotion.startDate ? new Date(promotion.startDate).toLocaleDateString() : "Unknown"} -{" "}
+                    {promotion.endDate ? new Date(promotion.endDate).toLocaleDateString() : "Unknown"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Total Uses</p>
+                  <p className="text-sm font-bold text-gti-dark-green">{promotion.performance?.uses || 0}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Customer Savings</p>
+                  <p className="text-sm font-bold text-gti-dark-green">
+                    ${(promotion.performance?.savings || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Conversion Rate</p>
+                  <div className="flex items-center space-x-1">
+                    <Percent className="h-3 w-3 text-gti-bright-green" />
+                    <p className="text-sm font-bold text-gti-dark-green">
+                      {promotion.performance?.conversionRate || 0}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+
+        {filteredPromotions.length === 0 && (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Target className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No campaigns found</h3>
+              <p className="text-muted-foreground text-center">
+                {searchTerm ? "Try adjusting your search terms" : "Create your first BOGO campaign to get started"}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {editingPromotionId && (
+        <BogoPromotionEditModal
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false)
+            setEditingPromotionId(null)
+            setEditingStartStep(1)
+          }}
+          promotionId={editingPromotionId}
+          initialStep={editingStartStep}
+          onSuccess={handleEditSuccess}
+        />
       )}
-    </div>
+    </>
   )
 }

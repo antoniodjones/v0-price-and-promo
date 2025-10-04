@@ -7,6 +7,8 @@ import { ProductsFilters } from "@/components/products/products-filters"
 
 export default function ProductsPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [sortBy, setSortBy] = useState("name-asc")
 
   const handleProductAdded = () => {
     setRefreshTrigger((prev) => prev + 1)
@@ -14,7 +16,13 @@ export default function ProductsPage() {
 
   return (
     <div className="flex-1 space-y-6 p-6">
-      <ProductsHeader onProductAdded={handleProductAdded} />
+      <ProductsHeader
+        onProductAdded={handleProductAdded}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+      />
 
       <div className="flex gap-6">
         <aside className="w-80 space-y-6">
@@ -23,7 +31,7 @@ export default function ProductsPage() {
 
         <main className="flex-1">
           <Suspense fallback={<div>Loading products...</div>}>
-            <ProductsList refreshTrigger={refreshTrigger} />
+            <ProductsList refreshTrigger={refreshTrigger} viewMode={viewMode} />
           </Suspense>
         </main>
       </div>

@@ -12,6 +12,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   TrendingUp,
   TrendingDown,
   AlertTriangle,
@@ -49,15 +57,30 @@ export default function PriceTrackingPage() {
   const [loading, setLoading] = useState(true)
   const [selectedProduct, setSelectedProduct] = useState<string>("all")
   const [alertFilter, setAlertFilter] = useState<string>("all")
+  const [showAddProductDialog, setShowAddProductDialog] = useState(false)
+  const [availableProducts, setAvailableProducts] = useState<any[]>([])
+  const [selectedNewProduct, setSelectedNewProduct] = useState<string>("")
+  const [newProductThreshold, setNewProductThreshold] = useState<string>("10")
   const { toast } = useToast()
 
   useEffect(() => {
     loadTrackingData()
+    loadAvailableProducts()
   }, [])
+
+  const loadAvailableProducts = async () => {
+    try {
+      const products = await priceTrackingDb.getAvailableProducts()
+      setAvailableProducts(products)
+    } catch (error) {
+      console.error("[v0] Error loading available products:", error)
+    }
+  }
 
   const loadTrackingData = async () => {
     try {
       setLoading(true)
+      console.log("[v0] Loading price tracking data...")
       const [statsData, alertsData, productsData, historyData] = await Promise.all([
         priceTrackingDb.getTrackingStats(),
         priceTrackingDb.getPriceAlerts(alertFilter),
@@ -65,15 +88,16 @@ export default function PriceTrackingPage() {
         priceTrackingDb.getPriceHistory(selectedProduct),
       ])
 
+      console.log("[v0] Tracked products loaded:", productsData.length)
       setStats(statsData)
       setAlerts(alertsData)
       setTrackedProducts(productsData)
       setPriceHistory(historyData)
     } catch (error) {
-      console.error("Error loading tracking data:", error)
+      console.error("[v0] Error loading tracking data:", error)
       toast({
         title: "Error",
-        description: "Failed to load price tracking data. Please try again.",
+        description: `Failed to load price tracking data: ${error instanceof Error ? error.message : "Unknown error"}`,
         variant: "destructive",
       })
     } finally {
@@ -146,6 +170,47 @@ export default function PriceTrackingPage() {
       title: "Success",
       description: "Price tracking data refreshed successfully.",
     })
+  }
+
+  const handleAddProduct = async () => {
+    if (!selectedNewProduct) {
+      toast({
+        title: "Error",
+        description: "Please select a product to track.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const threshold = Number.parseFloat(newProductThreshold)
+    if (isNaN(threshold) || threshold <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid threshold value.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const success = await priceTrackingDb.addProductToTracking(selectedNewProduct, threshold)
+
+    if (success) {
+      toast({
+        title: "Success",
+        description: "Product added to tracking successfully.",
+      })
+      setShowAddProductDialog(false)
+      setSelectedNewProduct("")
+      setNewProductThreshold("10")
+      await loadTrackingData()
+      await loadAvailableProducts()
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to add product to tracking.",
+        variant: "destructive",
+      })
+    }
   }
 
   const getAlertIcon = (alertType: string) => {
@@ -228,7 +293,7 @@ export default function PriceTrackingPage() {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh Prices
               </Button>
-              <Button>
+              <Button onClick={() => setShowAddProductDialog(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Product
               </Button>
@@ -390,7 +455,7 @@ export default function PriceTrackingPage() {
             <TabsContent value="tracked" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Tracked Products</h3>
-                <Button>
+                <Button onClick={() => setShowAddProductDialog(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Product
                 </Button>
@@ -616,6 +681,59 @@ export default function PriceTrackingPage() {
           </Tabs>
         </div>
       </ErrorBoundary>
+      {/* Add Product Dialog */}
+      <Dialog open={showAddProductDialog} onOpenChange={setShowAddProductDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Product to Tracking</DialogTitle>
+            <DialogDescription>
+              Select a product to monitor for price changes and set an alert threshold.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="product-select">Product</Label>
+              <Select value={selectedNewProduct} onValueChange={setSelectedNewProduct}>
+                <SelectTrigger id="product-select">
+                  <SelectValue placeholder="Select a product" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableProducts.length === 0 ? (
+                    <SelectItem value="none" disabled>
+                      No products available
+                    </SelectItem>
+                  ) : (
+                    availableProducts.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name} ({product.sku})
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="threshold">Alert Threshold (%)</Label>
+              <Input
+                id="threshold"
+                type="number"
+                placeholder="10"
+                value={newProductThreshold}
+                onChange={(e) => setNewProductThreshold(e.target.value)}
+              />
+              <p className="text-sm text-muted-foreground">
+                You'll be alerted when the price changes by this percentage
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddProductDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddProduct}>Add Product</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ProtectedRoute>
   )
 }

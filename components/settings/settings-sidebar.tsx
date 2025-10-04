@@ -20,6 +20,9 @@ const iconMap: Record<string, string> = {
   Building: "🏢",
   Bot: "🤖",
   HardDrive: "💾",
+  FileCode: "📄", // Added FileCode icon for documentation
+  ClipboardList: "📋", // Added icons for Task Plan and Test Validation
+  TestTube2: "🧪",
 }
 
 interface NavigationGroup {

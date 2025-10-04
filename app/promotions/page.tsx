@@ -5,11 +5,17 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Search, Filter, Percent, Calendar, Target, TrendingUp } from "lucide-react"
+import { Plus, Search, Filter, Percent, Calendar, Target, TrendingUp, Upload } from "lucide-react"
 import Link from "next/link"
+import { BulkUploadModal } from "@/components/promotions/bulk-upload-modal"
 
 export default function PromotionsPage() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
+
+  const handleBulkUploadSuccess = () => {
+    window.location.reload()
+  }
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -21,8 +27,12 @@ export default function PromotionsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setBulkUploadOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Bulk Upload
+          </Button>
           <Link href="/customer-discounts/new">
-            <Button className="bg-gti-bright-green hover:bg-gti-medium-green">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
               <Percent className="mr-2 h-4 w-4" />
               Create Discount
             </Button>
@@ -40,46 +50,45 @@ export default function PromotionsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Promotions</CardTitle>
-            <Target className="h-4 w-4 text-gti-bright-green" />
+            <Target className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gti-dark-green">28</div>
+            <div className="text-2xl font-bold text-foreground">28</div>
             <p className="text-xs text-muted-foreground">Across all types</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Savings</CardTitle>
-            <TrendingUp className="h-4 w-4 text-gti-bright-green" />
+            <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gti-dark-green">$47,320</div>
+            <div className="text-2xl font-bold text-foreground">$47,320</div>
             <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-            <Percent className="h-4 w-4 text-gti-bright-green" />
+            <Percent className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gti-dark-green">22.8%</div>
+            <div className="text-2xl font-bold text-foreground">22.8%</div>
             <p className="text-xs text-muted-foreground">+5.1% from last month</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg Order Value</CardTitle>
-            <Calendar className="h-4 w-4 text-gti-bright-green" />
+            <Calendar className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gti-dark-green">$398</div>
+            <div className="text-2xl font-bold text-foreground">$398</div>
             <p className="text-xs text-muted-foreground">+18% with promotions</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Search and Filters */}
       <div className="flex items-center space-x-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -106,14 +115,14 @@ export default function PromotionsPage() {
 
         <TabsContent value="discounts" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
-            <Card className="border-gti-bright-green/20">
+            <Card className="border-primary/20">
               <CardHeader>
                 <CardTitle className="text-lg">💰 Item-Level Discounts</CardTitle>
                 <p className="text-sm text-muted-foreground">Percentage or dollar off specific products</p>
               </CardHeader>
               <CardContent>
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-2xl font-bold text-gti-dark-green">12</span>
+                  <span className="text-2xl font-bold text-foreground">12</span>
                   <span className="text-sm text-muted-foreground">Active</span>
                 </div>
                 <Link href="/customer-discounts">
@@ -124,14 +133,14 @@ export default function PromotionsPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-gti-bright-green/20">
+            <Card className="border-primary/20">
               <CardHeader>
                 <CardTitle className="text-lg">🏷️ Brand-Level Discounts</CardTitle>
                 <p className="text-sm text-muted-foreground">Discounts across entire brands</p>
               </CardHeader>
               <CardContent>
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-2xl font-bold text-gti-dark-green">8</span>
+                  <span className="text-2xl font-bold text-foreground">8</span>
                   <span className="text-sm text-muted-foreground">Active</span>
                 </div>
                 <Link href="/customer-discounts?scope=brand">
@@ -142,14 +151,14 @@ export default function PromotionsPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-gti-bright-green/20">
+            <Card className="border-primary/20">
               <CardHeader>
                 <CardTitle className="text-lg">📂 Category Discounts</CardTitle>
                 <p className="text-sm text-muted-foreground">Discounts for product categories</p>
               </CardHeader>
               <CardContent>
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-2xl font-bold text-gti-dark-green">5</span>
+                  <span className="text-2xl font-bold text-foreground">5</span>
                   <span className="text-sm text-muted-foreground">Active</span>
                 </div>
                 <Link href="/customer-discounts?scope=category">
@@ -270,6 +279,12 @@ export default function PromotionsPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <BulkUploadModal
+        isOpen={bulkUploadOpen}
+        onClose={() => setBulkUploadOpen(false)}
+        onSuccess={handleBulkUploadSuccess}
+      />
     </div>
   )
 }

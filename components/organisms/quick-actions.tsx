@@ -21,7 +21,7 @@ const quickActions = [
   {
     title: "Test Pricing Scenario",
     description: "Validate pricing rules with sample baskets",
-    href: "/testing",
+    href: "/settings?section=test-validation",
     icon: Clock,
     color: "bg-gti-dark-green",
   },

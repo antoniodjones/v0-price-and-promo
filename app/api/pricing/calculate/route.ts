@@ -1,29 +1,78 @@
-// Pricing calculation API endpoint
-
-import { type NextRequest, NextResponse } from "next/server"
-import { pricingEngine } from "@/lib/pricing/engine"
-import { createApiResponse, handleApiError, validateRequestBody } from "@/lib/api/utils"
-import { PricingRequestSchema } from "@/lib/schemas"
-import { logInfo, logError } from "@/lib/logger"
+import type { NextRequest } from "next/server"
+import { createServerClient } from "@/lib/supabase/server"
+import { PricingEngine } from "@/lib/pricing-engine"
 
 export async function POST(request: NextRequest) {
   try {
-    logInfo("Pricing calculation API called")
+    const { productId, customerId, quantity = 1 } = await request.json()
 
-    const body = await request.json()
-    const validatedData = validateRequestBody(PricingRequestSchema, body)
+    if (!productId) {
+      return Response.json({ success: false, error: "Missing required parameters" }, { status: 400 })
+    }
 
-    // Initialize pricing engine for this customer and market
-    await pricingEngine.initialize(validatedData.customerId, validatedData.market)
+    const supabase = await createServerClient()
 
-    // Calculate pricing
-    const result = await pricingEngine.calculatePricing(validatedData.items)
+    // Get product details
+    const { data: product, error: productError } = await supabase
+      .from("products")
+      .select("*")
+      .eq("id", productId)
+      .single()
 
-    logInfo(`Pricing calculated successfully for ${validatedData.items.length} items`)
+    if (productError || !product) {
+      return Response.json({ success: false, error: "Product not found" }, { status: 404 })
+    }
 
-    return NextResponse.json(createApiResponse(result, "Pricing calculated successfully"), { status: 200 })
+    // Get customer details if provided
+    let customerTier: string | undefined
+    if (customerId) {
+      const { data: customer } = await supabase.from("customers").select("tier").eq("id", customerId).single()
+
+      customerTier = customer?.tier
+    }
+
+    const pricingResult = await PricingEngine.calculatePrice({
+      productId,
+      customerId,
+      customerTier,
+      quantity,
+      basePrice: Number(product.price),
+      productCategory: product.category,
+      productBrand: product.brand,
+    })
+
+    // Log the pricing application for audit
+    if (customerId) {
+      await PricingEngine.logPricingApplication(
+        {
+          productId,
+          customerId,
+          customerTier,
+          quantity,
+          basePrice: Number(product.price),
+          productCategory: product.category,
+          productBrand: product.brand,
+        },
+        pricingResult,
+      )
+    }
+
+    return Response.json({
+      success: true,
+      data: {
+        basePrice: pricingResult.originalPrice,
+        finalPrice: pricingResult.finalPrice,
+        totalDiscount: pricingResult.totalDiscount,
+        discountPercentage: (pricingResult.totalDiscount / pricingResult.originalPrice) * 100,
+        breakdown: pricingResult.breakdown,
+        appliedRules: {
+          volumeRule: pricingResult.appliedRules.volumeRule?.name,
+          tieredRule: pricingResult.appliedRules.tieredRule?.name,
+        },
+      },
+    })
   } catch (error) {
-    logError("Pricing calculation failed", error)
-    return handleApiError(error, "pricing calculation")
+    console.error("[v0] Error calculating price:", error)
+    return Response.json({ success: false, error: "Failed to calculate price" }, { status: 500 })
   }
 }

@@ -13,17 +13,10 @@ export default function LoginPage() {
             Back to home
           </Link>
           <h1 className="text-3xl font-bold">Welcome back</h1>
-          <p className="text-muted-foreground mt-2">Sign in to your GTI Pricing Engine account</p>
+          <p className="text-muted-foreground mt-2">Sign in to your Promotions Engine account</p>
         </div>
 
         <LoginForm />
-
-        <div className="text-center text-sm">
-          <span className="text-muted-foreground">Don't have an account? </span>
-          <Link href="/auth/sign-up" className="text-primary hover:underline">
-            Sign up
-          </Link>
-        </div>
       </div>
     </div>
   )

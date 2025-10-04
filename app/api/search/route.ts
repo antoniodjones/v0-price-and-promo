@@ -16,14 +16,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       createApiResponse(
         {
-          products: products.slice(0, 5), // Limit to 5 results
-          customers: customers.slice(0, 5), // Limit to 5 results
+          products: products.slice(0, 5),
+          customers: customers.slice(0, 5),
           query: query,
         },
         "Search completed successfully",
       ),
     )
   } catch (error) {
+    console.error("Search API error:", error)
     return handleApiError(error)
   }
 }

@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Package, Calendar, Percent, Plus, Settings, MoreVertical, Edit, Trash2 } from "lucide-react"
-import { NewRuleModal } from "@/components/inventory-discounts/new-rule-modal"
+import Link from "next/link"
 
 interface InventoryDiscountRule {
   id?: string
@@ -106,11 +106,11 @@ export default function InventoryDiscountsPage() {
     const getIcon = () => {
       switch (rule.ruleType) {
         case "expiration":
-          return <Calendar className="h-4 w-4 text-gti-bright-green" />
+          return <Calendar className="h-4 w-4 text-primary" />
         case "thc":
           return <Percent className="h-4 w-4 text-yellow-500" />
         default:
-          return <Package className="h-4 w-4 text-gti-bright-green" />
+          return <Package className="h-4 w-4 text-primary" />
       }
     }
 
@@ -168,10 +168,12 @@ export default function InventoryDiscountsPage() {
             Automatically apply discounts based on expiration dates and inventory levels
           </p>
         </div>
-        <Button className="bg-gti-dark-green hover:bg-gti-medium-green text-white" onClick={handleNewRule}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Rule
-        </Button>
+        <Link href="/inventory-discounts/new">
+          <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg">
+            <Plus className="mr-2 h-5 w-5" />
+            New Rule
+          </Button>
+        </Link>
       </div>
 
       {/* Configuration Cards */}
@@ -286,7 +288,7 @@ export default function InventoryDiscountsPage() {
             ].map((item, index) => (
               <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
-                  <Package className="h-4 w-4 text-gti-bright-green" />
+                  <Package className="h-4 w-4 text-primary" />
                   <div>
                     <p className="font-medium">{item.product}</p>
                     <p className="text-sm text-muted-foreground">
@@ -301,16 +303,6 @@ export default function InventoryDiscountsPage() {
           </div>
         </CardContent>
       </Card>
-
-      <NewRuleModal
-        isOpen={isNewRuleModalOpen}
-        onClose={() => {
-          setIsNewRuleModalOpen(false)
-          setEditingRule(null)
-        }}
-        onSave={handleSaveRule}
-        editingRule={editingRule}
-      />
     </div>
   )
 }

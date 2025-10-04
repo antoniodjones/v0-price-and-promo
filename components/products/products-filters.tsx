@@ -30,19 +30,41 @@ const statuses = [
   { id: "out-of-stock", name: "Out of Stock", count: 15 },
 ]
 
+const priceRanges = [
+  { id: "0-25", name: "Under $25", min: 0, max: 25 },
+  { id: "25-50", name: "$25 - $50", min: 25, max: 50 },
+  { id: "50-100", name: "$50 - $100", min: 50, max: 100 },
+  { id: "100+", name: "$100+", min: 100, max: 999999 },
+]
+
+const thcRanges = [
+  { id: "0-10", name: "0-10%", min: 0, max: 10 },
+  { id: "10-20", name: "10-20%", min: 10, max: 20 },
+  { id: "20-30", name: "20-30%", min: 20, max: 30 },
+  { id: "30+", name: "30%+", min: 30, max: 100 },
+]
+
 export function ProductsFilters() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(["active"])
+  const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([])
+  const [selectedThcRanges, setSelectedThcRanges] = useState<string[]>([])
 
   const clearAllFilters = () => {
     setSelectedCategories([])
     setSelectedBrands([])
     setSelectedStatuses(["active"])
+    setSelectedPriceRanges([])
+    setSelectedThcRanges([])
   }
 
   const activeFiltersCount =
-    selectedCategories.length + selectedBrands.length + (selectedStatuses.length > 1 ? selectedStatuses.length - 1 : 0)
+    selectedCategories.length +
+    selectedBrands.length +
+    selectedPriceRanges.length +
+    selectedThcRanges.length +
+    (selectedStatuses.length > 1 ? selectedStatuses.length - 1 : 0)
 
   return (
     <Card>
@@ -115,6 +137,58 @@ export function ProductsFilters() {
                   {brand.name}
                 </Label>
                 <span className="text-xs text-muted-foreground">{brand.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Separator />
+
+        <div>
+          <Label className="text-sm font-medium">Price Range</Label>
+          <div className="mt-2 space-y-2">
+            {priceRanges.map((range) => (
+              <div key={range.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`price-${range.id}`}
+                  checked={selectedPriceRanges.includes(range.id)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedPriceRanges([...selectedPriceRanges, range.id])
+                    } else {
+                      setSelectedPriceRanges(selectedPriceRanges.filter((id) => id !== range.id))
+                    }
+                  }}
+                />
+                <Label htmlFor={`price-${range.id}`} className="flex-1 text-sm font-normal cursor-pointer">
+                  {range.name}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Separator />
+
+        <div>
+          <Label className="text-sm font-medium">THC Percentage</Label>
+          <div className="mt-2 space-y-2">
+            {thcRanges.map((range) => (
+              <div key={range.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`thc-${range.id}`}
+                  checked={selectedThcRanges.includes(range.id)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedThcRanges([...selectedThcRanges, range.id])
+                    } else {
+                      setSelectedThcRanges(selectedThcRanges.filter((id) => id !== range.id))
+                    }
+                  }}
+                />
+                <Label htmlFor={`thc-${range.id}`} className="flex-1 text-sm font-normal cursor-pointer">
+                  {range.name}
+                </Label>
               </div>
             ))}
           </div>

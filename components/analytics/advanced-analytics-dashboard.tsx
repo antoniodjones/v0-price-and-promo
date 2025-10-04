@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts"
-import { TrendingUp, Target, Brain, DollarSign, BarChart3, Activity } from "lucide-react"
+import { TrendingUp, Target, Brain, DollarSign, BarChart3, Activity, AlertCircle } from "lucide-react"
 
 interface RevenueOptimization {
   summary: {
@@ -71,6 +71,7 @@ export function AdvancedAnalyticsDashboard() {
   const [selectedMarket, setSelectedMarket] = useState("all")
   const [timeframe, setTimeframe] = useState("6months")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchAnalyticsData()
@@ -78,11 +79,24 @@ export function AdvancedAnalyticsDashboard() {
 
   const fetchAnalyticsData = async () => {
     setLoading(true)
+    setError(null)
     try {
       const [revenueResponse, predictiveResponse] = await Promise.all([
         fetch(`/api/analytics/revenue-optimization?market=${selectedMarket}&timeframe=${timeframe}`),
         fetch(`/api/analytics/predictive?market=${selectedMarket}`),
       ])
+
+      if (!revenueResponse.ok) {
+        const errorText = await revenueResponse.text()
+        console.error("[v0] Revenue optimization API error:", errorText)
+        throw new Error(`Failed to fetch revenue data: ${revenueResponse.status}`)
+      }
+
+      if (!predictiveResponse.ok) {
+        const errorText = await predictiveResponse.text()
+        console.error("[v0] Predictive analytics API error:", errorText)
+        throw new Error(`Failed to fetch predictive data: ${predictiveResponse.status}`)
+      }
 
       const revenueResult = await revenueResponse.json()
       const predictiveResult = await predictiveResponse.json()
@@ -91,6 +105,7 @@ export function AdvancedAnalyticsDashboard() {
       if (predictiveResult.success) setPredictiveData(predictiveResult.data)
     } catch (error) {
       console.error("Failed to fetch analytics data:", error)
+      setError(error instanceof Error ? error.message : "Failed to load analytics data. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -149,6 +164,23 @@ export function AdvancedAnalyticsDashboard() {
         </div>
       </div>
 
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <div>
+                <p className="font-medium text-red-900">Error Loading Analytics</p>
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+              <Button onClick={fetchAnalyticsData} variant="outline" size="sm" className="ml-auto bg-transparent">
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs defaultValue="revenue-optimization" className="space-y-6">
         <TabsList>
           <TabsTrigger value="revenue-optimization">Revenue Optimization</TabsTrigger>
@@ -160,7 +192,6 @@ export function AdvancedAnalyticsDashboard() {
         <TabsContent value="revenue-optimization" className="space-y-6">
           {revenueData && (
             <>
-              {/* Revenue Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -207,13 +238,33 @@ export function AdvancedAnalyticsDashboard() {
                     <Activity className="h-4 w-4 text-purple-500" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{revenueData.opportunities.length}</div>
-                    <p className="text-xs text-muted-foreground">Active optimization opportunities</p>
+                    <div className="space-y-4">
+                      {revenueData.opportunities.map((opportunity) => (
+                        <div key={opportunity.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-medium">{opportunity.product}</h4>
+                              <Badge variant="outline">{opportunity.market}</Badge>
+                              <Badge variant="secondary">{opportunity.type.replace("_", " ")}</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">{opportunity.reasoning}</p>
+                            <div className="flex items-center gap-4 text-sm">
+                              <span className="text-green-600 font-medium">
+                                {formatCurrency(opportunity.expectedRevenueIncrease)} potential
+                              </span>
+                              <span className={`font-medium ${getConfidenceColor(opportunity.confidence)}`}>
+                                {Math.round(opportunity.confidence * 100)}% confidence
+                              </span>
+                            </div>
+                          </div>
+                          <Button size="sm">Apply</Button>
+                        </div>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Revenue Trends Chart */}
               <Card>
                 <CardHeader>
                   <CardTitle>Revenue Optimization Trends</CardTitle>
@@ -251,7 +302,6 @@ export function AdvancedAnalyticsDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Optimization Opportunities */}
               <Card>
                 <CardHeader>
                   <CardTitle>Top Revenue Opportunities</CardTitle>
@@ -290,7 +340,6 @@ export function AdvancedAnalyticsDashboard() {
         <TabsContent value="predictive-analytics" className="space-y-6">
           {predictiveData && (
             <>
-              {/* Demand Forecast */}
               {predictiveData.demandForecast && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card>
@@ -365,7 +414,6 @@ export function AdvancedAnalyticsDashboard() {
                 </div>
               )}
 
-              {/* Price Sensitivity Analysis */}
               {predictiveData.priceSensitivity && (
                 <Card>
                   <CardHeader>

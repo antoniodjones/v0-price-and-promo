@@ -46,7 +46,7 @@ interface PricingResult {
 
 const mockCustomer = {
   id: "cust-1",
-  name: "Dispensary ABC",
+  business_legal_name: "Dispensary ABC",
   tier: "A",
 }
 
@@ -452,7 +452,7 @@ export function PricingCalculator() {
               {/* Customer Info */}
               <div className="flex items-center justify-between p-3 bg-gti-light-green/10 rounded-lg">
                 <div>
-                  <p className="font-medium">Customer: {mockCustomer.name}</p>
+                  <p className="font-medium">Customer: {mockCustomer.business_legal_name}</p>
                   <p className="text-sm text-muted-foreground">Tier {mockCustomer.tier} Customer</p>
                 </div>
                 <Badge className="bg-gti-bright-green text-white">Active Customer</Badge>

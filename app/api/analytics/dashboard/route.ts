@@ -1,75 +1,192 @@
-// Dashboard analytics API with key metrics
+import { NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 
-import { type NextRequest, NextResponse } from "next/server"
-import { createApiResponse, handleApiError } from "@/lib/api/utils"
-
-// Mock analytics data
-const dashboardMetrics = {
-  overview: {
-    totalCustomers: 1247,
-    activeDiscounts: 23,
-    totalSavings: 125430.5,
-    averageDiscountRate: 12.5,
-    systemHealth: 99.8,
-    responseTime: 145,
-  },
-  discountDistribution: [
-    { type: "Customer Discounts", count: 15, percentage: 65.2 },
-    { type: "Inventory Discounts", count: 5, percentage: 21.7 },
-    { type: "BOGO Promotions", count: 2, percentage: 8.7 },
-    { type: "Bundle Deals", count: 1, percentage: 4.3 },
-  ],
-  monthlyTrends: [
-    { month: "Jan", savings: 18500, orders: 245 },
-    { month: "Feb", savings: 22100, orders: 289 },
-    { month: "Mar", savings: 19800, orders: 267 },
-    { month: "Apr", savings: 25600, orders: 312 },
-    { month: "May", savings: 28900, orders: 345 },
-    { month: "Jun", savings: 31200, orders: 378 },
-  ],
-  topPerformingDiscounts: [
-    { id: "1", name: "Tier A Volume Discount", usage: 1245, savings: 45600.0 },
-    { id: "2", name: "Expiring Inventory Auto-Discount", usage: 892, savings: 28900.0 },
-    { id: "3", name: "Summer BOGO - Flower", usage: 567, savings: 18750.0 },
-  ],
-  customerSegmentation: [
-    { tier: "A", count: 234, totalSpend: 125600.0, avgDiscount: 15.2 },
-    { tier: "B", count: 456, totalSpend: 189400.0, avgDiscount: 12.8 },
-    { tier: "C", count: 557, totalSpend: 167800.0, avgDiscount: 8.5 },
-  ],
-  alerts: [
-    {
-      id: "1",
-      type: "warning",
-      message: "High inventory discount usage detected for Flower category",
-      timestamp: "2024-01-20T14:30:00Z",
-    },
-    {
-      id: "2",
-      type: "info",
-      message: "New customer tier assignments completed",
-      timestamp: "2024-01-20T12:15:00Z",
-    },
-  ],
-}
-
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const searchParams = request.nextUrl.searchParams
-    const dateRange = searchParams.get("dateRange") || "30d"
-    const market = searchParams.get("market")
+    console.log("[v0] Dashboard API: Starting")
 
-    // In a real implementation, you would filter data based on dateRange and market
-    const filteredMetrics = { ...dashboardMetrics }
-
-    if (market) {
-      // Filter metrics by market (mock implementation)
-      filteredMetrics.overview.totalCustomers = Math.floor(dashboardMetrics.overview.totalCustomers * 0.6)
-      filteredMetrics.overview.totalSavings = dashboardMetrics.overview.totalSavings * 0.6
+    // Check environment variables
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error("[v0] Missing Supabase environment variables")
+      return NextResponse.json({ success: false, error: "Missing Supabase configuration" }, { status: 500 })
     }
 
-    return NextResponse.json(createApiResponse(filteredMetrics, "Dashboard analytics retrieved successfully"))
+    console.log("[v0] Dashboard API: Creating Supabase client")
+    const supabase = await createClient()
+
+    console.log("[v0] Dashboard API: Fetching products")
+    const { data: products, error: productsError } = await supabase
+      .from("products")
+      .select("id, price, cost, inventory_count, category")
+
+    if (productsError) {
+      console.error("[v0] Products query error:", productsError)
+    }
+
+    console.log("[v0] Dashboard API: Fetching promotions")
+    const { data: promotions, error: promotionsError } = await supabase
+      .from("bogo_promotions")
+      .select("id, name, status")
+      .eq("status", "active")
+
+    if (promotionsError) {
+      console.error("[v0] Promotions query error:", promotionsError)
+    }
+
+    console.log("[v0] Dashboard API: Fetching customers")
+    const { data: customers, error: customersError } = await supabase
+      .from("customers")
+      .select("id, tier, total_purchases, status")
+
+    if (customersError) {
+      console.error("[v0] Customers query error:", customersError)
+    }
+
+    console.log("[v0] Dashboard API: Fetching analytics snapshot")
+    const { data: snapshot, error: snapshotError } = await supabase
+      .from("analytics_snapshots")
+      .select("*")
+      .order("snapshot_time", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (snapshotError) {
+      console.error("[v0] Snapshot query error:", snapshotError)
+    }
+
+    // Process data safely
+    const productsList = products || []
+    const promotionsList = promotions || []
+    const customersList = customers || []
+
+    console.log("[v0] Dashboard API: Processing data")
+    console.log("[v0] Products count:", productsList.length)
+    console.log("[v0] Promotions count:", promotionsList.length)
+    console.log("[v0] Customers count:", customersList.length)
+
+    // Calculate metrics
+    const totalProducts = productsList.length
+    const lowInventory = productsList.filter((p) => (p.inventory_count || 0) < 10).length
+    const totalInventoryValue = productsList.reduce((sum, p) => sum + (p.price || 0) * (p.inventory_count || 0), 0)
+    const totalCostValue = productsList.reduce((sum, p) => sum + (p.cost || 0) * (p.inventory_count || 0), 0)
+    const avgMargin = totalInventoryValue > 0 ? ((totalInventoryValue - totalCostValue) / totalInventoryValue) * 100 : 0
+
+    const activePromotions = promotionsList.length
+    const totalCustomers = customersList.length
+    const activeCustomers = customersList.filter((c) => c.status === "active").length
+
+    // Category breakdown
+    const categoryMap = new Map<string, { count: number; value: number }>()
+    productsList.forEach((p) => {
+      const cat = p.category || "Uncategorized"
+      const existing = categoryMap.get(cat) || { count: 0, value: 0 }
+      categoryMap.set(cat, {
+        count: existing.count + 1,
+        value: existing.value + (p.price || 0) * (p.inventory_count || 0),
+      })
+    })
+
+    // Customer tier breakdown
+    const customersByTier = customersList.reduce(
+      (acc, c) => {
+        const tier = c.tier || "standard"
+        acc[tier] = (acc[tier] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>,
+    )
+
+    const totalCustomerValue = customersList.reduce((sum, c) => sum + (c.total_purchases || 0), 0)
+
+    // Revenue metrics from snapshot
+    const revenueMetrics = snapshot
+      ? {
+          totalRevenue: snapshot.total_revenue || 0,
+          revenueChange: snapshot.revenue_change || 0,
+          revenueChangePercent: snapshot.revenue_change_percent || 0,
+          ordersCount: snapshot.orders_count || 0,
+          avgOrderValue: snapshot.avg_order_value || 0,
+          conversionRate: snapshot.conversion_rate || 0,
+        }
+      : {
+          totalRevenue: 0,
+          revenueChange: 0,
+          revenueChangePercent: 0,
+          ordersCount: 0,
+          avgOrderValue: 0,
+          conversionRate: 0,
+        }
+
+    const dashboardData = {
+      success: true,
+      data: {
+        overview: {
+          totalProducts,
+          lowInventory,
+          totalInventoryValue,
+          avgMargin,
+          activePromotions,
+          totalCustomers,
+          activeCustomers,
+        },
+        revenue: revenueMetrics,
+        products: {
+          total: totalProducts,
+          lowInventory,
+          categories: Array.from(categoryMap.entries()).map(([name, data]) => ({
+            name,
+            count: data.count,
+            value: data.value,
+            percentage: totalProducts > 0 ? (data.count / totalProducts) * 100 : 0,
+          })),
+        },
+        promotions: {
+          active: activePromotions,
+        },
+        customers: {
+          total: totalCustomers,
+          active: activeCustomers,
+          totalValue: totalCustomerValue,
+          avgValue: totalCustomers > 0 ? totalCustomerValue / totalCustomers : 0,
+          byTier: Object.entries(customersByTier).map(([tier, count]) => ({
+            tier,
+            count,
+            percentage: totalCustomers > 0 ? (count / totalCustomers) * 100 : 0,
+          })),
+        },
+        performance: {
+          avgResponseTime: 0,
+          avgErrorRate: 0,
+          avgCpuUsage: 0,
+          avgMemoryUsage: 0,
+          metrics: [],
+        },
+        events: {
+          total: 0,
+          byType: [],
+          recent: [],
+        },
+        alerts: {
+          total: 0,
+          items: [],
+        },
+        generatedAt: new Date().toISOString(),
+      },
+      message: "Dashboard data retrieved successfully",
+    }
+
+    console.log("[v0] Dashboard API: Returning response")
+    return NextResponse.json(dashboardData)
   } catch (error) {
-    return handleApiError(error)
+    console.error("[v0] Dashboard API fatal error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to load dashboard data",
+        details: errorMessage,
+      },
+      { status: 500 },
+    )
   }
 }

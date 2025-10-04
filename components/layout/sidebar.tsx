@@ -15,114 +15,173 @@ import {
   BarChart3,
   Zap,
   Target,
-  TestTube,
   Calculator,
   Layers,
-  ClipboardList,
   ChevronDown,
   ChevronRight,
-  BookOpen,
   Search,
   Shield,
+  Trophy,
+  Tag,
+  Percent,
 } from "lucide-react"
 import { UserMenu } from "@/components/auth/user-menu"
+import { usePermissions } from "@/lib/rbac/hooks"
+import { PERMISSIONS } from "@/lib/rbac/roles"
+import { Separator } from "@/components/ui/separator"
 
-const navigation = [
+interface NavigationItem {
+  name: string
+  href: string
+  icon: any
+  permission?: string
+  subnodes?: NavigationItem[]
+}
+
+interface NavigationGroup {
+  name: string
+  items: NavigationItem[]
+}
+
+const navigationGroups: NavigationGroup[] = [
   {
-    name: "Dashboard",
-    href: "/",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "Price Search",
-    href: "/price-search",
-    icon: Search,
-  },
-  {
-    name: "Customer Discounts",
-    href: "/customer-discounts",
-    icon: Users,
-  },
-  {
-    name: "Inventory Discounts",
-    href: "/inventory-discounts",
-    icon: Package,
-  },
-  {
-    name: "Bundle Deals",
-    href: "/bundle-deals",
-    icon: Layers,
-  },
-  {
-    name: "Best Deal Logic",
-    href: "/pricing",
-    icon: Calculator,
-  },
-  {
-    name: "Market Pricing",
-    href: "/market-pricing",
-    icon: TrendingUp,
-  },
-  {
-    name: "Promotions",
-    href: "/promotions",
-    icon: Zap,
-  },
-  {
-    name: "Analytics",
-    href: "/analytics",
-    icon: BarChart3,
-  },
-  {
-    name: "Testing Tools",
-    href: "/testing",
-    icon: TestTube,
-  },
-  {
-    name: "Task Planning",
-    href: "/task-planning",
-    icon: ClipboardList,
-    subnodes: [
+    name: "Overview",
+    items: [
       {
-        name: "User Stories",
-        href: "/task-planning/user-stories",
-        icon: BookOpen,
+        name: "Dashboard",
+        href: "/",
+        icon: LayoutDashboard,
+      },
+      {
+        name: "Analytics",
+        href: "/analytics",
+        icon: BarChart3,
+        permission: PERMISSIONS.ANALYTICS_VIEW,
       },
     ],
   },
   {
-    name: "Admin",
-    href: "/admin",
-    icon: Shield,
+    name: "Pricing & Discounts",
+    items: [
+      {
+        name: "Best Deal Logic",
+        href: "/pricing",
+        icon: Calculator,
+        permission: PERMISSIONS.PRICING_VIEW,
+      },
+      {
+        name: "Market Pricing",
+        href: "/market-pricing",
+        icon: TrendingUp,
+        permission: PERMISSIONS.PRICING_VIEW,
+      },
+      {
+        name: "Simulator",
+        href: "/simulator",
+        icon: Zap,
+        permission: PERMISSIONS.PRICING_VIEW,
+      },
+      {
+        name: "Customer Discounts",
+        href: "/customer-discounts",
+        icon: Users,
+        permission: PERMISSIONS.DISCOUNTS_VIEW,
+      },
+      {
+        name: "Inventory Discounts",
+        href: "/inventory-discounts",
+        icon: Package,
+        permission: PERMISSIONS.DISCOUNTS_VIEW,
+      },
+      {
+        name: "Tier Management",
+        href: "/tier-management",
+        icon: Trophy,
+        permission: PERMISSIONS.DISCOUNTS_VIEW,
+      },
+    ],
   },
   {
-    name: "Settings",
-    href: "/settings",
-    icon: Settings,
+    name: "Promotions",
+    items: [
+      {
+        name: "All Promotions",
+        href: "/promotions",
+        icon: Tag,
+        permission: PERMISSIONS.PROMOTIONS_VIEW,
+      },
+      {
+        name: "Promo Codes",
+        href: "/promo-codes",
+        icon: Percent,
+        permission: PERMISSIONS.PROMOTIONS_VIEW,
+      },
+      {
+        name: "Bundle Deals",
+        href: "/bundle-deals",
+        icon: Layers,
+        permission: PERMISSIONS.PROMOTIONS_VIEW,
+      },
+    ],
+  },
+  {
+    name: "Products",
+    items: [
+      {
+        name: "Product Catalog",
+        href: "/products",
+        icon: Package,
+        permission: PERMISSIONS.PRODUCTS_VIEW,
+      },
+      {
+        name: "Price Search",
+        href: "/price-search",
+        icon: Search,
+        permission: PERMISSIONS.PRODUCTS_VIEW,
+      },
+    ],
+  },
+  {
+    name: "System",
+    items: [
+      {
+        name: "Settings",
+        href: "/settings",
+        icon: Settings,
+        permission: PERMISSIONS.SETTINGS_VIEW,
+      },
+      {
+        name: "Admin",
+        href: "/admin",
+        icon: Shield,
+        permission: PERMISSIONS.USERS_VIEW,
+      },
+    ],
   },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
-  const [expandedItems, setExpandedItems] = useState<string[]>(["Task Planning"])
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(["Overview", "Pricing & Discounts"])
+  const { hasPermission } = usePermissions()
 
-  console.log("[v0] Sidebar: Rendering with pathname:", pathname)
-
-  const toggleExpanded = (itemName: string) => {
-    console.log("[v0] Sidebar: Toggling expanded for:", itemName)
-    setExpandedItems((prev) =>
-      prev.includes(itemName) ? prev.filter((name) => name !== itemName) : [...prev, itemName],
+  const toggleGroup = (groupName: string) => {
+    setExpandedGroups((prev) =>
+      prev.includes(groupName) ? prev.filter((name) => name !== groupName) : [...prev, groupName],
     )
   }
 
   const handleCollapseToggle = () => {
-    console.log("[v0] Sidebar: Toggling collapse, current state:", collapsed)
     setCollapsed(!collapsed)
   }
 
-  const handleNavClick = (itemName: string, href: string) => {
-    console.log("[v0] Sidebar: Navigation clicked:", itemName, "->", href)
+  // Filter navigation items based on permissions
+  const filterItems = (items: NavigationItem[]): NavigationItem[] => {
+    return items.filter((item) => {
+      if (!item.permission) return true
+      return hasPermission(item.permission as any)
+    })
   }
 
   return (
@@ -135,16 +194,16 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex items-center justify-between h-16 border-b border-sidebar-border px-3">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-sidebar-primary rounded-md flex items-center justify-center">
-            <Target className="w-5 h-5 text-sidebar-primary-foreground" />
+          <div className="w-8 h-8 bg-gti-green rounded-md flex items-center justify-center">
+            <Target className="w-5 h-5 text-white" />
           </div>
           {!collapsed && (
             <div className="text-sidebar-foreground">
-              <div className="font-bold text-xl">Promotions Engine</div>
+              <div className="font-bold text-lg">GTI Pricing</div>
+              <div className="text-xs text-muted-foreground">Engine</div>
             </div>
           )}
         </div>
-        {/* User Menu */}
         {!collapsed && (
           <div className="flex items-center">
             <UserMenu />
@@ -154,68 +213,56 @@ export function Sidebar() {
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4">
-        <nav className="space-y-2">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href
-            const isExpanded = expandedItems.includes(item.name)
-            const hasSubnodes = item.subnodes && item.subnodes.length > 0
+        <nav className="space-y-4">
+          {navigationGroups.map((group) => {
+            const filteredItems = filterItems(group.items)
+            if (filteredItems.length === 0) return null
+
+            const isGroupExpanded = expandedGroups.includes(group.name)
 
             return (
-              <div key={item.name}>
-                {/* Main navigation item */}
-                <div className="flex items-center">
-                  <Link href={item.href} className="flex-1" onClick={() => handleNavClick(item.name, item.href)}>
-                    <Button
-                      variant={isActive ? "secondary" : "ghost"}
-                      className={cn(
-                        "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        isActive && "bg-sidebar-primary text-sidebar-primary-foreground",
-                        collapsed && "px-2",
-                      )}
+              <div key={group.name}>
+                {/* Group Header */}
+                {!collapsed && (
+                  <div className="flex items-center justify-between mb-2">
+                    <button
+                      onClick={() => toggleGroup(group.name)}
+                      className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
                     >
-                      <item.icon className={cn("h-4 w-4", !collapsed && "mr-3")} />
-                      {!collapsed && item.name}
-                    </Button>
-                  </Link>
+                      {group.name}
+                      {isGroupExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                    </button>
+                  </div>
+                )}
 
-                  {hasSubnodes && !collapsed && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleExpanded(item.name)}
-                      className="ml-1 p-1 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    >
-                      {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                    </Button>
-                  )}
-                </div>
+                {/* Group Items */}
+                {(collapsed || isGroupExpanded) && (
+                  <div className="space-y-1">
+                    {filteredItems.map((item) => {
+                      const isActive = pathname === item.href
 
-                {hasSubnodes && isExpanded && !collapsed && (
-                  <div className="ml-6 mt-1 space-y-1">
-                    {item.subnodes.map((subnode) => {
-                      const isSubnodeActive = pathname === subnode.href
                       return (
-                        <Link
-                          key={subnode.name}
-                          href={subnode.href}
-                          onClick={() => handleNavClick(subnode.name, subnode.href)}
-                        >
+                        <Link key={item.name} href={item.href}>
                           <Button
-                            variant={isSubnodeActive ? "secondary" : "ghost"}
-                            size="sm"
+                            variant={isActive ? "secondary" : "ghost"}
                             className={cn(
                               "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                              isSubnodeActive && "bg-sidebar-primary text-sidebar-primary-foreground",
+                              isActive && "bg-gti-green text-white hover:bg-gti-green/90 hover:text-white",
+                              collapsed && "px-2 justify-center",
                             )}
+                            title={collapsed ? item.name : undefined}
                           >
-                            <subnode.icon className="h-3 w-3 mr-2" />
-                            {subnode.name}
+                            <item.icon className={cn("h-4 w-4", !collapsed && "mr-3")} />
+                            {!collapsed && <span className="truncate">{item.name}</span>}
                           </Button>
                         </Link>
                       )
                     })}
                   </div>
                 )}
+
+                {/* Separator between groups */}
+                {!collapsed && isGroupExpanded && <Separator className="my-3" />}
               </div>
             )
           })}
@@ -229,8 +276,10 @@ export function Sidebar() {
           size="sm"
           onClick={handleCollapseToggle}
           className="w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed ? "→" : "←"}
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4 rotate-90" />}
+          {!collapsed && <span className="ml-2">Collapse</span>}
         </Button>
       </div>
     </div>

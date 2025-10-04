@@ -8,39 +8,24 @@ import { useAppContext } from "@/lib/context/app-context"
 import { UserMenu } from "@/components/auth/user-menu"
 
 interface HeaderProps {
-  title?: string
   showSearch?: boolean
   showNotifications?: boolean
   showUserMenu?: boolean
   className?: string
 }
 
-export function Header({
-  title = "GTI Pricing Engine",
-  showSearch = true,
-  showNotifications = true,
-  showUserMenu = true,
-  className,
-}: HeaderProps) {
+export function Header({ showSearch = true, showNotifications = true, showUserMenu = true, className }: HeaderProps) {
   const [searchQuery, setSearchQuery] = React.useState("")
   const { toggleMobileSidebar } = useAppContext()
 
   return (
     <div className={cn("flex items-center justify-between w-full", className)}>
-      {/* Left Section - Logo and Menu */}
+      {/* Left Section - Menu */}
       <div className="flex items-center gap-4">
         {/* Mobile Menu Button */}
         <Button variant="ghost" size="sm" className="lg:hidden" onClick={toggleMobileSidebar}>
           <Menu className="h-5 w-5" />
         </Button>
-
-        {/* Logo and Title */}
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">GTI</span>
-          </div>
-          <h1 className="text-xl font-semibold text-foreground hidden sm:block">{title}</h1>
-        </div>
       </div>
 
       {/* Center Section - Search */}

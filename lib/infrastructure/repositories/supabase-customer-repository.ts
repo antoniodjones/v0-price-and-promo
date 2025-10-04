@@ -58,7 +58,7 @@ export class SupabaseCustomerRepository implements CustomerRepository {
     const { data, error } = await client
       .from("customers")
       .select("*")
-      .or(`name.ilike.%${query}%,email.ilike.%${query}%`)
+      .ilike("business_legal_name", `%${query}%`)
       .limit(20)
 
     if (error) throw new Error(error.message)
@@ -70,8 +70,7 @@ export class SupabaseCustomerRepository implements CustomerRepository {
     const client = db.getClient()
 
     const customerData = {
-      name: customer.name,
-      email: customer.email,
+      business_legal_name: customer.businessLegalName,
       tier: customer.tier,
       market: customer.market,
       status: customer.status,
@@ -115,8 +114,7 @@ export class SupabaseCustomerRepository implements CustomerRepository {
   private mapToEntity(data: any): CustomerEntity {
     return new CustomerEntity(
       data.id,
-      data.name,
-      data.email,
+      data.business_legal_name,
       data.tier,
       data.market,
       data.status,

@@ -1,13 +1,15 @@
 // Navigation configuration for module-based routing
 // This will be enhanced with module system in later phases
 
+import type { Permission } from "./rbac/roles"
+
 export interface NavigationRoute {
   id: string
   path: string
   label: string
   icon?: string
   requireAuth?: boolean
-  requiredRole?: string
+  requiredPermissions?: Permission[]
   module?: string
   children?: NavigationRoute[]
 }
@@ -26,6 +28,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
     label: "Pricing Engine",
     icon: "Calculator",
     module: "pricing-engine",
+    requiredPermissions: ["pricing:view"],
     children: [
       {
         id: "pricing-calculator",
@@ -33,6 +36,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
         label: "Price Calculator",
         icon: "Calculator",
         module: "pricing-engine",
+        requiredPermissions: ["pricing:view"],
       },
       {
         id: "pricing-history",
@@ -40,6 +44,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
         label: "Price History",
         icon: "TrendingUp",
         module: "pricing-engine",
+        requiredPermissions: ["pricing:view"],
       },
       {
         id: "pricing-rules",
@@ -47,6 +52,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
         label: "Pricing Rules",
         icon: "Settings",
         module: "pricing-engine",
+        requiredPermissions: ["pricing:edit"],
       },
     ],
   },
@@ -56,20 +62,23 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
     label: "Discounts",
     icon: "Tag",
     module: "customer-discounts",
+    requiredPermissions: ["discounts:view"],
     children: [
       {
         id: "customer-discounts",
-        path: "/discounts/customer",
+        path: "/customer-discounts",
         label: "Customer Discounts",
         icon: "Tag",
         module: "customer-discounts",
+        requiredPermissions: ["discounts:view"],
       },
       {
         id: "inventory-discounts",
-        path: "/discounts/inventory",
+        path: "/inventory-discounts",
         label: "Inventory Discounts",
         icon: "Package",
         module: "inventory-discounts",
+        requiredPermissions: ["discounts:view"],
       },
     ],
   },
@@ -79,6 +88,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
     label: "Promotions",
     icon: "TrendingUp",
     module: "promotions",
+    requiredPermissions: ["promotions:view"],
   },
   {
     id: "analytics",
@@ -87,6 +97,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
     icon: "TrendingUp",
     module: "analytics",
     requireAuth: true,
+    requiredPermissions: ["analytics:view"],
   },
   {
     id: "settings",
@@ -95,6 +106,7 @@ export const NAVIGATION_ROUTES: NavigationRoute[] = [
     icon: "Settings",
     module: "settings",
     requireAuth: true,
+    requiredPermissions: ["settings:view"],
   },
 ]
 
@@ -139,13 +151,14 @@ export function generateBreadcrumbs(path: string) {
   return breadcrumbs
 }
 
-export function isRouteAccessible(route: NavigationRoute, userRole?: string): boolean {
-  // Phase 2: Basic access control - will be enhanced in Phase 3
-  if (!route.requireAuth) {
+export function isRouteAccessible(route: NavigationRoute, userPermissions: Permission[]): boolean {
+  if (!route.requireAuth && !route.requiredPermissions) {
     return true
   }
 
-  // For Phase 2, simulate access granted
-  // This will be replaced with real auth logic in Phase 3
+  if (route.requiredPermissions) {
+    return route.requiredPermissions.some((permission) => userPermissions.includes(permission))
+  }
+
   return true
 }

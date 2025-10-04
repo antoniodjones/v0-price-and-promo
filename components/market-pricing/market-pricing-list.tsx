@@ -4,7 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Edit, Trash2, Users, TrendingUp, AlertTriangle } from "lucide-react"
+import {
+  Edit,
+  Trash2,
+  Users,
+  TrendingUp,
+  AlertTriangle,
+  MoreHorizontal,
+  Package,
+  DollarSign,
+  Target,
+} from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useState, useEffect } from "react"
 import { MarketPricingEditModal } from "./market-pricing-edit-modal"
 
@@ -18,6 +29,7 @@ export function MarketPricingList({ selectedMarket }: MarketPricingListProps) {
   const [error, setError] = useState<string | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null)
+  const [editingStartStep, setEditingStartStep] = useState<number>(1)
 
   useEffect(() => {
     const fetchPricingRules = async () => {
@@ -122,6 +134,13 @@ export function MarketPricingList({ selectedMarket }: MarketPricingListProps) {
 
   const handleEditRule = (ruleId: string) => {
     setEditingRuleId(ruleId)
+    setEditingStartStep(1)
+    setEditModalOpen(true)
+  }
+
+  const handleQuickEdit = (ruleId: string, startStep: number) => {
+    setEditingRuleId(ruleId)
+    setEditingStartStep(startStep)
     setEditModalOpen(true)
   }
 
@@ -278,14 +297,35 @@ export function MarketPricingList({ selectedMarket }: MarketPricingListProps) {
                       <Badge className="bg-green-100 text-green-800">{rule.status}</Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleEditRule(rule.id)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 bg-transparent">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditRule(rule.id)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit All
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleQuickEdit(rule.id, 2)}>
+                            <Target className="mr-2 h-4 w-4" />
+                            Manage Scope
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleQuickEdit(rule.id, 3)}>
+                            <Package className="mr-2 h-4 w-4" />
+                            Manage Tiers
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleQuickEdit(rule.id, 4)}>
+                            <DollarSign className="mr-2 h-4 w-4" />
+                            Manage Discounts
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -318,8 +358,10 @@ export function MarketPricingList({ selectedMarket }: MarketPricingListProps) {
           onClose={() => {
             setEditModalOpen(false)
             setEditingRuleId(null)
+            setEditingStartStep(1)
           }}
           ruleId={editingRuleId}
+          initialStep={editingStartStep}
           onSuccess={handleEditSuccess}
         />
       )}

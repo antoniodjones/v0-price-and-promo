@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TrendingUp, Target, Percent, Calendar, Plus, BarChart3 } from "lucide-react"
+import { TrendingUp, Target, Percent, Calendar, Plus, BarChart3, Upload } from "lucide-react"
 import { promotionsService, type BogoPromotion, type DealNotification } from "@/lib/services/promotions"
 import { BogoPromotionsList } from "./bogo-promotions-list"
 import Link from "next/link"
+import { BulkUploadModal } from "./bulk-upload-modal"
 
 export function PromotionsDashboard() {
   const [loading, setLoading] = useState(true)
@@ -22,6 +23,7 @@ export function PromotionsDashboard() {
   const [bogoPromotions, setBogoPromotions] = useState<BogoPromotion[]>([])
   const [dealNotifications, setDealNotifications] = useState<DealNotification[]>([])
   const [searchTerm, setSearchTerm] = useState("")
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -44,6 +46,11 @@ export function PromotionsDashboard() {
 
     loadData()
   }, [])
+
+  const handleBulkUploadSuccess = () => {
+    setLoading(true)
+    window.location.reload()
+  }
 
   if (loading) {
     return (
@@ -133,6 +140,10 @@ export function PromotionsDashboard() {
               <h3 className="text-lg font-semibold">BOGO Promotions</h3>
               <p className="text-sm text-muted-foreground">{bogoPromotions.length} total campaigns</p>
             </div>
+            <Button variant="outline" onClick={() => setBulkUploadOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Bulk Upload
+            </Button>
           </div>
 
           <BogoPromotionsList searchTerm={searchTerm} />
@@ -204,6 +215,13 @@ export function PromotionsDashboard() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal
+        isOpen={bulkUploadOpen}
+        onClose={() => setBulkUploadOpen(false)}
+        onSuccess={handleBulkUploadSuccess}
+      />
     </div>
   )
 }

@@ -246,6 +246,8 @@ export interface SettingsData {
   security: SecuritySettings
   performance: PerformanceSettings
   enterprise: EnterpriseSettings
+  taskPlanning?: any
+  testValidation?: any
 }
 
 // Default settings
@@ -463,6 +465,8 @@ export const defaultSettings: SettingsData = {
       },
     },
   },
+  taskPlanning: undefined,
+  testValidation: undefined,
 }
 
 // Storage functions

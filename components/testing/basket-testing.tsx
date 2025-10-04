@@ -55,11 +55,11 @@ export function BasketTesting() {
   const [isRunning, setIsRunning] = useState(false)
 
   const customers = [
-    { id: "cust-001", name: "Elite Cannabis Co", tier: "A-Tier" },
-    { id: "cust-002", name: "Premium Dispensary LLC", tier: "A-Tier" },
-    { id: "cust-003", name: "High Volume Buyer", tier: "B-Tier" },
-    { id: "cust-004", name: "Dispensary ABC", tier: "B-Tier" },
-    { id: "cust-005", name: "New Customer", tier: "C-Tier" },
+    { id: "cust-001", business_legal_name: "Elite Cannabis Co", tier: "A-Tier" },
+    { id: "cust-002", business_legal_name: "Premium Dispensary LLC", tier: "A-Tier" },
+    { id: "cust-003", business_legal_name: "High Volume Buyer", tier: "B-Tier" },
+    { id: "cust-004", business_legal_name: "Dispensary ABC", tier: "B-Tier" },
+    { id: "cust-005", business_legal_name: "New Customer", tier: "C-Tier" },
   ]
 
   const addBasketItem = () => {
@@ -159,7 +159,7 @@ export function BasketTesting() {
                   {customers.map((customer) => (
                     <SelectItem key={customer.id} value={customer.id}>
                       <div className="flex items-center gap-2">
-                        {customer.name}
+                        {customer.business_legal_name}
                         {getTierBadge(customer.tier)}
                       </div>
                     </SelectItem>

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Edit, Copy, Trash2, Play, Pause, Package, Calendar, DollarSign } from "lucide-react"
+import { MoreHorizontal, Edit, Copy, Trash2, Play, Pause, Package, Calendar, DollarSign, Settings } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { BundleDealEditModal } from "./bundle-deal-edit-modal"
 
@@ -101,22 +101,25 @@ export function BundleDealsList() {
   const [deals, setDeals] = useState<BundleDeal[]>(bundleDeals)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingBundleId, setEditingBundleId] = useState<string | null>(null)
+  const [editingStartStep, setEditingStartStep] = useState<number>(1)
 
   const handleEditBundle = (bundleId: string) => {
     try {
       setEditingBundleId(bundleId)
+      setEditingStartStep(1)
       setEditModalOpen(true)
     } catch (error) {
       console.error("Error opening edit modal:", error)
     }
   }
 
-  const handleEditSuccess = () => {
+  const handleQuickEdit = (bundleId: string, startStep: number) => {
     try {
-      // In a real app, this would refresh the data from the API
-      console.log("Bundle updated successfully, refreshing list...")
+      setEditingBundleId(bundleId)
+      setEditingStartStep(startStep)
+      setEditModalOpen(true)
     } catch (error) {
-      console.error("Error handling edit success:", error)
+      console.error("Error opening quick edit:", error)
     }
   }
 
@@ -155,6 +158,10 @@ export function BundleDealsList() {
     return "N/A"
   }
 
+  const handleEditSuccess = () => {
+    // Placeholder for handleEditSuccess logic
+  }
+
   return (
     <>
       <div className="space-y-4">
@@ -188,7 +195,23 @@ export function BundleDealsList() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleEditBundle(deal.id.toString())}>
                         <Edit className="w-4 h-4 mr-2" />
-                        Edit Bundle
+                        Edit All
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleQuickEdit(deal.id.toString(), 2)}>
+                        <Package className="w-4 h-4 mr-2" />
+                        Manage Products
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleQuickEdit(deal.id.toString(), 3)}>
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        Manage Pricing
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleQuickEdit(deal.id.toString(), 4)}>
+                        <Settings className="w-4 h-4 mr-2" />
+                        Manage Rules
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleQuickEdit(deal.id.toString(), 5)}>
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Manage Dates
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         <Copy className="w-4 h-4 mr-2" />
@@ -286,8 +309,10 @@ export function BundleDealsList() {
           onClose={() => {
             setEditModalOpen(false)
             setEditingBundleId(null)
+            setEditingStartStep(1)
           }}
           bundleId={editingBundleId}
+          initialStep={editingStartStep}
           onSuccess={handleEditSuccess}
         />
       )}

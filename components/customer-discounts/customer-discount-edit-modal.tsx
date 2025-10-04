@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Check, X } from "lucide-react"
+import { ArrowLeft, Check, Edit } from "lucide-react"
 import { CustomArrow } from "@/components/ui/custom-arrow"
 import { DiscountLevelStep } from "./wizard-steps/discount-level-step"
 import { DiscountTargetStep } from "./wizard-steps/discount-target-step"
@@ -20,6 +20,7 @@ interface CustomerDiscountEditModalProps {
   isOpen: boolean
   onClose: () => void
   discountId: string
+  initialStep?: number
   onSuccess: () => void
 }
 
@@ -32,8 +33,14 @@ const steps = [
   { id: 6, name: "Review & Update", description: "Review and update the discount rule" },
 ]
 
-export function CustomerDiscountEditModal({ isOpen, onClose, discountId, onSuccess }: CustomerDiscountEditModalProps) {
-  const [currentStep, setCurrentStep] = useState(1)
+export function CustomerDiscountEditModal({
+  isOpen,
+  onClose,
+  discountId,
+  initialStep = 1,
+  onSuccess,
+}: CustomerDiscountEditModalProps) {
+  const [currentStep, setCurrentStep] = useState(initialStep)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [formData, setFormData] = useState<DiscountFormData>({
@@ -54,37 +61,54 @@ export function CustomerDiscountEditModal({ isOpen, onClose, discountId, onSucce
   useEffect(() => {
     if (isOpen && discountId) {
       loadDiscountData()
+      setCurrentStep(initialStep)
     }
-  }, [isOpen, discountId])
+  }, [isOpen, discountId, initialStep])
 
   const loadDiscountData = async () => {
     try {
       setIsLoading(true)
+      console.log("[v0] Loading discount data for ID:", discountId)
       const response = await fetch(`/api/discounts/customer/${discountId}`)
+      console.log("[v0] Response status:", response.status)
+
       if (!response.ok) {
         throw new Error("Failed to load discount data")
       }
 
       const result = await response.json()
+      console.log("[v0] Loaded discount data:", result)
+
       if (result.success) {
         const discount = result.data
+        console.log("[v0] Discount details:", discount)
+        console.log("[v0] Customer IDs:", discount.customer_ids)
 
-        // Transform API data to form data format
         setFormData({
-          level: discount.level === "item" ? "customer" : discount.level === "brand" ? "tier" : "market",
-          targetId: discount.target,
-          targetName: discount.target,
-          discountType: discount.type === "fixed" ? "dollar" : discount.type,
-          discountValue: discount.value,
+          level: discount.level || "",
+          targetId: discount.target || "",
+          targetName: discount.target || "",
+          discountType: discount.type === "fixed" ? "dollar" : discount.type || "",
+          discountValue: discount.value || 0,
           startDate: discount.start_date ? new Date(discount.start_date) : null,
           endDate: discount.end_date ? new Date(discount.end_date) : null,
-          customers: discount.customer_tiers || [],
+          customers: discount.customer_ids || [],
+          name: discount.name || "",
+        })
+
+        console.log("[v0] Form data set:", {
+          level: discount.level,
+          targetId: discount.target,
+          discountType: discount.type === "fixed" ? "dollar" : discount.type,
+          discountValue: discount.value,
+          customers: discount.customer_ids,
           name: discount.name,
         })
       } else {
         throw new Error(result.message || "Failed to load discount")
       }
     } catch (error) {
+      console.error("[v0] Error loading discount:", error)
       toast({
         title: "Error Loading Discount",
         description: error instanceof Error ? error.message : "Failed to load discount data",
@@ -98,6 +122,10 @@ export function CustomerDiscountEditModal({ isOpen, onClose, discountId, onSucce
 
   const updateFormData = (updates: Partial<DiscountFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }))
+  }
+
+  const goToStep = (stepNumber: number) => {
+    setCurrentStep(stepNumber)
   }
 
   const nextStep = () => {
@@ -160,39 +188,7 @@ export function CustomerDiscountEditModal({ isOpen, onClose, discountId, onSucce
     setIsSubmitting(true)
 
     try {
-      let customerIds: string[] = []
-      if (formData.customers.length > 0) {
-        // Fetch all customers to get their IDs
-        const customersResponse = await fetch("/api/customers")
-        if (!customersResponse.ok) {
-          throw new Error("Failed to fetch customers")
-        }
-
-        const customersResult = await customersResponse.json()
-        const allCustomers = customersResult.data || []
-
-        customerIds = []
-        for (const customerName of formData.customers) {
-          let customer = allCustomers.find((c: any) => c.name === customerName)
-
-          if (!customer) {
-            // Try fuzzy matching
-            const fuzzyMatch = allCustomers.find(
-              (c: any) =>
-                c.name.toLowerCase().includes(customerName.toLowerCase()) ||
-                customerName.toLowerCase().includes(c.name.toLowerCase()),
-            )
-
-            if (fuzzyMatch) {
-              customer = fuzzyMatch
-            } else {
-              throw new Error(`Customer "${customerName}" not found`)
-            }
-          }
-
-          customerIds.push(customer.id)
-        }
-      }
+      const customerIds = Array.isArray(formData.customers) ? formData.customers : []
 
       const discountData = {
         name: formData.name,
@@ -222,13 +218,11 @@ export function CustomerDiscountEditModal({ isOpen, onClose, discountId, onSucce
         throw new Error(result.message || result.error || `HTTP ${response.status}: Failed to update discount`)
       }
 
-      // Show success toast
       toast({
         title: "Discount Updated Successfully!",
         description: `${formData.name} has been updated.`,
       })
 
-      // Close modal and refresh parent
       onSuccess()
       onClose()
     } catch (error) {
@@ -243,7 +237,7 @@ export function CustomerDiscountEditModal({ isOpen, onClose, discountId, onSucce
   }
 
   const handleClose = () => {
-    setCurrentStep(1)
+    setCurrentStep(initialStep)
     setFormData({
       level: "",
       targetId: "",
@@ -258,88 +252,109 @@ export function CustomerDiscountEditModal({ isOpen, onClose, discountId, onSucce
     onClose()
   }
 
-  return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle>Edit Customer Discount</DialogTitle>
-              <DialogDescription>
-                {isLoading
-                  ? "Loading discount data..."
-                  : `Step ${currentStep} of ${steps.length}: ${steps[currentStep - 1].description}`}
-              </DialogDescription>
+  if (!isOpen) return null
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-background z-50 overflow-y-auto">
+        <div className="container mx-auto py-8 px-4">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gti-bright-green mx-auto mb-4"></div>
+              <p className="text-lg text-muted-foreground">Loading discount data...</p>
             </div>
-            <div className="flex items-center space-x-2">
-              {!isLoading && (
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 bg-background z-50 overflow-y-auto">
+      <div className="container mx-auto py-8 px-4">
+        <div className="mb-6 flex items-center justify-between">
+          <Button variant="ghost" onClick={handleClose} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Discounts
+          </Button>
+          <Badge variant="default" className="bg-gti-bright-green text-white gap-2 px-4 py-2">
+            <Edit className="h-4 w-4" />
+            Edit Mode
+          </Badge>
+        </div>
+
+        <div className="space-y-6">
+          {/* Progress Header */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>
+                    Step {currentStep} of {steps.length}
+                  </CardTitle>
+                  <CardDescription>{steps[currentStep - 1].description}</CardDescription>
+                </div>
                 <Badge variant="outline" className="text-gti-dark-green border-gti-dark-green">
                   {steps[currentStep - 1].name}
                 </Badge>
-              )}
-              <Button variant="ghost" size="icon" onClick={handleClose}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          {!isLoading && <Progress value={progress} className="mt-4" />}
-        </DialogHeader>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gti-bright-green mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading discount data...</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Step Navigation */}
-            <div className="flex justify-center py-4">
-              <div className="flex items-center space-x-4">
-                {steps.map((step, index) => (
-                  <div key={step.id} className="flex items-center">
-                    <div
-                      className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                        index + 1 < currentStep
-                          ? "bg-gti-bright-green border-gti-bright-green text-white"
-                          : index + 1 === currentStep
-                            ? "border-gti-bright-green text-gti-bright-green"
-                            : "border-gray-300 text-gray-300"
-                      }`}
-                    >
-                      {index + 1 < currentStep ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        <span className="text-sm font-medium">{step.id}</span>
-                      )}
-                    </div>
-                    {index < steps.length - 1 && (
-                      <div
-                        className={`w-12 h-0.5 ${index + 1 < currentStep ? "bg-gti-bright-green" : "bg-gray-300"}`}
-                      />
-                    )}
-                  </div>
-                ))}
               </div>
+              <Progress value={progress} className="mt-4" />
+            </CardHeader>
+          </Card>
+
+          <div className="flex justify-center">
+            <div className="flex items-center space-x-4">
+              {steps.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                  <button
+                    onClick={() => goToStep(index + 1)}
+                    className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all cursor-pointer ${
+                      index + 1 < currentStep
+                        ? "bg-gti-bright-green border-gti-bright-green text-white hover:bg-gti-medium-green hover:scale-110"
+                        : index + 1 === currentStep
+                          ? "border-gti-bright-green text-gti-bright-green bg-gti-bright-green/10 hover:bg-gti-bright-green/20"
+                          : "border-gray-300 text-gray-400 hover:border-gti-bright-green hover:text-gti-bright-green hover:scale-105"
+                    }`}
+                    title={`Go to ${step.name}`}
+                  >
+                    {index + 1 < currentStep ? (
+                      <Check className="w-4 h-4" />
+                    ) : (
+                      <span className="text-sm font-medium">{step.id}</span>
+                    )}
+                  </button>
+                  {index < steps.length - 1 && (
+                    <div className={`w-12 h-0.5 ${index + 1 < currentStep ? "bg-gti-bright-green" : "bg-gray-300"}`} />
+                  )}
+                </div>
+              ))}
             </div>
+          </div>
 
-            {/* Step Content */}
-            <div className="py-6">{renderStep()}</div>
+          {/* Step Content */}
+          <Card>
+            <CardContent className="p-6">{renderStep()}</CardContent>
+          </Card>
 
-            {/* Navigation Buttons */}
-            <div className="flex items-center justify-between pt-4 border-t">
-              <Button variant="outline" onClick={prevStep} disabled={currentStep === 1}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Previous
-              </Button>
+          {/* Navigation Buttons */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between w-full gap-4">
+                <Button
+                  variant="outline"
+                  onClick={prevStep}
+                  disabled={currentStep === 1}
+                  className="shrink-0 bg-transparent min-w-[120px]"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Previous
+                </Button>
 
-              <div className="flex items-center space-x-2">
                 {currentStep < steps.length ? (
                   <Button
                     onClick={nextStep}
                     disabled={!canProceed()}
-                    className="bg-gti-bright-green hover:bg-gti-medium-green text-white"
+                    className="bg-gti-bright-green hover:bg-gti-medium-green text-white shrink-0 min-w-[120px] ml-auto"
                   >
                     Next
                     <CustomArrow className="ml-2 h-4 w-4" color="#ffffff" />
@@ -348,17 +363,17 @@ export function CustomerDiscountEditModal({ isOpen, onClose, discountId, onSucce
                   <Button
                     onClick={handleSubmit}
                     disabled={!canProceed() || isSubmitting}
-                    className="bg-gti-bright-green hover:bg-gti-medium-green text-white"
+                    className="bg-gti-bright-green hover:bg-gti-medium-green text-white shrink-0 min-w-[180px] ml-auto"
                   >
                     <Check className="mr-2 h-4 w-4" />
                     {isSubmitting ? "Updating..." : "Update Discount"}
                   </Button>
                 )}
               </div>
-            </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   )
 }

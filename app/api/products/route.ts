@@ -1,81 +1,42 @@
-// Product management API endpoints
-
 import { type NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/api/database"
-import { createApiResponse, createPaginatedResponse, handleApiError, getPaginationParams } from "@/lib/api/utils"
-import { CreateProductSchema } from "@/lib/schemas"
-import { validateRequestBody } from "@/lib/api/utils"
+import { getProducts } from "@/lib/actions/products"
 
 export async function GET(request: NextRequest) {
   try {
     console.log("[v0] Products API: Starting GET request")
 
-    const { page, limit } = getPaginationParams(request)
-    const searchParams = request.nextUrl.searchParams
+    const result = await getProducts()
 
-    console.log("[v0] Products API: Pagination params - page:", page, "limit:", limit)
+    console.log("[v0] Products API: getProducts result:", {
+      success: result.success,
+      dataLength: result.data?.length,
+      error: result.error,
+    })
 
-    // Get filter parameters
-    const category = searchParams.get("category")
-    const brand = searchParams.get("brand")
-    const status = searchParams.get("status")
-
-    console.log("[v0] Products API: Filters - category:", category, "brand:", brand, "status:", status)
-
-    console.log("[v0] Products API: About to call db.getProducts")
-    const { data, total } = await db.getProducts(page, limit)
-    console.log("[v0] Products API: db.getProducts completed - data length:", data?.length, "total:", total)
-
-    if (!data || data.length === 0) {
-      console.log("[v0] Products API: No products found in database - returning empty array")
+    if (!result.success) {
+      console.error("[v0] Products API: Failed with error:", result.error)
       return NextResponse.json(
-        createPaginatedResponse(
-          [],
-          page,
-          limit,
-          0,
-          "No products found. Database may be empty - please run seed script.",
-        ),
-        { status: 200 },
+        {
+          success: false,
+          message: result.error || "Failed to fetch products",
+        },
+        { status: 500 },
       )
     }
 
-    // Apply filters (in a real implementation, this would be done in the database query)
-    let filteredData = data
-    if (category) {
-      filteredData = filteredData.filter((p) => (p.category || "").toLowerCase() === category.toLowerCase())
-    }
-    if (brand) {
-      filteredData = filteredData.filter((p) => (p.brand || "").toLowerCase() === brand.toLowerCase())
-    }
-
-    console.log("[v0] Products API: After filtering:", filteredData.length, "products")
-
-    return NextResponse.json(
-      createPaginatedResponse(filteredData, page, limit, filteredData.length, "Products retrieved successfully"),
-    )
+    return NextResponse.json({
+      success: true,
+      message: "Products retrieved successfully",
+      data: result.data,
+    })
   } catch (error) {
     console.error("[v0] Products API: Error occurred:", error)
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
-    console.error("[v0] Products API: Error details:", errorMessage)
-
-    if (error instanceof Error) {
-      console.error("[v0] Products API: Error stack:", error.stack)
-    }
 
     return NextResponse.json(
       {
         success: false,
-        message: `Failed to fetch products: ${errorMessage}`,
-        data: [],
-        error:
-          process.env.NODE_ENV === "development"
-            ? {
-                message: errorMessage,
-                stack: error instanceof Error ? error.stack : undefined,
-                details: error,
-              }
-            : undefined,
+        message: "Failed to fetch products",
+        error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
     )
@@ -84,14 +45,22 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    console.log("[v0] Products API: POST request received")
 
-    const validatedData = validateRequestBody(CreateProductSchema, body)
-
-    const product = await db.createProduct(validatedData)
-
-    return NextResponse.json(createApiResponse(product, "Product created successfully"), { status: 201 })
+    return NextResponse.json(
+      {
+        success: false,
+        message: "POST endpoint temporarily disabled for debugging",
+      },
+      { status: 503 },
+    )
   } catch (error) {
-    return handleApiError(error)
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Error in POST endpoint",
+      },
+      { status: 500 },
+    )
   }
 }

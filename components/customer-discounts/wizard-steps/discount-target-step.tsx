@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Package, Users, Award, Globe } from "lucide-react"
+import { Search, Package, Tag, Layers } from "lucide-react"
 import type { DiscountFormData } from "../customer-discount-wizard"
 
 interface DiscountTargetStepProps {
@@ -12,34 +12,35 @@ interface DiscountTargetStepProps {
   updateFormData: (updates: Partial<DiscountFormData>) => void
 }
 
-// Mock data - in real app this would come from API
 const mockTargets = {
-  customer: [
-    { id: "customer-1", name: "Premium Cannabis Co", type: "Individual Customer", productCount: 47 },
-    { id: "customer-2", name: "Incredibles Retail", type: "Business Customer", productCount: 23 },
-    { id: "customer-3", name: "Green Thumb Dispensary", type: "Wholesale Customer", productCount: 89 },
-    { id: "customer-4", name: "Rise Collective", type: "Premium Customer", productCount: 156 },
+  product: [
+    { id: "product-1", name: "Premium Flower - Indica", type: "Product", sku: "PF-IND-001" },
+    { id: "product-2", name: "Vape Cartridge - Hybrid", type: "Product", sku: "VC-HYB-002" },
+    { id: "product-3", name: "Edibles - Gummies 10mg", type: "Product", sku: "ED-GUM-003" },
+    { id: "product-4", name: "Concentrate - Live Resin", type: "Product", sku: "CN-LR-004" },
   ],
-  tier: [
-    { id: "tier-1", name: "Premium Tier", type: "High-value customers", productCount: 234 },
-    { id: "tier-2", name: "Standard Tier", type: "Regular customers", productCount: 89 },
-    { id: "tier-3", name: "Basic Tier", type: "New customers", productCount: 67 },
-    { id: "tier-4", name: "VIP Tier", type: "Exclusive customers", productCount: 45 },
+  brand: [
+    { id: "brand-1", name: "Green Harvest", type: "Premium Brand", productCount: 47 },
+    { id: "brand-2", name: "Cloud Nine", type: "Vape Brand", productCount: 23 },
+    { id: "brand-3", name: "Pure Bliss", type: "Edibles Brand", productCount: 89 },
+    { id: "brand-4", name: "Crystal Clear", type: "Concentrate Brand", productCount: 34 },
   ],
-  market: [
-    { id: "market-1", name: "California", type: "State Market", productCount: 1234 },
-    { id: "market-2", name: "Bay Area", type: "Regional Market", productCount: 456 },
-    { id: "market-3", name: "Los Angeles", type: "City Market", productCount: 789 },
-    { id: "market-4", name: "San Diego", type: "City Market", productCount: 321 },
+  category: [
+    { id: "category-1", name: "Flower", type: "Product Category", productCount: 234 },
+    { id: "category-2", name: "Vapes", type: "Product Category", productCount: 89 },
+    { id: "category-3", name: "Edibles", type: "Product Category", productCount: 156 },
+    { id: "category-4", name: "Concentrates", type: "Product Category", productCount: 67 },
   ],
 }
 
+type TargetType = "product" | "brand" | "category"
+
 export function DiscountTargetStep({ formData, updateFormData }: DiscountTargetStepProps) {
   const [searchTerm, setSearchTerm] = useState("")
+  const [targetType, setTargetType] = useState<TargetType>("category")
 
   const getTargets = () => {
-    if (!formData.level) return []
-    return mockTargets[formData.level] || []
+    return mockTargets[targetType] || []
   }
 
   const filteredTargets = getTargets().filter((target) => target.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -53,43 +54,60 @@ export function DiscountTargetStep({ formData, updateFormData }: DiscountTargetS
   }
 
   const getLevelIcon = () => {
-    switch (formData.level) {
-      case "customer":
-        return <Users className="h-4 w-4" />
-      case "tier":
-        return <Award className="h-4 w-4" />
-      case "market":
-        return <Globe className="h-4 w-4" />
+    switch (targetType) {
+      case "product":
+        return <Package className="h-4 w-4" />
+      case "brand":
+        return <Tag className="h-4 w-4" />
+      case "category":
+        return <Layers className="h-4 w-4" />
       default:
         return <Package className="h-4 w-4" />
-    }
-  }
-
-  const getLevelTitle = () => {
-    switch (formData.level) {
-      case "customer":
-        return "Select Customer"
-      case "tier":
-        return "Select Tier"
-      case "market":
-        return "Select Market"
-      default:
-        return "Select Target"
     }
   }
 
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gti-dark-green">{getLevelTitle()}</h2>
-        <p className="text-muted-foreground mt-2">Choose the specific {formData.level} for this discount rule</p>
+        <h2 className="text-2xl font-bold text-gti-dark-green">Select Discount Target</h2>
+        <p className="text-muted-foreground mt-2">Choose which products, brands, or categories will be discounted</p>
+      </div>
+
+      <div className="flex justify-center gap-2">
+        <button
+          onClick={() => setTargetType("category")}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            targetType === "category" ? "bg-gti-bright-green text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          <Layers className="h-4 w-4 inline mr-2" />
+          Category
+        </button>
+        <button
+          onClick={() => setTargetType("brand")}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            targetType === "brand" ? "bg-gti-bright-green text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          <Tag className="h-4 w-4 inline mr-2" />
+          Brand
+        </button>
+        <button
+          onClick={() => setTargetType("product")}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            targetType === "product" ? "bg-gti-bright-green text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          <Package className="h-4 w-4 inline mr-2" />
+          Product
+        </button>
       </div>
 
       {/* Search */}
       <div className="relative max-w-md mx-auto">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
-          placeholder={`Search ${formData.level}s...`}
+          placeholder={`Search ${targetType}s...`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
@@ -115,11 +133,14 @@ export function DiscountTargetStep({ formData, updateFormData }: DiscountTargetS
                   <div>
                     <p className="font-medium">{target.name}</p>
                     <p className="text-xs text-muted-foreground">{target.type}</p>
+                    {target.sku && <p className="text-xs text-muted-foreground mt-1">SKU: {target.sku}</p>}
                   </div>
                 </div>
-                <Badge variant="secondary" className="text-xs">
-                  {target.productCount} items
-                </Badge>
+                {target.productCount && (
+                  <Badge variant="secondary" className="text-xs">
+                    {target.productCount} items
+                  </Badge>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -129,7 +150,7 @@ export function DiscountTargetStep({ formData, updateFormData }: DiscountTargetS
       {filteredTargets.length === 0 && searchTerm && (
         <div className="text-center py-8">
           <p className="text-muted-foreground">
-            No {formData.level}s found matching "{searchTerm}"
+            No {targetType}s found matching "{searchTerm}"
           </p>
         </div>
       )}
@@ -141,7 +162,7 @@ export function DiscountTargetStep({ formData, updateFormData }: DiscountTargetS
             <p className="text-sm font-medium text-gti-dark-green">Selected: {formData.targetName}</p>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Discount will apply to all items in this {formData.level}
+            Discount will apply to this {targetType} for selected customers
           </p>
         </div>
       )}

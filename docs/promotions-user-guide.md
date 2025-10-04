@@ -58,6 +58,96 @@ Each section shows:
 
 ## Creating Promotions
 
+### Bulk Upload Feature
+
+For creating multiple promotions at once, use the Bulk Upload feature:
+
+#### How to Use Bulk Upload
+
+1. **Access Bulk Upload**: Click the "Bulk Upload" button in any promotion section
+2. **Select Promotion Type**: Choose from:
+   - BOGO Promotions
+   - Customer Discounts
+   - Inventory Discounts (Attribute-Based)
+   - Bundle Deals
+3. **Download Template**: Click "Download CSV Template" to get the correct format
+4. **Fill in Your Data**: Open the template in Excel or Google Sheets and add your promotions
+5. **Upload File**: Select your completed CSV file and click "Upload Promotions"
+6. **Review Results**: See how many promotions were created successfully and any errors
+
+#### CSV Template Formats
+
+**BOGO Promotions Template:**
+\`\`\`csv
+name,type,triggerLevel,triggerValue,rewardType,rewardValue,startDate,endDate,status
+"Summer BOGO - Incredibles",traditional,brand,Incredibles,free,100,2025-06-01T00:00:00Z,2025-08-31T23:59:59Z,active
+\`\`\`
+
+**Customer Discounts Template:**
+\`\`\`csv
+name,type,value,level,target,customerTiers,markets,startDate,endDate,status
+"VIP Brand Discount",percentage,15,brand,Incredibles,"A,B",California,2025-06-01T00:00:00Z,2025-12-31T23:59:59Z,active
+\`\`\`
+
+**Inventory Discounts Template:**
+\`\`\`csv
+name,type,triggerValue,discountType,discountValue,scope,scopeValue,status
+"30-Day Expiration Discount",expiration,30,percentage,20,all,,active
+"Low THC Flower Discount",thc,15,percentage,15,category,Flower,active
+\`\`\`
+
+**Bundle Deals Template:**
+\`\`\`csv
+name,type,products,discountType,discountValue,minQuantity,startDate,endDate,status
+"Summer Bundle",fixed,"prod_123,prod_456,prod_789",percentage,20,3,2025-06-01T00:00:00Z,2025-08-31T23:59:59Z,active
+\`\`\`
+
+#### Field Descriptions
+
+**Common Fields:**
+- `name`: Promotion name (required, max 100 characters)
+- `status`: "active", "inactive", or "scheduled" (defaults to "active")
+- `startDate`/`endDate`: ISO 8601 format (YYYY-MM-DDTHH:mm:ssZ)
+
+**BOGO-Specific:**
+- `type`: "traditional", "percentage", or "fixed"
+- `triggerLevel`: "item", "brand", or "category"
+- `triggerValue`: Product name, brand name, or category name
+- `rewardType`: "free", "percentage", or "fixed"
+- `rewardValue`: Number (0-100 for percentage, dollar amount for fixed)
+
+**Customer Discount-Specific:**
+- `type`: "percentage" or "fixed"
+- `value`: Discount amount (0-100 for percentage)
+- `level`: "brand", "category", "subcategory", "size", or "batch"
+- `target`: Target name (brand name, category name, etc.)
+- `customerTiers`: Comma-separated list (e.g., "A,B,C")
+- `markets`: Comma-separated list (e.g., "California,Nevada")
+
+**Inventory Discount-Specific:**
+- `type`: "expiration" or "thc"
+- `triggerValue`: Days (for expiration) or THC percentage (for thc)
+- `discountType`: "percentage" or "fixed"
+- `discountValue`: Discount amount
+- `scope`: "all", "category", or "brand"
+- `scopeValue`: Required if scope is not "all"
+
+**Bundle Deal-Specific:**
+- `type`: "fixed", "category", "mix_match", or "tiered"
+- `products`: Comma-separated product IDs (e.g., "prod_123,prod_456")
+- `discountType`: "percentage" or "fixed"
+- `discountValue`: Discount amount
+- `minQuantity`: Minimum number of items required
+
+#### Tips for Successful Bulk Uploads
+
+- **Use the template**: Always start with the downloaded template to ensure correct formatting
+- **Check dates**: Use ISO 8601 format (YYYY-MM-DDTHH:mm:ssZ) for all dates
+- **Validate data**: Ensure percentages don't exceed 100%, dates are in correct order
+- **Test first**: Upload a small batch first to verify your data format
+- **Review errors**: If any rows fail, the error message will tell you exactly what's wrong
+- **Keep backups**: Save your CSV files for future reference or modifications
+
 ### MVP Discounts (Percentage & Dollar Off)
 
 #### Creating an Item-Level Promotion

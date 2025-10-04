@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@custom-variant dark (&:is(.dark *));
 
 :root {
   --background: oklch(1 0 0);
@@ -35,6 +36,12 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Adding GTI brand colors */
+  --gti-bright-green: #22c55e;
+  --gti-medium-green: #16a34a;
+  --gti-dark-green: #15803d;
+  --gti-light-green: #86efac;
 }
 
 .dark {
@@ -70,6 +77,12 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+
+  /* GTI colors remain the same in dark mode */
+  --gti-bright-green: #22c55e;
+  --gti-medium-green: #16a34a;
+  --gti-dark-green: #15803d;
+  --gti-light-green: #86efac;
 }
 
 @theme inline {
@@ -110,6 +123,12 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Registering GTI colors for Tailwind */
+  --color-gti-bright-green: var(--gti-bright-green);
+  --color-gti-medium-green: var(--gti-medium-green);
+  --color-gti-dark-green: var(--gti-dark-green);
+  --color-gti-light-green: var(--gti-light-green);
 }
 
 @layer base {

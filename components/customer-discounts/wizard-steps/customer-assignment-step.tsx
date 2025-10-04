@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Users, Building, MapPin, X, Loader2 } from "lucide-react"
+import { Search, Users, Building, MapPin, X, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import type { DiscountFormData } from "../customer-discount-wizard"
 
 interface CustomerAssignmentStepProps {
@@ -16,8 +16,7 @@ interface CustomerAssignmentStepProps {
 
 interface Customer {
   id: string
-  name: string
-  email: string
+  business_legal_name: string
   tier: string
   market: string
   status: string
@@ -28,8 +27,7 @@ interface Customer {
 const mockCustomers: Customer[] = [
   {
     id: "1",
-    name: "Elite Cannabis Co",
-    email: "orders@elitecannabis.com",
+    business_legal_name: "Elite Cannabis Co",
     tier: "premium",
     market: "Illinois",
     status: "active",
@@ -38,8 +36,7 @@ const mockCustomers: Customer[] = [
   },
   {
     id: "2",
-    name: "Premium Dispensary LLC",
-    email: "purchasing@premiumdisp.com",
+    business_legal_name: "Premium Dispensary LLC",
     tier: "standard",
     market: "California",
     status: "active",
@@ -51,9 +48,13 @@ const mockCustomers: Customer[] = [
 export function CustomerAssignmentStep({ formData, updateFormData }: CustomerAssignmentStepProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTier, setSelectedTier] = useState<string>("")
-  const [customers, setCustomers] = useState<Customer[]>([]) // Ensure customers is always initialized as an array
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const customersPerPage = 10
+
+  const [selectedCustomers, setSelectedCustomers] = useState<Array<{ id: string; name: string }>>([])
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -62,7 +63,7 @@ export function CustomerAssignmentStep({ formData, updateFormData }: CustomerAss
         setLoading(true)
         setError(null)
 
-        const response = await fetch("/api/customers?limit=50")
+        const response = await fetch("/api/customers")
 
         if (!response.ok) {
           console.log("[v0] API failed, using mock data")
@@ -84,8 +85,7 @@ export function CustomerAssignmentStep({ formData, updateFormData }: CustomerAss
         if (data?.success && Array.isArray(data.data)) {
           const customerData = data.data.map((customer: any) => ({
             id: customer?.id || "",
-            name: customer?.name || "Unknown Customer",
-            email: customer?.email || "",
+            business_legal_name: customer?.business_legal_name || "Unknown Customer",
             tier: customer?.tier || "standard",
             market: customer?.market || "Unknown",
             status: customer?.status || "active",
@@ -112,7 +112,7 @@ export function CustomerAssignmentStep({ formData, updateFormData }: CustomerAss
   const filteredCustomers = Array.isArray(customers)
     ? customers.filter((customer) => {
         const searchLower = (searchTerm || "").toLowerCase()
-        const nameMatch = (customer?.name || "").toLowerCase().includes(searchLower)
+        const nameMatch = (customer?.business_legal_name || "").toLowerCase().includes(searchLower)
         const marketMatch = (customer?.market || "").toLowerCase().includes(searchLower)
         const matchesSearch = nameMatch || marketMatch
         const matchesTier = !selectedTier || customer?.tier === selectedTier
@@ -120,37 +120,48 @@ export function CustomerAssignmentStep({ formData, updateFormData }: CustomerAss
       })
     : []
 
+  const totalPages = Math.ceil(filteredCustomers.length / customersPerPage)
+  const startIndex = (currentPage - 1) * customersPerPage
+  const endIndex = startIndex + customersPerPage
+  const paginatedCustomers = filteredCustomers.slice(startIndex, endIndex)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, selectedTier])
+
   const handleCustomerToggle = useCallback(
     (customerId: string, customerName: string) => {
-      const currentCustomers = Array.isArray(formData?.customers) ? formData.customers : []
-      const isSelected = currentCustomers.includes(customerName)
+      const isSelected = selectedCustomers.some((c) => c.id === customerId)
 
+      let newSelectedCustomers
       if (isSelected) {
-        updateFormData({
-          customers: currentCustomers.filter((name) => name !== customerName),
-        })
+        newSelectedCustomers = selectedCustomers.filter((c) => c.id !== customerId)
       } else {
-        updateFormData({
-          customers: [...currentCustomers, customerName],
-        })
+        newSelectedCustomers = [...selectedCustomers, { id: customerId, name: customerName }]
       }
+
+      setSelectedCustomers(newSelectedCustomers)
+      // Update formData with just the IDs
+      updateFormData({
+        customers: newSelectedCustomers.map((c) => c.id),
+      })
     },
-    [formData?.customers, updateFormData],
+    [selectedCustomers, updateFormData],
   )
 
   const handleRemoveCustomer = useCallback(
-    (customerName: string) => {
-      const currentCustomers = Array.isArray(formData?.customers) ? formData.customers : []
+    (customerId: string) => {
+      const newSelectedCustomers = selectedCustomers.filter((c) => c.id !== customerId)
+      setSelectedCustomers(newSelectedCustomers)
       updateFormData({
-        customers: currentCustomers.filter((name) => name !== customerName),
+        customers: newSelectedCustomers.map((c) => c.id),
       })
     },
-    [formData?.customers, updateFormData],
+    [selectedCustomers, updateFormData],
   )
 
-  const isCustomerSelected = (customerName: string) => {
-    const currentCustomers = Array.isArray(formData?.customers) ? formData.customers : []
-    return currentCustomers.includes(customerName)
+  const isCustomerSelected = (customerId: string) => {
+    return selectedCustomers.some((c) => c.id === customerId)
   }
 
   const getTierColor = (tier: string) => {
@@ -166,7 +177,7 @@ export function CustomerAssignmentStep({ formData, updateFormData }: CustomerAss
     }
   }
 
-  const selectedCustomersCount = Array.isArray(formData?.customers) ? formData.customers.length : 0
+  const selectedCustomersCount = selectedCustomers.length
 
   if (loading) {
     return (
@@ -207,7 +218,6 @@ export function CustomerAssignmentStep({ formData, updateFormData }: CustomerAss
         <p className="text-muted-foreground mt-2">Select which customers will receive this discount</p>
       </div>
 
-      {/* Selected Customers Summary */}
       {selectedCustomersCount > 0 && (
         <Card>
           <CardHeader>
@@ -218,18 +228,18 @@ export function CustomerAssignmentStep({ formData, updateFormData }: CustomerAss
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {(formData?.customers || []).map((customerName) => (
+              {selectedCustomers.map((customer) => (
                 <Badge
-                  key={customerName}
+                  key={customer.id}
                   variant="secondary"
                   className="flex items-center space-x-1 bg-gti-light-green/20 text-gti-dark-green"
                 >
-                  <span>{customerName}</span>
+                  <span>{customer.name}</span>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => handleRemoveCustomer(customerName)}
+                    onClick={() => handleRemoveCustomer(customer.id)}
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -240,7 +250,6 @@ export function CustomerAssignmentStep({ formData, updateFormData }: CustomerAss
         </Card>
       )}
 
-      {/* Search and Filters */}
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -283,34 +292,31 @@ export function CustomerAssignmentStep({ formData, updateFormData }: CustomerAss
         </CardContent>
       </Card>
 
-      {/* Customer List */}
       <div className="grid gap-3">
-        {filteredCustomers.map((customer) => (
+        {paginatedCustomers.map((customer) => (
           <Card
             key={customer.id}
             className={`cursor-pointer transition-all hover:shadow-md ${
-              isCustomerSelected(customer.name)
+              isCustomerSelected(customer.id)
                 ? "ring-2 ring-gti-bright-green border-gti-bright-green bg-gti-light-green/5"
                 : "hover:border-gti-light-green"
             }`}
-            onMouseDown={(e) => {
+            onClick={(e) => {
               e.preventDefault()
-              handleCustomerToggle(customer.id, customer.name)
+              handleCustomerToggle(customer.id, customer.business_legal_name)
             }}
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <Checkbox checked={isCustomerSelected(customer.name)} readOnly />
+                  <Checkbox checked={isCustomerSelected(customer.id)} readOnly />
                   <div className="flex items-center space-x-2">
                     <Building className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="font-medium">{customer.name}</p>
+                      <p className="font-medium">{customer.business_legal_name}</p>
                       <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                         <MapPin className="h-3 w-3" />
                         <span>{customer.market}</span>
-                        <span>•</span>
-                        <span>{customer.email}</span>
                       </div>
                     </div>
                   </div>
@@ -339,7 +345,56 @@ export function CustomerAssignmentStep({ formData, updateFormData }: CustomerAss
         </div>
       )}
 
-      {/* Summary */}
+      {filteredCustomers.length > customersPerPage && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Showing {startIndex + 1}-{Math.min(endIndex, filteredCustomers.length)} of {filteredCustomers.length}{" "}
+                customers
+              </p>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <Button
+                      key={page}
+                      variant={page === currentPage ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                      className={
+                        page === currentPage
+                          ? "bg-gti-bright-green hover:bg-gti-medium-green min-w-[36px]"
+                          : "min-w-[36px]"
+                      }
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {selectedCustomersCount > 0 && (
         <div className="bg-gti-light-green/10 border border-gti-light-green rounded-lg p-4">
           <div className="flex items-center space-x-2">

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { ChevronLeft, ChevronRight, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, X, Check } from "lucide-react"
 import { BundleTypeStep } from "./wizard-steps/bundle-type-step"
 import { BundleProductsStep } from "./wizard-steps/bundle-products-step"
 import { BundlePricingStep } from "./wizard-steps/bundle-pricing-step"
@@ -17,6 +17,7 @@ interface BundleDealEditModalProps {
   isOpen: boolean
   onClose: () => void
   bundleId: string
+  initialStep?: number
   onSuccess: () => void
 }
 
@@ -29,8 +30,14 @@ const steps = [
   { id: 6, title: "Review", description: "Review and update bundle" },
 ]
 
-export function BundleDealEditModal({ isOpen, onClose, bundleId, onSuccess }: BundleDealEditModalProps) {
-  const [currentStep, setCurrentStep] = useState(1)
+export function BundleDealEditModal({
+  isOpen,
+  onClose,
+  bundleId,
+  initialStep = 1,
+  onSuccess,
+}: BundleDealEditModalProps) {
+  const [currentStep, setCurrentStep] = useState(initialStep)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [bundleData, setBundleData] = useState({
@@ -53,6 +60,12 @@ export function BundleDealEditModal({ isOpen, onClose, bundleId, onSuccess }: Bu
   })
 
   const { toast } = useToast()
+
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentStep(initialStep)
+    }
+  }, [initialStep, isOpen])
 
   // Load existing bundle data when modal opens
   useEffect(() => {
@@ -210,6 +223,10 @@ export function BundleDealEditModal({ isOpen, onClose, bundleId, onSuccess }: Bu
     onClose()
   }
 
+  const handleStepClick = (stepId: number) => {
+    setCurrentStep(stepId)
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -244,6 +261,36 @@ export function BundleDealEditModal({ isOpen, onClose, bundleId, onSuccess }: Bu
           </div>
         ) : (
           <>
+            <div className="flex justify-center mb-6">
+              <div className="flex items-center space-x-4">
+                {steps.map((step, index) => (
+                  <div key={step.id} className="flex items-center">
+                    <button
+                      onClick={() => handleStepClick(step.id)}
+                      className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-colors ${
+                        index + 1 < currentStep
+                          ? "bg-gti-bright-green border-gti-bright-green text-white cursor-pointer hover:bg-gti-medium-green"
+                          : index + 1 === currentStep
+                            ? "border-gti-bright-green text-gti-bright-green cursor-pointer hover:border-gti-medium-green"
+                            : "border-gray-300 text-gray-300 cursor-pointer hover:border-gray-400"
+                      }`}
+                    >
+                      {index + 1 < currentStep ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <span className="text-sm font-medium">{step.id}</span>
+                      )}
+                    </button>
+                    {index < steps.length - 1 && (
+                      <div
+                        className={`w-12 h-0.5 ${index + 1 < currentStep ? "bg-gti-bright-green" : "bg-gray-300"}`}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Step Content */}
             <div className="py-6">{renderStep()}</div>
 
@@ -253,21 +300,6 @@ export function BundleDealEditModal({ isOpen, onClose, bundleId, onSuccess }: Bu
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Previous
               </Button>
-
-              <div className="flex items-center gap-2">
-                {steps.map((step) => (
-                  <div
-                    key={step.id}
-                    className={`w-3 h-3 rounded-full ${
-                      step.id === currentStep
-                        ? "bg-gti-bright-green"
-                        : step.id < currentStep
-                          ? "bg-gti-medium-green"
-                          : "bg-gray-200"
-                    }`}
-                  />
-                ))}
-              </div>
 
               <div className="flex items-center space-x-2">
                 {currentStep < steps.length ? (

@@ -93,17 +93,25 @@ export class PriceTrackingDatabase {
 
   async getTrackingStats(): Promise<PriceTrackingStats> {
     try {
+      console.log("[v0] Fetching tracking stats...")
       // Get active alerts count
       const { count: activeAlerts } = await this.supabase
         .from("price_alerts")
         .select("*", { count: "exact", head: true })
-        .eq("status", "active")
+        .eq("is_active", true)
+
+      console.log("[v0] Active alerts:", activeAlerts)
 
       // Get tracked products count
-      const { count: trackedProducts } = await this.supabase
+      const { count: trackedProducts, error: trackedError } = await this.supabase
         .from("product_tracking_settings")
         .select("*", { count: "exact", head: true })
         .eq("alert_enabled", true)
+
+      if (trackedError) {
+        console.error("[v0] Error fetching tracked products:", trackedError)
+      }
+      console.log("[v0] Tracked products:", trackedProducts)
 
       // Get price updates today
       const today = new Date()
@@ -111,7 +119,9 @@ export class PriceTrackingDatabase {
       const { count: priceUpdatesToday } = await this.supabase
         .from("price_history")
         .select("*", { count: "exact", head: true })
-        .gte("recorded_at", today.toISOString())
+        .gte("scraped_at", today.toISOString())
+
+      console.log("[v0] Price updates today:", priceUpdatesToday)
 
       // Calculate average price change (simplified - would need more complex query in production)
       const avgPriceChange = -3.2 // Mock value for now
@@ -123,7 +133,7 @@ export class PriceTrackingDatabase {
         avg_price_change: avgPriceChange,
       }
     } catch (error) {
-      console.error("Error fetching tracking stats:", error)
+      console.error("[v0] Error fetching tracking stats:", error)
       return {
         active_alerts: 0,
         tracked_products: 0,
@@ -143,25 +153,39 @@ export class PriceTrackingDatabase {
             name,
             sku,
             category
-          ),
-          price_sources (
-            name
           )
         `)
-        .order("triggered_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(limit)
 
       if (status && status !== "all") {
-        query = query.eq("status", status)
+        if (status === "active") {
+          query = query.eq("is_active", true)
+        }
       }
 
       const { data, error } = await query
 
-      if (error) throw error
+      if (error) {
+        console.error("[v0] Error fetching price alerts:", error)
+        throw error
+      }
 
-      return data || []
+      return (data || []).map((alert) => ({
+        ...alert,
+        source_id: "", // Not available in current schema
+        alert_type: alert.alert_type || "threshold",
+        threshold_value: alert.target_price,
+        threshold_type: "amount" as const,
+        current_price: 0, // Would need to fetch from price_history
+        previous_price: 0,
+        change_amount: 0,
+        change_percentage: 0,
+        status: alert.is_active ? "active" : "resolved",
+        triggered_at: alert.triggered_at || alert.created_at,
+      })) as PriceAlert[]
     } catch (error) {
-      console.error("Error fetching price alerts:", error)
+      console.error("[v0] Error fetching price alerts:", error)
       return []
     }
   }
@@ -169,14 +193,7 @@ export class PriceTrackingDatabase {
   async updateAlertStatus(alertId: string, status: "acknowledged" | "resolved"): Promise<boolean> {
     try {
       const updateData: any = {
-        status,
-        updated_at: new Date().toISOString(),
-      }
-
-      if (status === "acknowledged") {
-        updateData.acknowledged_at = new Date().toISOString()
-      } else if (status === "resolved") {
-        updateData.resolved_at = new Date().toISOString()
+        is_active: status !== "resolved",
       }
 
       const { error } = await this.supabase.from("price_alerts").update(updateData).eq("id", alertId)
@@ -184,13 +201,14 @@ export class PriceTrackingDatabase {
       if (error) throw error
       return true
     } catch (error) {
-      console.error("Error updating alert status:", error)
+      console.error("[v0] Error updating alert status:", error)
       return false
     }
   }
 
   async getTrackedProducts(): Promise<TrackedProduct[]> {
     try {
+      console.log("[v0] Fetching tracked products...")
       const { data, error } = await this.supabase
         .from("products")
         .select(`
@@ -204,7 +222,12 @@ export class PriceTrackingDatabase {
         `)
         .not("product_tracking_settings", "is", null)
 
-      if (error) throw error
+      if (error) {
+        console.error("[v0] Error fetching tracked products:", error)
+        throw error
+      }
+
+      console.log("[v0] Raw tracked products data:", data?.length || 0)
 
       // Transform data and calculate additional fields
       const trackedProducts = await Promise.all(
@@ -212,9 +235,9 @@ export class PriceTrackingDatabase {
           // Get current price (latest price from history)
           const { data: latestPrice } = await this.supabase
             .from("price_history")
-            .select("price, recorded_at")
+            .select("price, scraped_at")
             .eq("product_id", product.id)
-            .order("recorded_at", { ascending: false })
+            .order("scraped_at", { ascending: false })
             .limit(1)
             .single()
 
@@ -231,8 +254,8 @@ export class PriceTrackingDatabase {
             .from("price_history")
             .select("price")
             .eq("product_id", product.id)
-            .lte("recorded_at", yesterday.toISOString())
-            .order("recorded_at", { ascending: false })
+            .lte("scraped_at", yesterday.toISOString())
+            .order("scraped_at", { ascending: false })
             .limit(1)
             .single()
 
@@ -242,7 +265,7 @@ export class PriceTrackingDatabase {
             .select("source_id", { count: "exact", head: true })
             .eq("product_id", product.id)
 
-          const currentPrice = latestPrice?.price || 0
+          const currentPrice = latestPrice?.price || product.price || 0
           const yesterdayPriceValue = yesterdayPrice?.price || currentPrice
           const priceChange24h = currentPrice - yesterdayPriceValue
           const priceChangePercentage = yesterdayPriceValue > 0 ? (priceChange24h / yesterdayPriceValue) * 100 : 0
@@ -267,16 +290,66 @@ export class PriceTrackingDatabase {
             alert_threshold: settings?.alert_threshold || 10,
             alert_type: settings?.alert_type || "percentage",
             sources_count: sourcesCount || 0,
-            last_updated: latestPrice?.recorded_at || product.updated_at,
+            last_updated: latestPrice?.scraped_at || product.updated_at,
             product_tracking_settings: settings,
           }
         }),
       )
 
+      console.log("[v0] Processed tracked products:", trackedProducts.length)
       return trackedProducts
     } catch (error) {
-      console.error("Error fetching tracked products:", error)
+      console.error("[v0] Error fetching tracked products:", error)
       return []
+    }
+  }
+
+  async getAvailableProducts(): Promise<any[]> {
+    try {
+      const { data: allProducts, error: productsError } = await this.supabase
+        .from("products")
+        .select("id, name, sku, category")
+        .limit(100)
+
+      if (productsError) throw productsError
+
+      const { data: trackedSettings, error: settingsError } = await this.supabase
+        .from("product_tracking_settings")
+        .select("product_id")
+
+      if (settingsError) {
+        console.error("[v0] Error fetching tracked settings:", settingsError)
+        // Return all products if we can't get tracked ones
+        return allProducts || []
+      }
+
+      const trackedIds = new Set(trackedSettings?.map((s) => s.product_id) || [])
+
+      const availableProducts = (allProducts || []).filter((product) => !trackedIds.has(product.id))
+
+      console.log("[v0] Available products (not tracked):", availableProducts.length)
+      return availableProducts
+    } catch (error) {
+      console.error("[v0] Error fetching available products:", error)
+      return []
+    }
+  }
+
+  async addProductToTracking(productId: string, threshold: number): Promise<boolean> {
+    try {
+      const { error } = await this.supabase.from("product_tracking_settings").insert({
+        product_id: productId,
+        alert_enabled: true,
+        alert_threshold: threshold,
+        alert_type: "percentage",
+        email_notifications: true,
+      })
+
+      if (error) throw error
+      return true
+    } catch (error) {
+      console.error("[v0] Error adding product to tracking:", error)
+      return false
     }
   }
 
@@ -294,7 +367,7 @@ export class PriceTrackingDatabase {
       if (error) throw error
       return true
     } catch (error) {
-      console.error("Error updating tracking settings:", error)
+      console.error("[v0] Error updating tracking settings:", error)
       return false
     }
   }
@@ -314,7 +387,7 @@ export class PriceTrackingDatabase {
             name
           )
         `)
-        .order("recorded_at", { ascending: false })
+        .order("scraped_at", { ascending: false })
         .limit(limit)
 
       if (productId && productId !== "all") {
@@ -325,9 +398,14 @@ export class PriceTrackingDatabase {
 
       if (error) throw error
 
-      return data || []
+      return (data || []).map((record) => ({
+        ...record,
+        recorded_at: record.scraped_at,
+        change_from_previous: 0, // Would need calculation
+        change_percentage: 0, // Would need calculation
+      })) as PriceHistory[]
     } catch (error) {
-      console.error("Error fetching price history:", error)
+      console.error("[v0] Error fetching price history:", error)
       return []
     }
   }
@@ -344,26 +422,41 @@ export class PriceTrackingDatabase {
           product_id: productId,
           source_id: sourceId,
           price,
+          scraped_at: new Date().toISOString(),
         })
         .select()
         .single()
 
       if (error) throw error
 
-      // Check if any alerts were triggered (the trigger function handles this)
+      // Check if any alerts were triggered
       const { data: newAlerts } = await this.supabase
         .from("price_alerts")
         .select("*")
         .eq("product_id", productId)
-        .order("triggered_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(1)
 
       return {
         success: true,
-        alert: newAlerts?.[0] || undefined,
+        alert: newAlerts?.[0]
+          ? ({
+              ...newAlerts[0],
+              source_id: sourceId,
+              alert_type: newAlerts[0].alert_type || "threshold",
+              threshold_value: newAlerts[0].target_price,
+              threshold_type: "amount" as const,
+              current_price: price,
+              previous_price: 0,
+              change_amount: 0,
+              change_percentage: 0,
+              status: newAlerts[0].is_active ? "active" : "resolved",
+              triggered_at: newAlerts[0].triggered_at || newAlerts[0].created_at,
+            } as PriceAlert)
+          : undefined,
       }
     } catch (error) {
-      console.error("Error adding price record:", error)
+      console.error("[v0] Error adding price record:", error)
       return { success: false }
     }
   }
@@ -378,21 +471,16 @@ export class PriceTrackingDatabase {
     try {
       const { error } = await this.supabase.from("price_alerts").insert({
         product_id: productId,
-        source_id: sourceId,
+        user_id: null, // Would need actual user ID
         alert_type: alertType,
-        threshold_value: thresholdValue,
-        threshold_type: thresholdType,
-        current_price: 0, // Will be updated by trigger
-        previous_price: 0, // Will be updated by trigger
-        change_amount: 0, // Will be updated by trigger
-        change_percentage: 0, // Will be updated by trigger
-        status: "active",
+        target_price: thresholdValue || 0,
+        is_active: true,
       })
 
       if (error) throw error
       return true
     } catch (error) {
-      console.error("Error creating custom alert:", error)
+      console.error("[v0] Error creating custom alert:", error)
       return false
     }
   }

@@ -53,7 +53,7 @@ export function useCustomers() {
         const newCustomer = await customerRepository.save(
           new CustomerEntity(
             "new",
-            customerData.name,
+            customerData.businessLegalName,
             customerData.email,
             customerData.tier,
             customerData.market,
@@ -68,7 +68,7 @@ export function useCustomers() {
           payload: {
             type: "success",
             title: "Customer Created",
-            message: `Successfully created ${newCustomer.name}`,
+            message: `Successfully created ${newCustomer.businessLegalName}`,
           },
         })
 

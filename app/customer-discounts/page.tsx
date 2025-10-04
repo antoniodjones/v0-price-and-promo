@@ -14,8 +14,8 @@ export default function CustomerDiscountsPage() {
           </p>
         </div>
         <Link href="/customer-discounts/new">
-          <Button className="bg-gti-bright-green hover:bg-gti-medium-green text-white">
-            <Plus className="mr-2 h-4 w-4" />
+          <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg">
+            <Plus className="mr-2 h-5 w-5" />
             Create Discount
           </Button>
         </Link>

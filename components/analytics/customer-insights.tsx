@@ -54,7 +54,7 @@ export function CustomerInsights({ selectedMarket, dateRange }: CustomerInsights
 
   const topCustomers = [
     {
-      name: "Elite Cannabis Co",
+      business_legal_name: "Elite Cannabis Co",
       tier: "A-Tier",
       totalOrders: 156,
       totalSpent: "$445K",
@@ -64,7 +64,7 @@ export function CustomerInsights({ selectedMarket, dateRange }: CustomerInsights
       status: "Active",
     },
     {
-      name: "Premium Dispensary LLC",
+      business_legal_name: "Premium Dispensary LLC",
       tier: "A-Tier",
       totalOrders: 142,
       totalSpent: "$398K",
@@ -74,7 +74,7 @@ export function CustomerInsights({ selectedMarket, dateRange }: CustomerInsights
       status: "Active",
     },
     {
-      name: "High Volume Buyer",
+      business_legal_name: "High Volume Buyer",
       tier: "B-Tier",
       totalOrders: 98,
       totalSpent: "$162K",
@@ -84,7 +84,7 @@ export function CustomerInsights({ selectedMarket, dateRange }: CustomerInsights
       status: "Active",
     },
     {
-      name: "Dispensary ABC",
+      business_legal_name: "Dispensary ABC",
       tier: "B-Tier",
       totalOrders: 87,
       totalSpent: "$143K",
@@ -211,7 +211,7 @@ export function CustomerInsights({ selectedMarket, dateRange }: CustomerInsights
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3 font-medium text-gray-600">Customer Name</th>
+                  <th className="text-left p-3 font-medium text-gray-600">Business Name</th>
                   <th className="text-left p-3 font-medium text-gray-600">Tier</th>
                   <th className="text-left p-3 font-medium text-gray-600">Total Orders</th>
                   <th className="text-left p-3 font-medium text-gray-600">Total Spent</th>
@@ -225,7 +225,7 @@ export function CustomerInsights({ selectedMarket, dateRange }: CustomerInsights
                 {topCustomers.map((customer, index) => (
                   <tr key={index} className="border-b hover:bg-gray-50">
                     <td className="p-3">
-                      <div className="font-medium text-gray-900">{customer.name}</div>
+                      <div className="font-medium text-gray-900">{customer.business_legal_name}</div>
                     </td>
                     <td className="p-3">{getTierBadge(customer.tier)}</td>
                     <td className="p-3 text-gray-600">{customer.totalOrders}</td>

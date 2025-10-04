@@ -1,0 +1,232 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Search, MoreHorizontal, Edit, Trash2, Loader2, Package, Tag } from "lucide-react"
+import { TieredPricingModal } from "./tiered-pricing-modal"
+
+interface TieredPricingRule {
+  id: string
+  name: string
+  description?: string
+  customer_tiers: string[]
+  scope: "product" | "category" | "brand" | "global"
+  scope_id?: string
+  scope_value?: string
+  discount_type: string
+  discount_value: number
+  priority: number
+  status: string
+  start_date?: string
+  end_date?: string
+}
+
+export function TieredPricingList() {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [rules, setRules] = useState<TieredPricingRule[]>([])
+  const [loading, setLoading] = useState(true)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedRule, setSelectedRule] = useState<TieredPricingRule | null>(null)
+
+  useEffect(() => {
+    fetchRules()
+  }, [])
+
+  const fetchRules = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch("/api/pricing-rules/tiered")
+      if (response.ok) {
+        const result = await response.json()
+        setRules(result.data || [])
+      }
+    } catch (err) {
+      console.error("[v0] Error fetching tiered pricing rules:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEdit = (rule: TieredPricingRule) => {
+    setSelectedRule(rule)
+    setModalOpen(true)
+  }
+
+  const handleDelete = async (ruleId: string) => {
+    if (!confirm("Are you sure you want to delete this pricing rule?")) return
+
+    try {
+      const response = await fetch(`/api/pricing-rules/tiered/${ruleId}`, {
+        method: "DELETE",
+      })
+      if (response.ok) {
+        fetchRules()
+      }
+    } catch (err) {
+      console.error("[v0] Error deleting rule:", err)
+    }
+  }
+
+  const getScopeIcon = (scope: string) => {
+    switch (scope) {
+      case "brand":
+        return <Tag className="h-4 w-4" />
+      case "product":
+        return <Package className="h-4 w-4" />
+      default:
+        return <Package className="h-4 w-4" />
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-gti-bright-green text-white"
+      case "scheduled":
+        return "bg-blue-500 text-white"
+      case "inactive":
+        return "bg-gray-500 text-white"
+      default:
+        return "bg-gray-500 text-white"
+    }
+  }
+
+  const filteredRules = rules.filter(
+    (rule) =>
+      rule.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rule.scope_value?.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading tiered pricing rules...</span>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Tiered Pricing Rules</CardTitle>
+              <CardDescription>Customer tier-based pricing (A/B/C tiers)</CardDescription>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search rules..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-80"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredRules.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No tiered pricing rules found. Create your first rule to get started.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Rule Name</TableHead>
+                  <TableHead>Customer Tiers</TableHead>
+                  <TableHead>Scope</TableHead>
+                  <TableHead>Target</TableHead>
+                  <TableHead>Discount</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRules.map((rule) => (
+                  <TableRow key={rule.id}>
+                    <TableCell>
+                      <div className="font-medium">{rule.name}</div>
+                      {rule.description && <div className="text-xs text-muted-foreground">{rule.description}</div>}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {rule.customer_tiers.map((tier) => (
+                          <Badge key={tier} variant="outline">
+                            {tier}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {getScopeIcon(rule.scope)}
+                        <span className="capitalize">{rule.scope}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">{rule.scope_value || "All"}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm font-medium">
+                        {rule.discount_value}
+                        {rule.discount_type === "percentage" ? "%" : "$"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{rule.priority}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(rule.status)}>{rule.status}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(rule)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(rule.id)}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {modalOpen && (
+        <TieredPricingModal
+          isOpen={modalOpen}
+          onClose={() => {
+            setModalOpen(false)
+            setSelectedRule(null)
+          }}
+          rule={selectedRule}
+          onSuccess={fetchRules}
+        />
+      )}
+    </>
+  )
+}

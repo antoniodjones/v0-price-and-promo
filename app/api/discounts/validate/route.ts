@@ -332,7 +332,7 @@ export async function GET(request: NextRequest) {
         {
           customer: {
             id: customer.id,
-            name: customer.name,
+            business_legal_name: customer.business_legal_name,
             tier: customer.tier,
           },
           discountSummary: {

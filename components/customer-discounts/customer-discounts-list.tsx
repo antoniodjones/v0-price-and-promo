@@ -95,6 +95,7 @@ export function CustomerDiscountsList() {
   const [error, setError] = useState<string | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingDiscountId, setEditingDiscountId] = useState<string | null>(null)
+  const [editingStartStep, setEditingStartStep] = useState<number>(1)
 
   useEffect(() => {
     const fetchDiscounts = async () => {
@@ -148,6 +149,12 @@ export function CustomerDiscountsList() {
 
   const handleEditDiscount = (discountId: string) => {
     setEditingDiscountId(discountId)
+    setEditModalOpen(true)
+  }
+
+  const handleQuickEdit = (discountId: string, startStep: number) => {
+    setEditingDiscountId(discountId)
+    setEditingStartStep(startStep)
     setEditModalOpen(true)
   }
 
@@ -331,9 +338,17 @@ export function CustomerDiscountsList() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleEditDiscount(discount.id)}>
                           <Edit className="mr-2 h-4 w-4" />
-                          Edit
+                          Edit All
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 2)}>
+                          <Package className="mr-2 h-4 w-4" />
+                          Manage Products
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 3)}>
+                          <Tag className="mr-2 h-4 w-4" />
+                          Manage Discount Value
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 5)}>
                           <Users className="mr-2 h-4 w-4" />
                           Manage Customers
                         </DropdownMenuItem>
@@ -357,8 +372,10 @@ export function CustomerDiscountsList() {
           onClose={() => {
             setEditModalOpen(false)
             setEditingDiscountId(null)
+            setEditingStartStep(1)
           }}
           discountId={editingDiscountId}
+          initialStep={editingStartStep}
           onSuccess={handleEditSuccess}
         />
       )}

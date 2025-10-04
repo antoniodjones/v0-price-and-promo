@@ -8,7 +8,7 @@ export function BundleDealsHeader() {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-3xl font-bold text-gti-dark-green">Bundle Deals</h1>
+        <h1 className="text-3xl font-bold text-foreground">Bundle Deals</h1>
         <p className="text-muted-foreground mt-2">Manage multi-product bundle pricing and promotional campaigns</p>
       </div>
 
@@ -24,8 +24,8 @@ export function BundleDealsHeader() {
         </Button>
 
         <Link href="/bundle-deals/new">
-          <Button className="bg-gti-bright-green hover:bg-gti-medium-green">
-            <Plus className="w-4 h-4 mr-2" />
+          <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg">
+            <Plus className="w-5 h-5 mr-2" />
             Create Bundle
           </Button>
         </Link>

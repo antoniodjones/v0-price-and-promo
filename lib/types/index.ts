@@ -16,8 +16,7 @@ export interface Product {
 
 export interface Customer {
   id: string
-  name: string
-  email: string
+  business_legal_name: string // Renamed from 'name'
   tier: "A" | "B" | "C"
   market: string
   status: "active" | "inactive"
