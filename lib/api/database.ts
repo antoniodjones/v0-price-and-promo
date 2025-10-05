@@ -115,6 +115,7 @@ export interface CustomerDiscount {
 export interface InventoryDiscount {
   id: string
   product_id: string
+  type?: string // Added type property for discount classification
   discount_percentage: number
   discount_type: string
   reason: string
