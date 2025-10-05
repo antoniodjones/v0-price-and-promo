@@ -1,22 +1,23 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@supabase/ssr"
+import { createClient } from "@supabase/supabase-js"
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-      },
-    })
-
+    const supabase = createClient()
     const { searchParams } = new URL(request.url)
     const limit = Number.parseInt(searchParams.get("limit") || "50")
     const eventType = searchParams.get("type")
 
     // Get recent events from various tables
-    const events = []
+    const events: Array<{
+      id: string
+      type: string
+      title: string
+      description: string
+      timestamp: number
+      value?: number
+      metadata?: Record<string, any>
+    }> = []
 
     // Get recent sales/orders
     const { data: recentSales } = await supabase
@@ -145,14 +146,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-      },
-    })
-
+    const supabase = createClient()
     const body = await request.json()
     const { type, title, description, value, metadata } = body
 
