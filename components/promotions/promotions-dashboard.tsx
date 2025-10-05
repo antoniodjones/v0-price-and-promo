@@ -29,7 +29,7 @@ export function PromotionsDashboard() {
     const loadData = async () => {
       try {
         const [stats, bogos, deals] = await Promise.all([
-          promotionsService.getPromotionStats(),
+          promotionsService.getPromotionStatsClient(),
           promotionsService.getBogoPromotions(),
           promotionsService.getActiveDealNotifications(),
         ])
