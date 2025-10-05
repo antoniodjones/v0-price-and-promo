@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TrendingUp, Target, Percent, Calendar, Plus, BarChart3, Upload } from "lucide-react"
-import { promotionsService, type BogoPromotion, type DealNotification } from "@/lib/services/promotions"
+import { promotionsClientService, type BogoPromotion, type DealNotification } from "@/lib/services/promotions-client"
 import { BogoPromotionsList } from "./bogo-promotions-list"
 import Link from "next/link"
 import { BulkUploadModal } from "./bulk-upload-modal"
@@ -29,9 +29,9 @@ export function PromotionsDashboard() {
     const loadData = async () => {
       try {
         const [stats, bogos, deals] = await Promise.all([
-          promotionsService.getPromotionStatsClient(),
-          promotionsService.getBogoPromotionsClient(),
-          promotionsService.getActiveDealNotificationsClient(),
+          promotionsClientService.getPromotionStats(),
+          promotionsClientService.getBogoPromotions(),
+          promotionsClientService.getActiveDealNotifications(),
         ])
 
         setPromotionStats(stats)
