@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Download, Filter, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
+import type { DateRange } from "react-day-picker"
 
 interface RebateReportsProps {
   selectedMarket: string
-  dateRange: { from: Date; to: Date }
+  dateRange: DateRange | undefined
 }
 
 export function RebateReports({ selectedMarket, dateRange }: RebateReportsProps) {

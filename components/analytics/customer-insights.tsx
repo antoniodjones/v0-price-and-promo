@@ -15,10 +15,11 @@ import {
   Scatter,
 } from "recharts"
 import { Users, TrendingUp, Award, AlertTriangle } from "lucide-react"
+import type { DateRange } from "react-day-picker"
 
 interface CustomerInsightsProps {
   selectedMarket: string
-  dateRange: { from: Date; to: Date }
+  dateRange: DateRange | undefined
 }
 
 export function CustomerInsights({ selectedMarket, dateRange }: CustomerInsightsProps) {

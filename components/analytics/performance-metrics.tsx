@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts"
 import { TrendingUp, TrendingDown, Target, Zap } from "lucide-react"
+import type { DateRange } from "react-day-picker"
 
 interface PerformanceMetricsProps {
   selectedMarket: string
-  dateRange: { from: Date; to: Date }
+  dateRange: DateRange | undefined
 }
 
 export function PerformanceMetrics({ selectedMarket, dateRange }: PerformanceMetricsProps) {

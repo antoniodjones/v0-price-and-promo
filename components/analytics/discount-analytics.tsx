@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
+import type { DateRange } from "react-day-picker"
 
 interface DiscountAnalyticsProps {
   selectedMarket: string
-  dateRange: { from: Date; to: Date }
+  dateRange: DateRange | undefined
 }
 
 export function DiscountAnalytics({ selectedMarket, dateRange }: DiscountAnalyticsProps) {
