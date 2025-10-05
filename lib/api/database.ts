@@ -324,15 +324,61 @@ export async function getVendorRebates(filters?: {
   }
 }
 
-export async function calculateRebateData() {
-  const rebates = await getVendorRebates()
-  return rebates.reduce(
-    (acc, rebate: any) => {
-      acc[rebate.product_id] = rebate.rebate_amount
-      return acc
-    },
-    {} as Record<string, number>,
-  )
+export async function calculateRebateData(params: {
+  vendorName: string
+  period: string
+  rebateRate: number
+}) {
+  try {
+    const supabase = await createClient()
+
+    // Get all products from this vendor
+    const { data: products, error: productsError } = await supabase
+      .from("products")
+      .select("id, name, brand, price")
+      .eq("brand", params.vendorName)
+
+    if (productsError) throw productsError
+
+    // Calculate rebate data
+    const rebateCalculation = {
+      vendorName: params.vendorName,
+      period: params.period,
+      rebateRate: params.rebateRate,
+      totalProducts: products?.length || 0,
+      estimatedRebateAmount: 0,
+      productBreakdown:
+        products?.map((product) => ({
+          productId: product.id,
+          productName: product.name,
+          price: product.price,
+          rebateAmount: product.price * (params.rebateRate / 100),
+        })) || [],
+      createdAt: new Date().toISOString(),
+    }
+
+    // Calculate total estimated rebate
+    rebateCalculation.estimatedRebateAmount = rebateCalculation.productBreakdown.reduce(
+      (sum, item) => sum + item.rebateAmount,
+      0,
+    )
+
+    // Optionally save to vendor_rebates table
+    await supabase.from("vendor_rebates").insert([
+      {
+        vendor_name: params.vendorName,
+        period: params.period,
+        rebate_rate: params.rebateRate,
+        total_amount: rebateCalculation.estimatedRebateAmount,
+        status: "active",
+      },
+    ])
+
+    return rebateCalculation
+  } catch (error) {
+    logError("Error calculating rebate data", error)
+    throw error
+  }
 }
 
 export const db = {
