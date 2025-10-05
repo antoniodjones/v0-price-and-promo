@@ -76,15 +76,15 @@ export interface CreateBogoPromotionData {
 
 export interface CreateBundleDealData {
   name: string
+  type?: "percentage" | "fixed" | "bogo" | "tiered"
   description?: string
   products: string[]
-  bundle_price: number
-  discount_percentage: number
-  start_date: string
-  end_date?: string
+  discountType?: string
+  discountValue?: number
+  minQuantity?: number
+  startDate: string
+  endDate?: string
   status?: string
-  min_quantity?: number
-  max_quantity?: number
 }
 
 export interface Customer {
