@@ -12,10 +12,11 @@ import { RebateReports } from "@/components/analytics/rebate-reports"
 import { PerformanceMetrics } from "@/components/analytics/performance-metrics"
 import { CustomerInsights } from "@/components/analytics/customer-insights"
 import { AdvancedAnalyticsDashboard } from "@/components/analytics/advanced-analytics-dashboard"
+import type { DateRange } from "react-day-picker"
 
 export default function AnalyticsPage() {
   const [selectedMarket, setSelectedMarket] = useState("all")
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2024, 0, 1),
     to: new Date(),
   })
