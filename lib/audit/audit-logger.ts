@@ -1,5 +1,4 @@
 import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
 
 export interface AuditLogEntry {
   event_type: string
@@ -46,8 +45,7 @@ export interface AuditLogStats {
 }
 
 class AuditLogger {
-  private getSupabaseClient() {
-    const cookieStore = cookies()
+  private async getSupabaseClient(cookieStore: Awaited<ReturnType<typeof import("next/headers").cookies>>) {
     return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
       cookies: {
         get(name: string) {
@@ -57,9 +55,12 @@ class AuditLogger {
     })
   }
 
-  async log(entry: AuditLogEntry): Promise<boolean> {
+  async log(
+    entry: AuditLogEntry,
+    cookieStore: Awaited<ReturnType<typeof import("next/headers").cookies>>,
+  ): Promise<boolean> {
     try {
-      const supabase = this.getSupabaseClient()
+      const supabase = await this.getSupabaseClient(cookieStore)
 
       // Set default values
       const auditEntry = {
@@ -111,12 +112,13 @@ class AuditLogger {
   }
 
   async getAuditLogs(
+    cookieStore: Awaited<ReturnType<typeof import("next/headers").cookies>>,
     filter: AuditLogFilter = {},
     page = 1,
     limit = 50,
   ): Promise<{ data: any[]; total: number; pagination: any }> {
     try {
-      const supabase = this.getSupabaseClient()
+      const supabase = await this.getSupabaseClient(cookieStore)
       let query = supabase.from("audit_logs").select("*", { count: "exact" }).order("created_at", { ascending: false })
 
       // Apply filters
@@ -177,9 +179,9 @@ class AuditLogger {
     }
   }
 
-  async getAuditStats(): Promise<AuditLogStats> {
+  async getAuditStats(cookieStore: Awaited<ReturnType<typeof import("next/headers").cookies>>): Promise<AuditLogStats> {
     try {
-      const supabase = this.getSupabaseClient()
+      const supabase = await this.getSupabaseClient(cookieStore)
       const today = new Date().toISOString().split("T")[0]
 
       // Get basic stats
@@ -203,7 +205,6 @@ class AuditLogger {
           .gte("created_at", today),
       ])
 
-      // Get top event types
       const { data: topEvents } = await supabase
         .from("audit_logs")
         .select("event_type")
@@ -265,9 +266,9 @@ class AuditLogger {
     }
   }
 
-  async cleanupExpiredLogs(): Promise<number> {
+  async cleanupExpiredLogs(cookieStore: Awaited<ReturnType<typeof import("next/headers").cookies>>): Promise<number> {
     try {
-      const supabase = this.getSupabaseClient()
+      const supabase = await this.getSupabaseClient(cookieStore)
       const { data } = await supabase.rpc("cleanup_expired_audit_logs")
       return data || 0
     } catch (error) {
@@ -278,6 +279,7 @@ class AuditLogger {
 
   // Convenience methods for common audit events
   async logUserAction(
+    cookieStore: Awaited<ReturnType<typeof import("next/headers").cookies>>,
     action: string,
     userId: string,
     userEmail: string,
@@ -287,22 +289,26 @@ class AuditLogger {
     newValues?: Record<string, any>,
     metadata?: Record<string, any>,
   ) {
-    return this.log({
-      event_type: `user_${action}`,
-      event_category: "user",
-      event_action: action,
-      resource_type: resourceType,
-      resource_id: resourceId,
-      user_id: userId,
-      user_email: userEmail,
-      old_values: oldValues,
-      new_values: newValues,
-      metadata,
-      severity: "info",
-    })
+    return this.log(
+      {
+        event_type: `user_${action}`,
+        event_category: "user",
+        event_action: action,
+        resource_type: resourceType,
+        resource_id: resourceId,
+        user_id: userId,
+        user_email: userEmail,
+        old_values: oldValues,
+        new_values: newValues,
+        metadata,
+        severity: "info",
+      },
+      cookieStore,
+    )
   }
 
   async logSystemEvent(
+    cookieStore: Awaited<ReturnType<typeof import("next/headers").cookies>>,
     eventType: string,
     action: string,
     resourceType?: string,
@@ -311,19 +317,23 @@ class AuditLogger {
     severity: "critical" | "high" | "medium" | "low" | "info" = "info",
     status: "success" | "failure" | "warning" = "success",
   ) {
-    return this.log({
-      event_type: eventType,
-      event_category: "system",
-      event_action: action,
-      resource_type: resourceType,
-      resource_id: resourceId,
-      event_data: eventData,
-      severity,
-      status,
-    })
+    return this.log(
+      {
+        event_type: eventType,
+        event_category: "system",
+        event_action: action,
+        resource_type: resourceType,
+        resource_id: resourceId,
+        event_data: eventData,
+        severity,
+        status,
+      },
+      cookieStore,
+    )
   }
 
   async logSecurityEvent(
+    cookieStore: Awaited<ReturnType<typeof import("next/headers").cookies>>,
     eventType: string,
     action: string,
     userId?: string,
@@ -333,20 +343,24 @@ class AuditLogger {
     eventData?: Record<string, any>,
     severity: "critical" | "high" | "medium" | "low" | "info" = "high",
   ) {
-    return this.log({
-      event_type: eventType,
-      event_category: "security",
-      event_action: action,
-      user_id: userId,
-      user_email: userEmail,
-      ip_address: ipAddress,
-      user_agent: userAgent,
-      event_data: eventData,
-      severity,
-    })
+    return this.log(
+      {
+        event_type: eventType,
+        event_category: "security",
+        event_action: action,
+        user_id: userId,
+        user_email: userEmail,
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        event_data: eventData,
+        severity,
+      },
+      cookieStore,
+    )
   }
 
   async logBusinessEvent(
+    cookieStore: Awaited<ReturnType<typeof import("next/headers").cookies>>,
     eventType: string,
     action: string,
     resourceType: string,
@@ -357,19 +371,22 @@ class AuditLogger {
     oldValues?: Record<string, any>,
     newValues?: Record<string, any>,
   ) {
-    return this.log({
-      event_type: eventType,
-      event_category: "business",
-      event_action: action,
-      resource_type: resourceType,
-      resource_id: resourceId,
-      user_id: userId,
-      user_email: userEmail,
-      event_data: eventData,
-      old_values: oldValues,
-      new_values: newValues,
-      severity: "info",
-    })
+    return this.log(
+      {
+        event_type: eventType,
+        event_category: "business",
+        event_action: action,
+        resource_type: resourceType,
+        resource_id: resourceId,
+        user_id: userId,
+        user_email: userEmail,
+        event_data: eventData,
+        old_values: oldValues,
+        new_values: newValues,
+        severity: "info",
+      },
+      cookieStore,
+    )
   }
 }
 

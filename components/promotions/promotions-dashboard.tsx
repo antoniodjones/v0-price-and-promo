@@ -30,8 +30,8 @@ export function PromotionsDashboard() {
       try {
         const [stats, bogos, deals] = await Promise.all([
           promotionsService.getPromotionStatsClient(),
-          promotionsService.getBogoPromotions(),
-          promotionsService.getActiveDealNotifications(),
+          promotionsService.getBogoPromotionsClient(),
+          promotionsService.getActiveDealNotificationsClient(),
         ])
 
         setPromotionStats(stats)

@@ -117,6 +117,15 @@ export class PromotionsService {
     return data
   }
 
+  // Client-safe version of BOGO Promotions
+  async getBogoPromotionsClient(): Promise<BogoPromotion[]> {
+    const supabase = createBrowserClient()
+    const { data, error } = await supabase.from("bogo_promotions").select("*").order("created_at", { ascending: false })
+
+    if (error) throw error
+    return data || []
+  }
+
   // Deal Notifications
   async getDealNotifications(): Promise<DealNotification[]> {
     const supabase = await createClient()
@@ -150,6 +159,20 @@ export class PromotionsService {
 
     if (error) throw error
     return data
+  }
+
+  // Client-safe version of Deal Notifications
+  async getActiveDealNotificationsClient(): Promise<DealNotification[]> {
+    const supabase = createBrowserClient()
+    const { data, error } = await supabase
+      .from("deal_notifications")
+      .select("*")
+      .eq("is_active", true)
+      .gte("valid_until", new Date().toISOString())
+      .order("created_at", { ascending: false })
+
+    if (error) throw error
+    return data || []
   }
 
   // Promotion Tracking
