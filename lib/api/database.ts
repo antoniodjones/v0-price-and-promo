@@ -116,6 +116,7 @@ export interface InventoryDiscount {
   id: string
   product_id: string
   type?: string // Added type property for discount classification
+  scope?: string // Added scope property for filtering discounts by scope (e.g., 'product', 'category', 'store')
   discount_percentage: number
   discount_type: string
   reason: string
