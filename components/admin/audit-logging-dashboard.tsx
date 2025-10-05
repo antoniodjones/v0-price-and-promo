@@ -24,7 +24,8 @@ import {
   Eye,
   BarChart3,
 } from "lucide-react"
-import { auditLogger, type AuditLogFilter, type AuditLogStats } from "@/lib/audit/audit-logger"
+import type { AuditLogFilter, AuditLogStats } from "@/lib/audit/audit-logger"
+import { getAuditLogsAction, getAuditStatsAction, cleanupExpiredLogsAction } from "@/app/actions/audit-actions"
 
 interface AuditLog {
   id: string
@@ -77,8 +78,8 @@ export function AuditLoggingDashboard() {
     try {
       setLoading(true)
       const [logsResponse, statsData] = await Promise.all([
-        auditLogger.getAuditLogs(filters, pagination.page, pagination.limit),
-        auditLogger.getAuditStats(),
+        getAuditLogsAction(filters, pagination.page, pagination.limit),
+        getAuditStatsAction(),
       ])
 
       setAuditLogs(logsResponse.data)
@@ -106,7 +107,7 @@ export function AuditLoggingDashboard() {
 
   const handleCleanupLogs = async () => {
     try {
-      const deletedCount = await auditLogger.cleanupExpiredLogs()
+      const deletedCount = await cleanupExpiredLogsAction()
       toast({
         title: "Cleanup Complete",
         description: `${deletedCount} expired audit logs were removed.`,
