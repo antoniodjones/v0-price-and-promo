@@ -148,6 +148,7 @@ export interface BundleDeal {
   id: string
   name: string
   description?: string
+  type?: "fixed" | "category" | "mix_match" | "tiered"
   products: string[] // Array of product IDs
   bundle_price: number
   discount_percentage: number
