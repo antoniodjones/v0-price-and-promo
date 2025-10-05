@@ -270,28 +270,57 @@ const logError = (message: string, error: any) => {
   console.error(`${message}:`, error)
 }
 
-export async function getVendorRebates() {
+export async function getVendorRebates(filters?: {
+  vendor?: string | null
+  period?: string | null
+  status?: string | null
+  page?: number
+  limit?: number
+}) {
   try {
     const supabase = await createClient()
-    const { data, error } = await supabase
-      .from("vendor_rebates")
-      .select("*")
-      .eq("status", "active")
-      .order("created_at", { ascending: false })
+
+    let query = supabase.from("vendor_rebates").select("*", { count: "exact" })
+
+    // Apply filters if provided
+    if (filters?.vendor) {
+      query = query.eq("vendor_name", filters.vendor)
+    }
+
+    if (filters?.period) {
+      query = query.eq("period", filters.period)
+    }
+
+    if (filters?.status) {
+      query = query.eq("status", filters.status)
+    } else {
+      // Default to active if no status filter provided
+      query = query.eq("status", "active")
+    }
+
+    // Apply pagination
+    if (filters?.page && filters?.limit) {
+      const offset = (filters.page - 1) * filters.limit
+      query = query.range(offset, offset + filters.limit - 1)
+    }
+
+    query = query.order("created_at", { ascending: false })
+
+    const { data, error, count } = await query
 
     if (error) {
-      // If table doesn't exist, return empty array
+      // If table doesn't exist, return empty result
       if (error.code === "42P01") {
         console.warn("vendor_rebates table does not exist yet")
-        return []
+        return { data: [], total: 0 }
       }
       throw error
     }
 
-    return data || []
+    return { data: data || [], total: count || 0 }
   } catch (error) {
     logError("Error fetching vendor rebates", error)
-    return []
+    return { data: [], total: 0 }
   }
 }
 
