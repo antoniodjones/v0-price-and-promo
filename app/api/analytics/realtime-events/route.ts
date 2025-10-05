@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/server"
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     const limit = Number.parseInt(searchParams.get("limit") || "50")
     const eventType = searchParams.get("type")
@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
       timestamp: number
       value?: number
       metadata?: Record<string, any>
+      severity?: string
     }> = []
 
     // Get recent sales/orders
@@ -146,7 +147,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const body = await request.json()
     const { type, title, description, value, metadata } = body
 
