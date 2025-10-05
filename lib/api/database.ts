@@ -495,6 +495,10 @@ export const db = {
     }
   },
 
+  async getCustomerById(customerId: string): Promise<Customer | null> {
+    return this.getCustomer(customerId)
+  },
+
   async createCustomer(customerData: CreateCustomerData) {
     const supabase = await createClient()
 
