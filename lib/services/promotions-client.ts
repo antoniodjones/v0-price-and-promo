@@ -42,6 +42,10 @@ export class PromotionsClientService {
   }
 
   // Client-safe version of BOGO Promotions
+  /**
+   * Fetches all BOGO promotions from the database
+   * @returns Promise<BogoPromotion[]> Array of BOGO promotions
+   */
   async getBogoPromotions(): Promise<BogoPromotion[]> {
     const supabase = createBrowserClient()
     const { data, error } = await supabase.from("bogo_promotions").select("*").order("created_at", { ascending: false })
@@ -51,6 +55,10 @@ export class PromotionsClientService {
   }
 
   // Client-safe version of Deal Notifications
+  /**
+   * Fetches active deal notifications
+   * @returns Promise<DealNotification[]> Array of active deal notifications
+   */
   async getActiveDealNotifications(): Promise<DealNotification[]> {
     const supabase = createBrowserClient()
     const { data, error } = await supabase
@@ -64,6 +72,10 @@ export class PromotionsClientService {
     return data || []
   }
 
+  /**
+   * Calculates and returns promotion statistics
+   * @returns Promise with promotion stats including revenue, savings, and conversion rate
+   */
   async getPromotionStats(): Promise<{
     totalActivePromotions: number
     totalRevenue: number
