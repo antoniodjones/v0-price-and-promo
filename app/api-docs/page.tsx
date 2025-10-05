@@ -4,6 +4,348 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+// Code examples stored as constants to avoid linter parsing issues
+const CODE_EXAMPLES = {
+  typescript: `import { GTIPricingAPI } from '@gti/pricing-sdk'
+
+const api = new GTIPricingAPI({
+  baseUrl: 'https://your-domain.com/api',
+  apiKey: 'your-api-key'
+})
+
+// Calculate pricing with discounts
+const pricingResponse = await api.pricing.calculate({
+  items: [
+    { productId: 'prod_123', quantity: 2 }
+  ],
+  customerId: 'cust_456',
+  market: 'california'
+})
+
+// Create a BOGO promotion
+const bogoResponse = await api.promotions.createBOGO({
+  name: 'Buy 2 Get 1 Free Edibles',
+  triggerValue: 2,
+  rewardValue: 1,
+  category: 'edibles',
+  startDate: new Date('2024-02-01'),
+  endDate: new Date('2024-02-14')
+})
+
+// Set up price alerts
+const alertResponse = await api.tracking.createAlert({
+  productId: 'prod_789',
+  alertType: 'price_drop',
+  targetPrice: 45.00
+})
+
+// Get real-time analytics
+const analyticsResponse = await api.analytics.getRealtime({
+  metrics: ['activeUsers', 'currentRevenue', 'promotionUsage'],
+  interval: 30
+})
+
+// Generate custom reports
+const reportResponse = await api.analytics.generateReport({
+  reportType: 'promotion_performance',
+  dateRange: {
+    start: '2024-01-01',
+    end: '2024-01-31'
+  },
+  filters: {
+    promotionTypes: ['bogo', 'percentage_discount']
+  }
+})`,
+
+  python: `import requests
+from datetime import datetime
+import json
+
+class GTIPricingClient:
+    def __init__(self, base_url, api_key=None):
+        self.base_url = base_url
+        self.headers = {'Content-Type': 'application/json'}
+        if api_key:
+            self.headers['Authorization'] = f'Bearer {api_key}'
+    
+    def calculate_pricing(self, items, customer_id=None, market=None):
+        response = requests.post(
+            f"{self.base_url}/pricing/calculate",
+            json={
+                "items": items,
+                "customerId": customer_id,
+                "market": market
+            },
+            headers=self.headers
+        )
+        return response.json()
+    
+    def create_bogo_promotion(self, name, trigger_value, reward_value, **kwargs):
+        promotion_data = {
+            "name": name,
+            "type": "buy_x_get_y",
+            "triggerValue": trigger_value,
+            "rewardValue": reward_value,
+            **kwargs
+        }
+        response = requests.post(
+            f"{self.base_url}/promotions/bogo",
+            json=promotion_data,
+            headers=self.headers
+        )
+        return response.json()
+    
+    def get_analytics(self, timeframe='30d', metrics=None):
+        params = {"timeframe": timeframe}
+        if metrics:
+            params["metrics"] = ",".join(metrics)
+        
+        response = requests.get(
+            f"{self.base_url}/analytics/dashboard",
+            params=params,
+            headers=self.headers
+        )
+        return response.json()
+    
+    def get_realtime_analytics(self, metrics=None, interval=30):
+        params = {"interval": interval}
+        if metrics:
+            params["metrics"] = ",".join(metrics)
+        
+        response = requests.get(
+            f"{self.base_url}/analytics/realtime",
+            params=params,
+            headers=self.headers
+        )
+        return response.json()
+
+# Usage Examples
+client = GTIPricingClient("https://your-domain.com/api", "your-api-key")
+
+# Calculate pricing
+response = client.calculate_pricing([
+    {"productId": "prod_123", "quantity": 1}
+], customer_id="cust_456", market="california")
+print(f"Total: $" + str(response["calculation"]["total"]))
+
+# Create BOGO promotion
+bogo = client.create_bogo_promotion(
+    name="Weekend BOGO Special",
+    trigger_value=2,
+    reward_value=1,
+    startDate="2024-02-01T00:00:00Z",
+    endDate="2024-02-03T23:59:59Z"
+)
+print(f"Created promotion: {bogo['id']}")
+
+# Get real-time analytics
+realtime = client.get_realtime_analytics(
+    metrics=["activeUsers", "currentRevenue"],
+    interval=60
+)
+print(f"Active users: {realtime['metrics']['activeUsers']}")`,
+
+  react: `import { useState, useEffect } from 'react'
+import { useGTIPricing } from '@gti/pricing-react'
+
+function PricingCalculator() {
+  const { calculatePricing, loading, error } = useGTIPricing()
+  const [cart, setCart] = useState([])
+  const [pricing, setPricing] = useState(null)
+
+  const handleCalculate = async () => {
+    try {
+      const result = await calculatePricing({
+        items: cart,
+        customerId: 'current-user-id',
+        market: 'california'
+      })
+      setPricing(result.calculation)
+    } catch (err) {
+      console.error('Pricing calculation failed:', err)
+    }
+  }
+
+  return (
+    <div>
+      {/* Cart items */}
+      <div className="space-y-2">
+        {cart.map((item) => (
+          <div key={item.productId} className="flex justify-between">
+            <span>{item.name} x{item.quantity}</span>
+            <span>$\{item.price}</span>
+          </div>
+        ))}
+      </div>
+      
+      {/* Pricing summary */}
+      {pricing && (
+        <div className="mt-4 p-4 border rounded">
+          <div className="flex justify-between">
+            <span>Subtotal:</span>
+            <span>$\{pricing.subtotal}</span>
+          </div>
+          {pricing.discounts.map((discount) => (
+            <div key={discount.type} className="flex justify-between text-green-600">
+              <span>{discount.name}:</span>
+              <span>-$\{discount.amount}</span>
+            </div>
+          ))}
+          <div className="flex justify-between font-bold border-t pt-2">
+            <span>Total:</span>
+            <span>$\{pricing.total}</span>
+          </div>
+        </div>
+      )}
+      
+      <button 
+        onClick={handleCalculate}
+        disabled={loading}
+        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+      >
+        {loading ? 'Calculating...' : 'Calculate Price'}
+      </button>
+    </div>
+  )
+}`,
+
+  websocket: `// JavaScript WebSocket client for real-time updates
+class GTIRealtimeClient {
+  constructor(wsUrl, apiKey) {
+    this.wsUrl = wsUrl
+    this.apiKey = apiKey
+    this.ws = null
+    this.listeners = new Map()
+  }
+
+  connect() {
+    this.ws = new WebSocket(\`\${this.wsUrl}?auth=\${this.apiKey}\`)
+    
+    this.ws.onopen = () => {
+      console.log('Connected to GTI real-time updates')
+      this.subscribe(['pricing', 'promotions', 'analytics'])
+    }
+    
+    this.ws.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      this.handleMessage(data)
+    }
+  }
+
+  subscribe(channels) {
+    this.ws.send(JSON.stringify({
+      type: 'subscribe',
+      channels: channels
+    }))
+  }
+
+  on(event, callback) {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, [])
+    }
+    this.listeners.get(event).push(callback)
+  }
+
+  handleMessage(data) {
+    const listeners = this.listeners.get(data.type) || []
+    listeners.forEach(callback => callback(data))
+  }
+}
+
+// Usage
+const client = new GTIRealtimeClient('wss://your-domain.com/ws', 'your-api-key')
+
+client.on('price_change', (data) => {
+  console.log(\`Price changed for \${data.productId}: \${data.newPrice}\`)
+})
+
+client.on('promotion_activated', (data) => {
+  console.log(\`Promotion activated: \${data.promotionName}\`)
+})
+
+client.on('analytics_update', (data) => {
+  updateDashboard(data.metrics)
+})
+
+client.connect()`,
+
+  curl: `# Calculate pricing with market and customer context
+curl -X POST https://your-domain.com/api/pricing/calculate \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer your-api-key" \\
+  -d '{
+    "items": [{"productId": "prod_123", "quantity": 2}],
+    "customerId": "cust_456",
+    "market": "california"
+  }'
+
+# Create bundle deal promotion
+curl -X POST https://your-domain.com/api/promotions/bundles \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Starter Bundle Deal",
+    "products": [
+      {"productId": "prod_123", "quantity": 1},
+      {"productId": "prod_124", "quantity": 2}
+    ],
+    "bundlePrice": 89.99,
+    "discountType": "fixed_amount",
+    "discountValue": 25.00
+  }'
+
+# Get real-time analytics
+curl -X GET "https://your-domain.com/api/analytics/realtime?metrics=activeUsers,currentRevenue&interval=30"
+
+# Generate custom report
+curl -X POST https://your-domain.com/api/analytics/reports \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "reportType": "promotion_performance",
+    "dateRange": {
+      "start": "2024-01-01",
+      "end": "2024-01-31"
+    },
+    "filters": {
+      "promotionTypes": ["bogo", "percentage_discount"]
+    }
+  }'
+
+# Validate promotion before creation
+curl -X POST https://your-domain.com/api/promotions/validate \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "promotion": {
+      "name": "Flash Sale",
+      "type": "percentage_discount",
+      "value": 25,
+      "startDate": "2024-02-15T00:00:00Z",
+      "endDate": "2024-02-17T23:59:59Z"
+    },
+    "checkConflicts": true
+  }'
+
+# Get predictive analytics
+curl -X GET "https://your-domain.com/api/analytics/predictive?model=revenue&horizon=30d&confidence=0.85"
+
+# Bulk pricing calculation
+curl -X POST https://your-domain.com/api/pricing/bulk \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "calculations": [
+      {
+        "id": "calc_1",
+        "items": [{"productId": "prod_123", "quantity": 1}],
+        "customerId": "cust_456"
+      },
+      {
+        "id": "calc_2",
+        "items": [{"productId": "prod_124", "quantity": 3}],
+        "customerId": "cust_789"
+      }
+    ]
+  }'`,
+}
+
 export default function ApiDocsPage() {
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -988,366 +1330,27 @@ export default function ApiDocsPage() {
             <CardContent className="space-y-6">
               <div>
                 <h4 className="font-semibold mb-3">JavaScript/TypeScript SDK</h4>
-                <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">
-                  {`import { GTIPricingAPI } from '@gti/pricing-sdk'
-
-const api = new GTIPricingAPI({
-  baseUrl: 'https://your-domain.com/api',
-  apiKey: 'your-api-key'
-})
-
-// Calculate pricing with discounts
-const pricingResponse = await api.pricing.calculate({
-  items: [
-    { productId: 'prod_123', quantity: 2 }
-  ],
-  customerId: 'cust_456',
-  market: 'california'
-})
-
-// Create a BOGO promotion
-const bogoResponse = await api.promotions.createBOGO({
-  name: 'Buy 2 Get 1 Free Edibles',
-  triggerValue: 2,
-  rewardValue: 1,
-  category: 'edibles',
-  startDate: new Date('2024-02-01'),
-  endDate: new Date('2024-02-14')
-})
-
-// Set up price alerts
-const alertResponse = await api.tracking.createAlert({
-  productId: 'prod_789',
-  alertType: 'price_drop',
-  targetPrice: 45.00
-})
-
-// Get real-time analytics
-const analyticsResponse = await api.analytics.getRealtime({
-  metrics: ['activeUsers', 'currentRevenue', 'promotionUsage'],
-  interval: 30
-})
-
-// Generate custom reports
-const reportResponse = await api.analytics.generateReport({
-  reportType: 'promotion_performance',
-  dateRange: {
-    start: '2024-01-01',
-    end: '2024-01-31'
-  },
-  filters: {
-    promotionTypes: ['bogo', 'percentage_discount']
-  }
-})`}
-                </pre>
+                <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">{CODE_EXAMPLES.typescript}</pre>
               </div>
 
               <div>
                 <h4 className="font-semibold mb-3">Python Integration</h4>
-                <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">
-                  {`import requests
-from datetime import datetime
-import json
-
-class GTIPricingClient:
-    def __init__(self, base_url, api_key=None):
-        self.base_url = base_url
-        self.headers = {'Content-Type': 'application/json'}
-        if api_key:
-            self.headers['Authorization'] = f'Bearer {api_key}'
-    
-    def calculate_pricing(self, items, customer_id=None, market=None):
-        response = requests.post(
-            f"{self.base_url}/pricing/calculate",
-            json={
-                "items": items,
-                "customerId": customer_id,
-                "market": market
-            },
-            headers=self.headers
-        )
-        return response.json()
-    
-    def create_bogo_promotion(self, name, trigger_value, reward_value, **kwargs):
-        promotion_data = {
-            "name": name,
-            "type": "buy_x_get_y",
-            "triggerValue": trigger_value,
-            "rewardValue": reward_value,
-            **kwargs
-        }
-        response = requests.post(
-            f"{self.base_url}/promotions/bogo",
-            json=promotion_data,
-            headers=self.headers
-        )
-        return response.json()
-    
-    def get_analytics(self, timeframe='30d', metrics=None):
-        params = {"timeframe": timeframe}
-        if metrics:
-            params["metrics"] = ",".join(metrics)
-        
-        response = requests.get(
-            f"{self.base_url}/analytics/dashboard",
-            params=params,
-            headers=self.headers
-        )
-        return response.json()
-    
-    def get_realtime_analytics(self, metrics=None, interval=30):
-        params = {"interval": interval}
-        if metrics:
-            params["metrics"] = ",".join(metrics)
-        
-        response = requests.get(
-            f"{self.base_url}/analytics/realtime",
-            params=params,
-            headers=self.headers
-        )
-        return response.json()
-
-# Usage Examples
-client = GTIPricingClient("https://your-domain.com/api", "your-api-key")
-
-# Calculate pricing
-response = client.calculate_pricing([
-    {"productId": "prod_123", "quantity": 1}
-], customer_id="cust_456", market="california")
-print(f"Total: ${response["calculation"]["total"]}")
-
-# Create BOGO promotion
-bogo = client.create_bogo_promotion(
-    name="Weekend BOGO Special",
-    trigger_value=2,
-    reward_value=1,
-    startDate="2024-02-01T00:00:00Z",
-    endDate="2024-02-03T23:59:59Z"
-)
-print(f"Created promotion: {bogo['id']}")
-
-# Get real-time analytics
-realtime = client.get_realtime_analytics(
-    metrics=["activeUsers", "currentRevenue"],
-    interval=60
-)
-print(f"Active users: {realtime['metrics']['activeUsers']}")`}
-                </pre>
+                <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">{CODE_EXAMPLES.python}</pre>
               </div>
 
               <div>
                 <h4 className="font-semibold mb-3">cURL Examples</h4>
-                <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">
-                  {`# Calculate pricing with market and customer context
-curl -X POST https://your-domain.com/api/pricing/calculate \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer your-api-key" \\
-  -d '{
-    "items": [{"productId": "prod_123", "quantity": 2}],
-    "customerId": "cust_456",
-    "market": "california"
-  }'
-
-# Create bundle deal promotion
-curl -X POST https://your-domain.com/api/promotions/bundles \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "name": "Starter Bundle Deal",
-    "products": [
-      {"productId": "prod_123", "quantity": 1},
-      {"productId": "prod_124", "quantity": 2}
-    ],
-    "bundlePrice": 89.99,
-    "discountType": "fixed_amount",
-    "discountValue": 25.00
-  }'
-
-# Get real-time analytics
-curl -X GET "https://your-domain.com/api/analytics/realtime?metrics=activeUsers,currentRevenue&interval=30"
-
-# Generate custom report
-curl -X POST https://your-domain.com/api/analytics/reports \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "reportType": "promotion_performance",
-    "dateRange": {
-      "start": "2024-01-01",
-      "end": "2024-01-31"
-    },
-    "filters": {
-      "promotionTypes": ["bogo", "percentage_discount"]
-    }
-  }'
-
-# Validate promotion before creation
-curl -X POST https://your-domain.com/api/promotions/validate \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "promotion": {
-      "name": "Flash Sale",
-      "type": "percentage_discount",
-      "value": 25,
-      "startDate": "2024-02-15T00:00:00Z",
-      "endDate": "2024-02-17T23:59:59Z"
-    },
-    "checkConflicts": true
-  }'
-
-# Get predictive analytics
-curl -X GET "https://your-domain.com/api/analytics/predictive?model=revenue&horizon=30d&confidence=0.85"
-
-# Bulk pricing calculation
-curl -X POST https://your-domain.com/api/pricing/bulk \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "calculations": [
-      {
-        "id": "calc_1",
-        "items": [{"productId": "prod_123", "quantity": 1}],
-        "customerId": "cust_456"
-      },
-      {
-        "id": "calc_2",
-        "items": [{"productId": "prod_124", "quantity": 3}],
-        "customerId": "cust_789"
-      }
-    ]
-  }'`}
-                </pre>
+                <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">{CODE_EXAMPLES.curl}</pre>
               </div>
 
               <div>
                 <h4 className="font-semibold mb-3">React/Next.js Integration</h4>
-                <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">
-                  {`import { useState, useEffect } from 'react'
-import { useGTIPricing } from '@gti/pricing-react'
-
-function PricingCalculator() {
-  const { calculatePricing, loading, error } = useGTIPricing()
-  const [cart, setCart] = useState([])
-  const [pricing, setPricing] = useState(null)
-
-  const handleCalculate = async () => {
-    try {
-      const result = await calculatePricing({
-        items: cart,
-        customerId: 'current-user-id',
-        market: 'california'
-      })
-      setPricing(result.calculation)
-    } catch (err) {
-      console.error('Pricing calculation failed:', err)
-    }
-  }
-
-  return (
-    <div>
-      {/* Cart items */}
-      <div className="space-y-2">
-        {cart.map((item) => (
-          <div key={item.productId} className="flex justify-between">
-            <span>{item.name} x{item.quantity}</span>
-            <span>${item.price}</span>
-          </div>
-        ))}
-      </div>
-      
-      {/* Pricing summary */}
-      {pricing && (
-        <div className="mt-4 p-4 border rounded">
-          <div className="flex justify-between">
-            <span>Subtotal:</span>
-            <span>${pricing.subtotal}</span>
-          </div>
-          {pricing.discounts.map((discount) => (
-            <div key={discount.type} className="flex justify-between text-green-600">
-              <span>{discount.name}:</span>
-              <span>-${discount.amount}</span>
-            </div>
-          ))}
-          <div className="flex justify-between font-bold border-t pt-2">
-            <span>Total:</span>
-            <span>${pricing.total}</span>
-          </div>
-        </div>
-      )}
-      
-      <button 
-        onClick={handleCalculate}
-        disabled={loading}
-        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
-      >
-        {loading ? 'Calculating...' : 'Calculate Price'}
-      </button>
-    </div>
-  )
-}`}
-                </pre>
+                <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">{CODE_EXAMPLES.react}</pre>
               </div>
 
               <div>
                 <h4 className="font-semibold mb-3">WebSocket Real-time Updates</h4>
-                <pre className="bg-muted p-4 rounded text-xs overflow-x-auto">
-                  {`// JavaScript WebSocket client for real-time updates
-class GTIRealtimeClient {
-  constructor(wsUrl, apiKey) {
-    this.wsUrl = wsUrl
-    this.apiKey = apiKey
-    this.ws = null
-    this.listeners = new Map()
-  }
-
-  connect() {
-    this.ws = new WebSocket(\`\${this.wsUrl}?auth=\${this.apiKey}\`)
-    
-    this.ws.onopen = () => {
-      console.log('Connected to GTI real-time updates')
-      this.subscribe(['pricing', 'promotions', 'analytics'])
-    }
-    
-    this.ws.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      this.handleMessage(data)
-    }
-  }
-
-  subscribe(channels) {
-    this.ws.send(JSON.stringify({
-      type: 'subscribe',
-      channels: channels
-    }))
-  }
-
-  on(event, callback) {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, [])
-    }
-    this.listeners.get(event).push(callback)
-  }
-
-  handleMessage(data) {
-    const listeners = this.listeners.get(data.type) || []
-    listeners.forEach(callback => callback(data))
-  }
-}
-
-// Usage
-const client = new GTIRealtimeClient('wss://your-domain.com/ws', 'your-api-key')
-
-client.on('price_change', (data) => {
-  console.log(\`Price changed for \${data.productId}: \${data.newPrice}\`)
-})
-
-client.on('promotion_activated', (data) => {
-  console.log(\`Promotion activated: \${data.promotionName}\`)
-})
-
-client.on('analytics_update', (data) => {
-  updateDashboard(data.metrics)
-})
-
-client.connect()`}
-                </pre>
+                <pre className="bg-muted p-4 rounded text-xs overflow-x-auto">{CODE_EXAMPLES.websocket}</pre>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
