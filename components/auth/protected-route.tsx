@@ -7,6 +7,7 @@ interface ProtectedRouteProps {
   redirectTo?: string
   requiredRole?: string | string[]
   requiredDepartment?: string | string[]
+  requireAdmin?: boolean
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
