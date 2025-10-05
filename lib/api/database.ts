@@ -49,15 +49,14 @@ export interface CreateCustomerDiscountData {
 }
 
 export interface CreateInventoryDiscountData {
-  product_id: string
-  discount_percentage: number
-  discount_type: string
-  reason: string
-  start_date: string
-  end_date?: string
+  name: string
+  type: string
+  triggerValue: number
+  discountType: string
+  discountValue: number
+  scope: string
+  scopeValue?: string
   status?: string
-  min_quantity?: number
-  max_quantity?: number
 }
 
 export interface CreateBogoPromotionData {
