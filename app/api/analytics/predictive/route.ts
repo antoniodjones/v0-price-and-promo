@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     const market = searchParams.get("market")
     const analysisType = searchParams.get("type") || "all"
 
-    let responseData = { ...predictiveData }
+    let responseData: any = { ...predictiveData }
 
     // Filter by analysis type
     if (analysisType === "demand") {
