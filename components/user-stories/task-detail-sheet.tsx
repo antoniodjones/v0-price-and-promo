@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Copy, User, Link2, CheckSquare, MessageSquare, Send } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { RichTextEditor } from "@/components/user-stories/rich-text-editor"
+import { TaskActionsMenu } from "@/components/user-stories/task-actions-menu"
 
 interface UserStory {
   id: string
@@ -55,6 +56,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
   const [editedTask, setEditedTask] = useState<UserStory | null>(task)
   const [newComment, setNewComment] = useState("")
   const [comments, setComments] = useState<Comment[]>([])
+  const [autoCommitEnabled, setAutoCommitEnabled] = useState(true)
 
   useEffect(() => {
     if (task) {
@@ -174,6 +176,12 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
+                    <TaskActionsMenu
+                      taskId={editedTask.id}
+                      taskTitle={editedTask.title}
+                      autoCommitEnabled={autoCommitEnabled}
+                      onAutoCommitToggle={setAutoCommitEnabled}
+                    />
                   </div>
                   <Input
                     value={editedTask.title}

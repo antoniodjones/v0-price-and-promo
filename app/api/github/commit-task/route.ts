@@ -6,6 +6,7 @@
 
 import { type NextRequest, NextResponse } from "next/server"
 import { createGitHubWorkflowService, type FileChange, type GitHubWorkflowConfig } from "@/lib/services/github-workflow"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
@@ -92,7 +93,6 @@ export async function GET(request: NextRequest) {
 
   try {
     // Return task's git information
-    const { createClient } = await import("@/lib/supabase/server")
     const supabase = createClient()
 
     const { data, error } = await supabase
