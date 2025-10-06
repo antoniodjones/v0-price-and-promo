@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         console.error(`Failed to send notification to ${subscription.endpoint}:`, error)
 
         // Remove invalid subscriptions
-        if (error.statusCode === 410) {
+        if (error && typeof error === "object" && "statusCode" in error && error.statusCode === 410) {
           await supabase.from("push_subscriptions").delete().eq("endpoint", subscription.endpoint)
         }
 
