@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { PricingEngine } from "@/lib/pricing-engine"
 
 export async function POST(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ success: false, error: "Missing required parameters" }, { status: 400 })
     }
 
-    const supabase = await createServerClient()
+    const supabase = await createClient()
 
     // Get product details
     const { data: product, error: productError } = await supabase
