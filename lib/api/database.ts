@@ -417,6 +417,10 @@ export const db = {
     return data
   },
 
+  async getProductById(id: string) {
+    return this.getProduct(id)
+  },
+
   async createProduct(productData: CreateProductData) {
     const supabase = await createClient()
 
