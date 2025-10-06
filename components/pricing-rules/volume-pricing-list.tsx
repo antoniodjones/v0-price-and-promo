@@ -5,10 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Search, MoreHorizontal, Edit, Trash2, Loader2, Package, Tag } from "lucide-react"
+import { Search, MoreHorizontal, Edit, Trash2, Package, Tag } from "lucide-react"
 import { VolumePricingModal } from "./volume-pricing-modal"
+import { UnifiedDataTable } from "@/components/shared/unified-data-table"
+import { useTableFilter, useTableSort } from "@/lib/table-helpers"
+import type { ColumnDef } from "@/lib/table-helpers"
 
 interface VolumePricingRule {
   id: string
@@ -31,11 +33,13 @@ interface VolumePricingRule {
 }
 
 export function VolumePricingList() {
-  const [searchTerm, setSearchTerm] = useState("")
   const [rules, setRules] = useState<VolumePricingRule[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedRule, setSelectedRule] = useState<VolumePricingRule | null>(null)
+
+  const { filteredData, searchTerm, setSearchTerm } = useTableFilter(rules, ["name", "scope_value"])
+  const { sortedData, sortConfig, requestSort } = useTableSort(filteredData)
 
   useEffect(() => {
     fetchRules()
@@ -100,22 +104,79 @@ export function VolumePricingList() {
     }
   }
 
-  const filteredRules = rules.filter(
-    (rule) =>
-      rule.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rule.scope_value?.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
-
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading volume pricing rules...</span>
-        </CardContent>
-      </Card>
-    )
-  }
+  const columns: ColumnDef<VolumePricingRule>[] = [
+    {
+      key: "name",
+      header: "Rule Name",
+      sortable: true,
+      render: (rule) => (
+        <div>
+          <div className="font-medium">{rule.name}</div>
+          {rule.description && <div className="text-xs text-muted-foreground">{rule.description}</div>}
+        </div>
+      ),
+    },
+    {
+      key: "scope",
+      header: "Scope",
+      sortable: true,
+      render: (rule) => (
+        <div className="flex items-center gap-2">
+          {getScopeIcon(rule.scope)}
+          <span className="capitalize">{rule.scope}</span>
+        </div>
+      ),
+    },
+    {
+      key: "scope_value",
+      header: "Target",
+      sortable: true,
+      render: (rule) => <div className="text-sm">{rule.scope_value || "All"}</div>,
+    },
+    {
+      key: "tiers",
+      header: "Tiers",
+      render: (rule) => (
+        <div className="flex flex-col gap-1">
+          {rule.tiers.map((tier, idx) => (
+            <div key={idx} className="text-xs">
+              {tier.min_quantity}-{tier.max_quantity || "∞"}: {tier.discount_value}
+              {tier.discount_type === "percentage" ? "%" : "$"} off
+            </div>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      render: (rule) => <Badge className={getStatusColor(rule.status)}>{rule.status}</Badge>,
+    },
+    {
+      key: "actions",
+      header: "",
+      render: (rule) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleEdit(rule)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(rule.id)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ]
 
   return (
     <>
@@ -138,75 +199,14 @@ export function VolumePricingList() {
           </div>
         </CardHeader>
         <CardContent>
-          {filteredRules.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No volume pricing rules found. Create your first rule to get started.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Rule Name</TableHead>
-                  <TableHead>Scope</TableHead>
-                  <TableHead>Target</TableHead>
-                  <TableHead>Tiers</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRules.map((rule) => (
-                  <TableRow key={rule.id}>
-                    <TableCell>
-                      <div className="font-medium">{rule.name}</div>
-                      {rule.description && <div className="text-xs text-muted-foreground">{rule.description}</div>}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getScopeIcon(rule.scope)}
-                        <span className="capitalize">{rule.scope}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{rule.scope_value || "All"}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        {rule.tiers.map((tier, idx) => (
-                          <div key={idx} className="text-xs">
-                            {tier.min_quantity}-{tier.max_quantity || "∞"}: {tier.discount_value}
-                            {tier.discount_type === "percentage" ? "%" : "$"} off
-                          </div>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(rule.status)}>{rule.status}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(rule)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(rule.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <UnifiedDataTable
+            data={sortedData}
+            columns={columns}
+            loading={loading}
+            emptyMessage="No volume pricing rules found. Create your first rule to get started."
+            sortConfig={sortConfig}
+            onSort={requestSort}
+          />
         </CardContent>
       </Card>
 

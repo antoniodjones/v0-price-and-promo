@@ -7,31 +7,14 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/use-toast"
-import {
-  Users,
-  Plus,
-  Edit,
-  Trash2,
-  Search,
-  Upload,
-  UserX,
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-} from "lucide-react"
+import { UnifiedDataTable } from "@/components/shared/unified-data-table"
+import { useTableSort, useTableFilter, useTablePagination, useTableSelection } from "@/lib/table-helpers"
+import { formatDate } from "@/lib/table-formatters"
+import { Users, Plus, Edit, Trash2, Search, Upload, UserX, AlertCircle, CheckCircle, XCircle } from "lucide-react"
 import { userAPI, type ApiUser, type BulkOperationResult } from "@/lib/api/user-management"
+import { useToast } from "@/components/ui/use-toast" // Import useToast
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog" // Import Dialog components
+import { Textarea } from "@/components/ui/textarea"
 
 interface UserFilters {
   search: string
@@ -49,18 +32,13 @@ export function UserManagementDashboard() {
     status: "all",
     department: "all",
   })
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-  })
   const [selectedUsers, setSelectedUsers] = useState<string[]>([])
   const [showCreateUser, setShowCreateUser] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [editingUser, setEditingUser] = useState<ApiUser | null>(null)
   const [bulkImportData, setBulkImportData] = useState("")
   const [bulkOperationResult, setBulkOperationResult] = useState<BulkOperationResult | null>(null)
-  const { toast } = useToast()
+  const { toast } = useToast() // Declare useToast
 
   const [newUser, setNewUser] = useState<Omit<ApiUser, "id" | "created_at" | "updated_at">>({
     name: "",
@@ -72,20 +50,17 @@ export function UserManagementDashboard() {
 
   useEffect(() => {
     loadUsers()
-  }, [filters, pagination.page, pagination.limit])
+  }, [filters])
 
   const loadUsers = async () => {
     try {
       setLoading(true)
       const response = await userAPI.getUsers({
-        page: pagination.page,
-        limit: pagination.limit,
         search: filters.search || undefined,
         role: filters.role === "all" ? undefined : filters.role,
         status: filters.status === "all" ? undefined : filters.status,
       })
       setUsers(response.data)
-      setPagination((prev) => ({ ...prev, total: response.pagination.total }))
     } catch (error) {
       console.error("Error loading users:", error)
       toast({
@@ -258,6 +233,80 @@ export function UserManagementDashboard() {
 
   const departments = Array.from(new Set(users.map((user) => user.department).filter(Boolean)))
 
+  const { sortedData, sortConfig, handleSort } = useTableSort(users, { key: "name", direction: "asc" })
+  const { filteredData } = useTableFilter(sortedData, filters.search, ["name", "email", "department"])
+  const { paginatedData, pagination, goToPage, setPageSize } = useTablePagination(filteredData, 10)
+  const { selectedRows, toggleRow, toggleAll, clearSelection } = useTableSelection(users.map((u) => u.id!))
+
+  const columns = [
+    {
+      key: "select",
+      label: <input type="checkbox" checked={selectedRows.length === users.length} onChange={() => toggleAll()} />,
+      render: (user: ApiUser) => (
+        <input type="checkbox" checked={selectedRows.includes(user.id!)} onChange={() => toggleRow(user.id!)} />
+      ),
+    },
+    {
+      key: "name",
+      label: "User",
+      sortable: true,
+      render: (user: ApiUser) => (
+        <div>
+          <div className="font-medium">{user.name}</div>
+          <div className="text-sm text-muted-foreground">{user.email}</div>
+        </div>
+      ),
+    },
+    {
+      key: "role",
+      label: "Role",
+      sortable: true,
+      render: (user: ApiUser) => <Badge variant={getRoleBadgeVariant(user.role)}>{user.role}</Badge>,
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      render: (user: ApiUser) => (
+        <div className="flex items-center gap-2">
+          {getStatusIcon(user.status)}
+          <Badge variant={user.status === "active" ? "default" : "secondary"}>{user.status}</Badge>
+        </div>
+      ),
+    },
+    {
+      key: "department",
+      label: "Department",
+      sortable: true,
+      render: (user: ApiUser) => user.department || "—",
+    },
+    {
+      key: "created_at",
+      label: "Created",
+      sortable: true,
+      render: (user: ApiUser) => formatDate(user.created_at),
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (user: ApiUser) => (
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setEditingUser(user)}>
+            <Edit className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDeleteUser(user.id!)}
+            className="text-red-500 hover:text-red-700"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -267,139 +316,14 @@ export function UserManagementDashboard() {
           <p className="text-sm text-muted-foreground">Manage user accounts, roles, and permissions</p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={showBulkImport} onOpenChange={setShowBulkImport}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Upload className="mr-2 h-4 w-4" />
-                Bulk Import
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Bulk Import Users</DialogTitle>
-                <DialogDescription>
-                  Import multiple users at once using JSON format. Each user should have name, email, role, and status.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bulk-data">User Data (JSON)</Label>
-                  <Textarea
-                    id="bulk-data"
-                    placeholder={`[
-  {
-    "name": "John Doe",
-    "email": "john@example.com",
-    "role": "user",
-    "status": "active",
-    "department": "Sales"
-  }
-]`}
-                    value={bulkImportData}
-                    onChange={(e) => setBulkImportData(e.target.value)}
-                    rows={10}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleBulkImport}>Import Users</Button>
-                  <Button variant="outline" onClick={() => setShowBulkImport(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add User
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New User</DialogTitle>
-                <DialogDescription>
-                  Add a new user to the system with appropriate role and permissions.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="user-name">Name *</Label>
-                    <Input
-                      id="user-name"
-                      placeholder="John Doe"
-                      value={newUser.name}
-                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="user-email">Email *</Label>
-                    <Input
-                      id="user-email"
-                      type="email"
-                      placeholder="john@example.com"
-                      value={newUser.email}
-                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="user-role">Role</Label>
-                    <Select
-                      value={newUser.role}
-                      onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="manager">Manager</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="user-status">Status</Label>
-                    <Select
-                      value={newUser.status}
-                      onValueChange={(value: any) => setNewUser({ ...newUser, status: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="user-department">Department</Label>
-                  <Input
-                    id="user-department"
-                    placeholder="Sales, Marketing, IT, etc."
-                    value={newUser.department}
-                    onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button onClick={handleCreateUser}>Create User</Button>
-                  <Button variant="outline" onClick={() => setShowCreateUser(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button variant="outline" onClick={() => setShowBulkImport(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Bulk Import
+          </Button>
+          <Button onClick={() => setShowCreateUser(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
         </div>
       </div>
 
@@ -474,20 +398,20 @@ export function UserManagementDashboard() {
       </Card>
 
       {/* Bulk Operations */}
-      {selectedUsers.length > 0 && (
+      {selectedRows.length > 0 && (
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <span className="text-sm font-medium">{selectedUsers.length} users selected</span>
+                <span className="text-sm font-medium">{selectedRows.length} users selected</span>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={handleBulkDeactivate}>
                   <UserX className="mr-2 h-4 w-4" />
                   Deactivate Selected
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setSelectedUsers([])}>
+                <Button variant="outline" size="sm" onClick={clearSelection}>
                   Clear Selection
                 </Button>
               </div>
@@ -552,220 +476,233 @@ export function UserManagementDashboard() {
           <CardDescription>Manage user accounts and permissions</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span>Loading users...</span>
-              </div>
-            </div>
-          ) : users.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Users Found</h3>
-              <p className="text-muted-foreground mb-4">
-                {filters.search !== "" || filters.role !== "all" || filters.status !== "all"
+          <UnifiedDataTable
+            data={paginatedData}
+            columns={columns}
+            loading={loading}
+            sortConfig={sortConfig}
+            onSort={handleSort}
+            pagination={pagination}
+            onPageChange={goToPage}
+            onPageSizeChange={setPageSize}
+            emptyState={{
+              icon: Users,
+              title: "No Users Found",
+              description:
+                filters.search !== "" || filters.role !== "all" || filters.status !== "all"
                   ? "No users match your current filters"
-                  : "Add your first user to get started"}
-              </p>
-              <Button onClick={() => setShowCreateUser(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add User
-              </Button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <input
-                      type="checkbox"
-                      checked={selectedUsers.length === users.length}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedUsers(users.map((user) => user.id!))
-                        } else {
-                          setSelectedUsers([])
-                        }
-                      }}
-                    />
-                  </TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.includes(user.id!)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedUsers([...selectedUsers, user.id!])
-                          } else {
-                            setSelectedUsers(selectedUsers.filter((id) => id !== user.id))
-                          }
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{user.name}</div>
-                        <div className="text-sm text-muted-foreground">{user.email}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getRoleBadgeVariant(user.role)}>{user.role}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(user.status)}
-                        <Badge variant={user.status === "active" ? "default" : "secondary"}>{user.status}</Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>{user.department || "—"}</TableCell>
-                    <TableCell>{user.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Dialog
-                          open={editingUser?.id === user.id}
-                          onOpenChange={(open) => !open && setEditingUser(null)}
-                        >
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setEditingUser(user)}>
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Edit User</DialogTitle>
-                              <DialogDescription>Update user information and permissions.</DialogDescription>
-                            </DialogHeader>
-                            {editingUser && (
-                              <div className="space-y-4">
-                                <div className="grid gap-4 md:grid-cols-2">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="edit-name">Name</Label>
-                                    <Input
-                                      id="edit-name"
-                                      value={editingUser.name}
-                                      onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="edit-email">Email</Label>
-                                    <Input
-                                      id="edit-email"
-                                      type="email"
-                                      value={editingUser.email}
-                                      onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="grid gap-4 md:grid-cols-2">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="edit-role">Role</Label>
-                                    <Select
-                                      value={editingUser.role}
-                                      onValueChange={(value: any) => setEditingUser({ ...editingUser, role: value })}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="user">User</SelectItem>
-                                        <SelectItem value="manager">Manager</SelectItem>
-                                        <SelectItem value="admin">Admin</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="edit-status">Status</Label>
-                                    <Select
-                                      value={editingUser.status}
-                                      onValueChange={(value: any) => setEditingUser({ ...editingUser, status: value })}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor="edit-department">Department</Label>
-                                  <Input
-                                    id="edit-department"
-                                    value={editingUser.department || ""}
-                                    onChange={(e) => setEditingUser({ ...editingUser, department: e.target.value })}
-                                  />
-                                </div>
-
-                                <div className="flex gap-2">
-                                  <Button onClick={handleUpdateUser}>Update User</Button>
-                                  <Button variant="outline" onClick={() => setEditingUser(null)}>
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </DialogContent>
-                        </Dialog>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteUser(user.id!)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                  : "Add your first user to get started",
+              action: (
+                <Button onClick={() => setShowCreateUser(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add User
+                </Button>
+              ),
+            }}
+          />
         </CardContent>
       </Card>
 
-      {/* Pagination */}
-      {pagination.total > pagination.limit && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-            {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} users
+      {/* Bulk Import Dialog */}
+      <Dialog open={showBulkImport} onOpenChange={setShowBulkImport}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Bulk Import Users</DialogTitle>
+            <DialogDescription>
+              Import multiple users at once using JSON format. Each user should have name, email, role, and status.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="bulk-data">User Data (JSON)</Label>
+              <Textarea
+                id="bulk-data"
+                placeholder={`[
+  {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "user",
+    "status": "active",
+    "department": "Sales"
+  }
+]`}
+                value={bulkImportData}
+                onChange={(e) => setBulkImportData(e.target.value)}
+                rows={10}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleBulkImport}>Import Users</Button>
+              <Button variant="outline" onClick={() => setShowBulkImport(false)}>
+                Cancel
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
-              disabled={pagination.page === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
-              disabled={pagination.page * pagination.limit >= pagination.total}
-            >
-              Next
-            </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+            <DialogDescription>Add a new user to the system with appropriate role and permissions.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="user-name">Name *</Label>
+                <Input
+                  id="user-name"
+                  placeholder="John Doe"
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="user-email">Email *</Label>
+                <Input
+                  id="user-email"
+                  type="email"
+                  placeholder="john@example.com"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="user-role">Role</Label>
+                <Select value={newUser.role} onValueChange={(value: any) => setNewUser({ ...newUser, role: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="user-status">Status</Label>
+                <Select
+                  value={newUser.status}
+                  onValueChange={(value: any) => setNewUser({ ...newUser, status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="user-department">Department</Label>
+              <Input
+                id="user-department"
+                placeholder="Sales, Marketing, IT, etc."
+                value={newUser.department}
+                onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleCreateUser}>Create User</Button>
+              <Button variant="outline" onClick={() => setShowCreateUser(false)}>
+                Cancel
+              </Button>
+            </div>
           </div>
-        </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      {editingUser && (
+        <Dialog open={true} onOpenChange={() => setEditingUser(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>Update user information and permissions.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Name</Label>
+                  <Input
+                    id="edit-name"
+                    value={editingUser.name}
+                    onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-email">Email</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={editingUser.email}
+                    onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-role">Role</Label>
+                  <Select
+                    value={editingUser.role}
+                    onValueChange={(value: any) => setEditingUser({ ...editingUser, role: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-status">Status</Label>
+                  <Select
+                    value={editingUser.status}
+                    onValueChange={(value: any) => setEditingUser({ ...editingUser, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-department">Department</Label>
+                <Input
+                  id="edit-department"
+                  value={editingUser.department || ""}
+                  onChange={(e) => setEditingUser({ ...editingUser, department: e.target.value })}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button onClick={handleUpdateUser}>Update User</Button>
+                <Button variant="outline" onClick={() => setEditingUser(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )

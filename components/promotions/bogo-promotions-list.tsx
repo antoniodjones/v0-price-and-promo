@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { BogoPromotionEditModal } from "./bogo-promotion-edit-modal"
+import { formatDate, formatCurrency, formatPercentage } from "@/lib/table-formatters"
 
 interface BogoPromotion {
   id: string
@@ -223,8 +224,11 @@ export function BogoPromotionsList({ searchTerm }: BogoPromotionsListProps) {
                 </div>
               </div>
               <CardDescription>
-                Buy {promotion.triggerProduct || "Unknown Product"} → Get {promotion.rewardValue || 0}
-                {promotion.rewardType === "percentage" ? "%" : "$"} off {promotion.rewardProduct || "Unknown Product"}
+                Buy {promotion.triggerProduct || "Unknown Product"} → Get{" "}
+                {promotion.rewardType === "percentage"
+                  ? formatPercentage(promotion.rewardValue || 0)
+                  : formatCurrency(promotion.rewardValue || 0)}{" "}
+                off {promotion.rewardProduct || "Unknown Product"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -232,8 +236,7 @@ export function BogoPromotionsList({ searchTerm }: BogoPromotionsListProps) {
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Campaign Period</p>
                   <p className="text-sm">
-                    {promotion.startDate ? new Date(promotion.startDate).toLocaleDateString() : "Unknown"} -{" "}
-                    {promotion.endDate ? new Date(promotion.endDate).toLocaleDateString() : "Unknown"}
+                    {formatDate(promotion.startDate)} - {formatDate(promotion.endDate)}
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -243,7 +246,7 @@ export function BogoPromotionsList({ searchTerm }: BogoPromotionsListProps) {
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Customer Savings</p>
                   <p className="text-sm font-bold text-gti-dark-green">
-                    ${(promotion.performance?.savings || 0).toLocaleString()}
+                    {formatCurrency(promotion.performance?.savings || 0)}
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -251,7 +254,7 @@ export function BogoPromotionsList({ searchTerm }: BogoPromotionsListProps) {
                   <div className="flex items-center space-x-1">
                     <Percent className="h-3 w-3 text-gti-bright-green" />
                     <p className="text-sm font-bold text-gti-dark-green">
-                      {promotion.performance?.conversionRate || 0}%
+                      {formatPercentage(promotion.performance?.conversionRate || 0)}
                     </p>
                   </div>
                 </div>

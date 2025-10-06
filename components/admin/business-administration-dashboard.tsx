@@ -6,11 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
+import { UnifiedDataTable } from "@/components/shared/unified-data-table"
+import { useTableSort, useTableFilter, useTablePagination } from "@/lib/table-helpers"
+import { formatDate } from "@/lib/table-formatters"
 import {
   Building2,
   Settings,
@@ -39,6 +37,7 @@ import {
   type DataJob,
   type SystemConfig,
 } from "@/lib/admin/business-administration"
+import { useToast } from "@/components/ui/use-toast"
 
 export function BusinessAdministrationDashboard() {
   const [tenants, setTenants] = useState<Tenant[]>([])
@@ -146,6 +145,19 @@ export function BusinessAdministrationDashboard() {
     }
   }
 
+  const tenantsSort = useTableSort(tenants, { key: "created_at", direction: "desc" })
+  const tenantsFilter = useTableFilter(tenantsSort.sortedData, ["name", "slug", "domain"])
+  const tenantsPagination = useTablePagination(tenantsFilter.filteredData, 10)
+
+  const rulesSort = useTableSort(businessRules, { key: "priority", direction: "asc" })
+  const rulesFilter = useTableFilter(rulesSort.sortedData, ["name", "description", "rule_type"])
+
+  const integrationsSort = useTableSort(integrations, { key: "last_sync", direction: "desc" })
+  const integrationsFilter = useTableFilter(integrationsSort.sortedData, ["name", "description", "integration_type"])
+
+  const jobsSort = useTableSort(dataJobs, { key: "created_at", direction: "desc" })
+  const jobsFilter = useTableFilter(jobsSort.sortedData, ["job_type", "data_type"])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -252,53 +264,67 @@ export function BusinessAdministrationDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Organization</TableHead>
-                    <TableHead>Domain</TableHead>
-                    <TableHead>Subscription</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tenants.map((tenant) => (
-                    <TableRow key={tenant.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{tenant.name}</div>
-                          <div className="text-sm text-muted-foreground">{tenant.slug}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{tenant.domain || "Not set"}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {tenant.subscription_tier}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(tenant.status)}
-                          <Badge variant={tenant.status === "active" ? "default" : "secondary"}>{tenant.status}</Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>{new Date(tenant.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Settings className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <UnifiedDataTable
+                data={tenantsPagination.paginatedData}
+                columns={[
+                  {
+                    key: "name",
+                    header: "Organization",
+                    sortable: true,
+                    render: (tenant) => (
+                      <div>
+                        <div className="font-medium">{tenant.name}</div>
+                        <div className="text-sm text-muted-foreground">{tenant.slug}</div>
+                      </div>
+                    ),
+                  },
+                  { key: "domain", header: "Domain", render: (tenant) => tenant.domain || "Not set" },
+                  {
+                    key: "subscription_tier",
+                    header: "Subscription",
+                    render: (tenant) => (
+                      <Badge variant="outline" className="capitalize">
+                        {tenant.subscription_tier}
+                      </Badge>
+                    ),
+                  },
+                  {
+                    key: "status",
+                    header: "Status",
+                    sortable: true,
+                    render: (tenant) => (
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(tenant.status)}
+                        <Badge variant={tenant.status === "active" ? "default" : "secondary"}>{tenant.status}</Badge>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "created_at",
+                    header: "Created",
+                    sortable: true,
+                    render: (tenant) => formatDate(tenant.created_at),
+                  },
+                  {
+                    key: "actions",
+                    header: "Actions",
+                    render: () => (
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Settings className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ),
+                  },
+                ]}
+                sortState={tenantsSort}
+                searchValue={tenantsFilter.searchTerm}
+                onSearchChange={tenantsFilter.setSearchTerm}
+                pagination={tenantsPagination}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -325,49 +351,55 @@ export function BusinessAdministrationDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Rule Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {businessRules.map((rule) => (
-                    <TableRow key={rule.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{rule.name}</div>
-                          <div className="text-sm text-muted-foreground">{rule.description}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{rule.rule_type}</Badge>
-                      </TableCell>
-                      <TableCell>{rule.priority}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Switch checked={rule.enabled} />
-                          <span className="text-sm">{rule.enabled ? "Enabled" : "Disabled"}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button variant="outline" size="sm" className="text-red-500 bg-transparent">
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <UnifiedDataTable
+                data={rulesFilter.filteredData}
+                columns={[
+                  {
+                    key: "name",
+                    header: "Rule Name",
+                    sortable: true,
+                    render: (rule) => (
+                      <div>
+                        <div className="font-medium">{rule.name}</div>
+                        <div className="text-sm text-muted-foreground">{rule.description}</div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "rule_type",
+                    header: "Type",
+                    render: (rule) => <Badge variant="outline">{rule.rule_type}</Badge>,
+                  },
+                  { key: "priority", header: "Priority", sortable: true },
+                  {
+                    key: "enabled",
+                    header: "Status",
+                    render: (rule) => (
+                      <div className="flex items-center gap-2">
+                        <Switch checked={rule.enabled} />
+                        <span className="text-sm">{rule.enabled ? "Enabled" : "Disabled"}</span>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "actions",
+                    header: "Actions",
+                    render: () => (
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button variant="outline" size="sm" className="text-red-500 bg-transparent">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ),
+                  },
+                ]}
+                sortState={rulesSort}
+                searchValue={rulesFilter.searchTerm}
+                onSearchChange={rulesFilter.setSearchTerm}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -394,75 +426,85 @@ export function BusinessAdministrationDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Integration</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Sync</TableHead>
-                    <TableHead>Frequency</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {integrations.map((integration) => (
-                    <TableRow key={integration.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{integration.name}</div>
-                          <div className="text-sm text-muted-foreground">{integration.description}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{integration.integration_type}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(integration.status)}
-                          <Badge
-                            variant={
-                              integration.status === "active"
-                                ? "default"
-                                : integration.status === "error"
-                                  ? "destructive"
-                                  : "secondary"
-                            }
-                          >
-                            {integration.status}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {integration.last_sync ? new Date(integration.last_sync).toLocaleString() : "Never"}
-                      </TableCell>
-                      <TableCell>{integration.sync_frequency}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleTestIntegration(integration.id)}
-                            disabled={processingId === integration.id}
-                          >
-                            {processingId === integration.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Play className="h-3 w-3" />
-                            )}
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button variant="outline" size="sm" className="text-red-500 bg-transparent">
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <UnifiedDataTable
+                data={integrationsFilter.filteredData}
+                columns={[
+                  {
+                    key: "name",
+                    header: "Integration",
+                    sortable: true,
+                    render: (integration) => (
+                      <div>
+                        <div className="font-medium">{integration.name}</div>
+                        <div className="text-sm text-muted-foreground">{integration.description}</div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "integration_type",
+                    header: "Type",
+                    render: (integration) => <Badge variant="outline">{integration.integration_type}</Badge>,
+                  },
+                  {
+                    key: "status",
+                    header: "Status",
+                    sortable: true,
+                    render: (integration) => (
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(integration.status)}
+                        <Badge
+                          variant={
+                            integration.status === "active"
+                              ? "default"
+                              : integration.status === "error"
+                                ? "destructive"
+                                : "secondary"
+                          }
+                        >
+                          {integration.status}
+                        </Badge>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "last_sync",
+                    header: "Last Sync",
+                    sortable: true,
+                    render: (integration) =>
+                      integration.last_sync ? new Date(integration.last_sync).toLocaleString() : "Never",
+                  },
+                  { key: "sync_frequency", header: "Frequency" },
+                  {
+                    key: "actions",
+                    header: "Actions",
+                    render: (integration) => (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleTestIntegration(integration.id)}
+                          disabled={processingId === integration.id}
+                        >
+                          {processingId === integration.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Play className="h-3 w-3" />
+                          )}
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button variant="outline" size="sm" className="text-red-500 bg-transparent">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ),
+                  },
+                ]}
+                sortState={integrationsSort}
+                searchValue={integrationsFilter.searchTerm}
+                onSearchChange={integrationsFilter.setSearchTerm}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -477,18 +519,21 @@ export function BusinessAdministrationDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Data Type</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select data type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="products">Products</SelectItem>
-                      <SelectItem value="customers">Customers</SelectItem>
-                      <SelectItem value="prices">Price Data</SelectItem>
-                      <SelectItem value="discounts">Discounts</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="text-sm font-medium">Data Type</div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-full">
+                        <div className="relative">
+                          <select className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="products">Products</option>
+                            <option value="customers">Customers</option>
+                            <option value="prices">Price Data</option>
+                            <option value="discounts">Discounts</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <Button className="w-full">
                   <Upload className="mr-2 h-4 w-4" />
@@ -504,17 +549,20 @@ export function BusinessAdministrationDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Export Format</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select format" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="csv">CSV</SelectItem>
-                      <SelectItem value="json">JSON</SelectItem>
-                      <SelectItem value="excel">Excel</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="text-sm font-medium">Export Format</div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-full">
+                        <div className="relative">
+                          <select className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="csv">CSV</option>
+                            <option value="json">JSON</option>
+                            <option value="excel">Excel</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <Button className="w-full">
                   <Download className="mr-2 h-4 w-4" />
@@ -530,65 +578,76 @@ export function BusinessAdministrationDashboard() {
               <CardDescription>Track import and export operations</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Job Type</TableHead>
-                    <TableHead>Data Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {dataJobs.map((job) => (
-                    <TableRow key={job.id}>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {job.job_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{job.data_type}</TableCell>
-                      <TableCell>
-                        <span className={`font-medium capitalize ${getJobStatusColor(job.status)}`}>{job.status}</span>
-                      </TableCell>
-                      <TableCell>
-                        {job.records_total > 0 ? (
-                          <div className="flex items-center gap-2">
-                            <div className="text-sm">
-                              {job.records_processed} / {job.records_total}
-                            </div>
-                            <div className="w-16 bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-blue-500 h-2 rounded-full"
-                                style={{
-                                  width: `${(job.records_processed / job.records_total) * 100}%`,
-                                }}
-                              />
-                            </div>
+              <UnifiedDataTable
+                data={jobsFilter.filteredData}
+                columns={[
+                  {
+                    key: "job_type",
+                    header: "Job Type",
+                    render: (job) => (
+                      <Badge variant="outline" className="capitalize">
+                        {job.job_type}
+                      </Badge>
+                    ),
+                  },
+                  { key: "data_type", header: "Data Type" },
+                  {
+                    key: "status",
+                    header: "Status",
+                    sortable: true,
+                    render: (job) => (
+                      <span className={`font-medium capitalize ${getJobStatusColor(job.status)}`}>{job.status}</span>
+                    ),
+                  },
+                  {
+                    key: "progress",
+                    header: "Progress",
+                    render: (job) =>
+                      job.records_total > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm">
+                            {job.records_processed} / {job.records_total}
                           </div>
-                        ) : (
-                          "N/A"
-                        )}
-                      </TableCell>
-                      <TableCell>{new Date(job.created_at).toLocaleString()}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {job.status === "running" && (
-                            <Button variant="outline" size="sm">
-                              <Pause className="h-3 w-3" />
-                            </Button>
-                          )}
-                          <Button variant="outline" size="sm">
-                            <FileText className="h-3 w-3" />
-                          </Button>
+                          <div className="w-16 bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-500 h-2 rounded-full"
+                              style={{
+                                width: `${(job.records_processed / job.records_total) * 100}%`,
+                              }}
+                            />
+                          </div>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      ) : (
+                        "N/A"
+                      ),
+                  },
+                  {
+                    key: "created_at",
+                    header: "Created",
+                    sortable: true,
+                    render: (job) => new Date(job.created_at).toLocaleString(),
+                  },
+                  {
+                    key: "actions",
+                    header: "Actions",
+                    render: (job) => (
+                      <div className="flex gap-2">
+                        {job.status === "running" && (
+                          <Button variant="outline" size="sm">
+                            <Pause className="h-3 w-3" />
+                          </Button>
+                        )}
+                        <Button variant="outline" size="sm">
+                          <FileText className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ),
+                  },
+                ]}
+                sortState={jobsSort}
+                searchValue={jobsFilter.searchTerm}
+                onSearchChange={jobsFilter.setSearchTerm}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -617,17 +676,20 @@ export function BusinessAdministrationDashboard() {
                     <div className="grid gap-4 md:grid-cols-2">
                       {configs.map((config) => (
                         <div key={config.id} className="space-y-2">
-                          <Label className="text-sm font-medium">
+                          <div className="text-sm font-medium">
                             {config.config_key.split(".").pop()?.replace(/_/g, " ")}
-                          </Label>
+                          </div>
                           <div className="text-xs text-muted-foreground mb-2">{config.description}</div>
                           {typeof config.config_value.value === "boolean" ? (
                             <Switch checked={config.config_value.value} />
                           ) : (
-                            <Input
-                              value={config.config_value.value}
-                              type={config.config_value.type === "integer" ? "number" : "text"}
-                            />
+                            <div className="relative">
+                              <input
+                                type={config.config_value.type === "integer" ? "number" : "text"}
+                                value={config.config_value.value}
+                                className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </div>
                           )}
                         </div>
                       ))}

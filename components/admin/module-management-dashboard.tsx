@@ -6,18 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
+import { UnifiedDataTable } from "@/components/shared/unified-data-table"
+import { useTableSort, useTableFilter } from "@/lib/table-helpers"
+import { formatDate } from "@/lib/table-formatters"
 import {
   Settings,
   Shield,
@@ -38,6 +29,17 @@ import {
   type ModuleAuditLog,
   type ModuleValidationResult,
 } from "@/lib/admin/module-management"
+import { useToast } from "@/components/ui/use-toast" // Import useToast hook
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 export function ModuleManagementDashboard() {
   const [modules, setModules] = useState<SystemModule[]>([])
@@ -48,7 +50,7 @@ export function ModuleManagementDashboard() {
   const [toggleReason, setToggleReason] = useState("")
   const [validation, setValidation] = useState<ModuleValidationResult | null>(null)
   const [processingModule, setProcessingModule] = useState<string | null>(null)
-  const { toast } = useToast()
+  const { toast } = useToast() // Declare useToast hook
 
   useEffect(() => {
     loadData()
@@ -200,6 +202,12 @@ export function ModuleManagementDashboard() {
     return { total, enabled, byDomain, byRisk }
   }
 
+  const modulesSort = useTableSort(modules, { key: "domain", direction: "asc" })
+  const modulesFilter = useTableFilter(modulesSort.sortedData, ["name", "description", "domain", "module_id"])
+
+  const auditSort = useTableSort(auditLogs, { key: "created_at", direction: "desc" })
+  const auditFilter = useTableFilter(auditSort.sortedData, ["module_id", "action", "changed_by"])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -291,81 +299,99 @@ export function ModuleManagementDashboard() {
               <CardDescription>Manage feature flags and module dependencies for safe system operation</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Module</TableHead>
-                    <TableHead>Domain</TableHead>
-                    <TableHead>Risk Level</TableHead>
-                    <TableHead>Dependencies</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {modules.map((module) => (
-                    <TableRow key={module.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{module.name}</div>
-                          <div className="text-sm text-muted-foreground">{module.description}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getDomainIcon(module.domain)}
-                          <Badge variant="outline" className="capitalize">
-                            {module.domain}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getRiskLevelIcon(module.risk_level)}
-                          <span className={`text-sm font-medium capitalize ${getRiskLevelColor(module.risk_level)}`}>
-                            {module.risk_level}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {module.dependencies.length > 0 ? (
-                            module.dependencies.map((dep) => (
-                              <Badge key={dep} variant="secondary" className="text-xs">
-                                {dep}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-sm text-muted-foreground">None</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {module.enabled ? (
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <XCircle className="h-4 w-4 text-gray-400" />
-                          )}
-                          <Badge variant={module.enabled ? "default" : "secondary"}>
-                            {module.enabled ? "Enabled" : "Disabled"}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Switch
-                            checked={module.enabled}
-                            onCheckedChange={() => handleModuleToggle(module)}
-                            disabled={processingModule === module.module_id}
-                          />
-                          {processingModule === module.module_id && <Loader2 className="h-4 w-4 animate-spin" />}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <UnifiedDataTable
+                data={modulesFilter.filteredData}
+                columns={[
+                  {
+                    key: "name",
+                    header: "Module",
+                    sortable: true,
+                    render: (module) => (
+                      <div>
+                        <div className="font-medium">{module.name}</div>
+                        <div className="text-sm text-muted-foreground">{module.description}</div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "domain",
+                    header: "Domain",
+                    sortable: true,
+                    render: (module) => (
+                      <div className="flex items-center gap-2">
+                        {getDomainIcon(module.domain)}
+                        <Badge variant="outline" className="capitalize">
+                          {module.domain}
+                        </Badge>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "risk_level",
+                    header: "Risk Level",
+                    sortable: true,
+                    render: (module) => (
+                      <div className="flex items-center gap-2">
+                        {getRiskLevelIcon(module.risk_level)}
+                        <span className={`text-sm font-medium capitalize ${getRiskLevelColor(module.risk_level)}`}>
+                          {module.risk_level}
+                        </span>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "dependencies",
+                    header: "Dependencies",
+                    render: (module) => (
+                      <div className="flex flex-wrap gap-1">
+                        {module.dependencies.length > 0 ? (
+                          module.dependencies.map((dep) => (
+                            <Badge key={dep} variant="secondary" className="text-xs">
+                              {dep}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-sm text-muted-foreground">None</span>
+                        )}
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "enabled",
+                    header: "Status",
+                    sortable: true,
+                    render: (module) => (
+                      <div className="flex items-center gap-2">
+                        {module.enabled ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-gray-400" />
+                        )}
+                        <Badge variant={module.enabled ? "default" : "secondary"}>
+                          {module.enabled ? "Enabled" : "Disabled"}
+                        </Badge>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "actions",
+                    header: "Actions",
+                    render: (module) => (
+                      <div className="flex gap-2">
+                        <Switch
+                          checked={module.enabled}
+                          onCheckedChange={() => handleModuleToggle(module)}
+                          disabled={processingModule === module.module_id}
+                        />
+                        {processingModule === module.module_id && <Loader2 className="h-4 w-4 animate-spin" />}
+                      </div>
+                    ),
+                  },
+                ]}
+                sortState={modulesSort}
+                searchValue={modulesFilter.searchTerm}
+                onSearchChange={modulesFilter.setSearchTerm}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -378,48 +404,57 @@ export function ModuleManagementDashboard() {
               <CardDescription>Track all module changes and system modifications</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Timestamp</TableHead>
-                    <TableHead>Module</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Changed By</TableHead>
-                    <TableHead>Reason</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {auditLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{new Date(log.created_at).toLocaleString()}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{log.module_id}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            log.action === "enabled" ? "default" : log.action === "disabled" ? "secondary" : "outline"
-                          }
-                          className="capitalize"
-                        >
-                          {log.action}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">{log.changed_by || "System"}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{log.reason || "No reason provided"}</span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <UnifiedDataTable
+                data={auditFilter.filteredData}
+                columns={[
+                  {
+                    key: "created_at",
+                    header: "Timestamp",
+                    sortable: true,
+                    render: (log) => (
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{formatDate(log.created_at, true)}</span>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "module_id",
+                    header: "Module",
+                    render: (log) => <Badge variant="outline">{log.module_id}</Badge>,
+                  },
+                  {
+                    key: "action",
+                    header: "Action",
+                    sortable: true,
+                    render: (log) => (
+                      <Badge
+                        variant={
+                          log.action === "enabled" ? "default" : log.action === "disabled" ? "secondary" : "outline"
+                        }
+                        className="capitalize"
+                      >
+                        {log.action}
+                      </Badge>
+                    ),
+                  },
+                  {
+                    key: "changed_by",
+                    header: "Changed By",
+                    render: (log) => (
+                      <span className="text-sm text-muted-foreground">{log.changed_by || "System"}</span>
+                    ),
+                  },
+                  {
+                    key: "reason",
+                    header: "Reason",
+                    render: (log) => <span className="text-sm">{log.reason || "No reason provided"}</span>,
+                  },
+                ]}
+                sortState={auditSort}
+                searchValue={auditFilter.searchTerm}
+                onSearchChange={auditFilter.setSearchTerm}
+              />
             </CardContent>
           </Card>
         </TabsContent>

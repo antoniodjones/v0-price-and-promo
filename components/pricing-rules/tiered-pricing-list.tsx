@@ -5,10 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Search, MoreHorizontal, Edit, Trash2, Loader2, Package, Tag } from "lucide-react"
+import { Search, MoreHorizontal, Edit, Trash2, Package, Tag } from "lucide-react"
 import { TieredPricingModal } from "./tiered-pricing-modal"
+import { UnifiedDataTable } from "@/components/shared/unified-data-table"
+import { useTableFilter, useTableSort } from "@/lib/table-helpers"
+import type { ColumnDef } from "@/lib/table-helpers"
 
 interface TieredPricingRule {
   id: string
@@ -27,11 +29,13 @@ interface TieredPricingRule {
 }
 
 export function TieredPricingList() {
-  const [searchTerm, setSearchTerm] = useState("")
   const [rules, setRules] = useState<TieredPricingRule[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedRule, setSelectedRule] = useState<TieredPricingRule | null>(null)
+
+  const { filteredData, searchTerm, setSearchTerm } = useTableFilter(rules, ["name", "scope_value"])
+  const { sortedData, sortConfig, requestSort } = useTableSort(filteredData)
 
   useEffect(() => {
     fetchRules()
@@ -96,22 +100,95 @@ export function TieredPricingList() {
     }
   }
 
-  const filteredRules = rules.filter(
-    (rule) =>
-      rule.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rule.scope_value?.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
-
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading tiered pricing rules...</span>
-        </CardContent>
-      </Card>
-    )
-  }
+  const columns: ColumnDef<TieredPricingRule>[] = [
+    {
+      key: "name",
+      header: "Rule Name",
+      sortable: true,
+      render: (rule) => (
+        <div>
+          <div className="font-medium">{rule.name}</div>
+          {rule.description && <div className="text-xs text-muted-foreground">{rule.description}</div>}
+        </div>
+      ),
+    },
+    {
+      key: "customer_tiers",
+      header: "Customer Tiers",
+      render: (rule) => (
+        <div className="flex gap-1">
+          {rule.customer_tiers.map((tier) => (
+            <Badge key={tier} variant="outline">
+              {tier}
+            </Badge>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "scope",
+      header: "Scope",
+      sortable: true,
+      render: (rule) => (
+        <div className="flex items-center gap-2">
+          {getScopeIcon(rule.scope)}
+          <span className="capitalize">{rule.scope}</span>
+        </div>
+      ),
+    },
+    {
+      key: "scope_value",
+      header: "Target",
+      sortable: true,
+      render: (rule) => <div className="text-sm">{rule.scope_value || "All"}</div>,
+    },
+    {
+      key: "discount_value",
+      header: "Discount",
+      sortable: true,
+      render: (rule) => (
+        <div className="text-sm font-medium">
+          {rule.discount_value}
+          {rule.discount_type === "percentage" ? "%" : "$"}
+        </div>
+      ),
+    },
+    {
+      key: "priority",
+      header: "Priority",
+      sortable: true,
+      render: (rule) => <Badge variant="outline">{rule.priority}</Badge>,
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      render: (rule) => <Badge className={getStatusColor(rule.status)}>{rule.status}</Badge>,
+    },
+    {
+      key: "actions",
+      header: "",
+      render: (rule) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleEdit(rule)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(rule.id)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ]
 
   return (
     <>
@@ -134,85 +211,14 @@ export function TieredPricingList() {
           </div>
         </CardHeader>
         <CardContent>
-          {filteredRules.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No tiered pricing rules found. Create your first rule to get started.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Rule Name</TableHead>
-                  <TableHead>Customer Tiers</TableHead>
-                  <TableHead>Scope</TableHead>
-                  <TableHead>Target</TableHead>
-                  <TableHead>Discount</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRules.map((rule) => (
-                  <TableRow key={rule.id}>
-                    <TableCell>
-                      <div className="font-medium">{rule.name}</div>
-                      {rule.description && <div className="text-xs text-muted-foreground">{rule.description}</div>}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {rule.customer_tiers.map((tier) => (
-                          <Badge key={tier} variant="outline">
-                            {tier}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getScopeIcon(rule.scope)}
-                        <span className="capitalize">{rule.scope}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{rule.scope_value || "All"}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm font-medium">
-                        {rule.discount_value}
-                        {rule.discount_type === "percentage" ? "%" : "$"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{rule.priority}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(rule.status)}>{rule.status}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(rule)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(rule.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <UnifiedDataTable
+            data={sortedData}
+            columns={columns}
+            loading={loading}
+            emptyMessage="No tiered pricing rules found. Create your first rule to get started."
+            sortConfig={sortConfig}
+            onSort={requestSort}
+          />
         </CardContent>
       </Card>
 

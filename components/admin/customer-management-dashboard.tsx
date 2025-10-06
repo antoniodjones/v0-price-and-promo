@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
-import { Building2, Search, Plus, Edit, Loader2, RefreshCw, FileText } from "lucide-react"
+import { Building2, RefreshCw, Plus, Edit, FileText } from "lucide-react"
+import { UnifiedDataTable } from "@/components/shared/unified-data-table"
+import { useTableSort, useTableFilter, useTablePagination } from "@/lib/table-helpers"
+import { formatCurrency, formatDate } from "@/lib/table-formatters"
 
 interface Customer {
   id: string
@@ -41,13 +43,19 @@ export function CustomerManagementDashboard() {
     customerType: "all",
     tier: "all",
   })
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0,
-    totalPages: 0,
-  })
   const { toast } = useToast()
+
+  const { sortedData, sortConfig, handleSort } = useTableSort(customers, {
+    key: "business_legal_name",
+    direction: "asc",
+  })
+  const { filteredData } = useTableFilter(sortedData, filters.search, [
+    "business_legal_name",
+    "dba_name",
+    "cannabis_license_number",
+    "account_number",
+  ])
+  const { paginatedData, pagination, goToPage, setPageSize } = useTablePagination(filteredData, 20)
 
   useEffect(() => {
     loadCustomers()
@@ -76,11 +84,6 @@ export function CustomerManagementDashboard() {
         }
 
         setCustomers(customerData)
-        setPagination((prev) => ({
-          ...prev,
-          total: result.data.pagination.total,
-          totalPages: result.data.pagination.totalPages,
-        }))
       } else {
         toast({
           title: "Error",
@@ -119,20 +122,6 @@ export function CustomerManagementDashboard() {
     return <Badge className={colors[tier] || "bg-gray-500 text-white"}>Tier {tier}</Badge>
   }
 
-  const formatCurrency = (amount: number | null) => {
-    if (!amount) return "$0"
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-    }).format(amount)
-  }
-
-  const formatDate = (date: string | null) => {
-    if (!date) return "—"
-    return new Date(date).toLocaleDateString()
-  }
-
   const isLicenseExpiringSoon = (expirationDate: string | null) => {
     if (!expirationDate) return false
     const expDate = new Date(expirationDate)
@@ -145,6 +134,95 @@ export function CustomerManagementDashboard() {
     if (!expirationDate) return false
     return new Date(expirationDate) < new Date()
   }
+
+  const columns = [
+    {
+      key: "id",
+      label: "ID",
+      sortable: true,
+      render: (customer: Customer) => <span className="font-mono text-xs">{customer.id.slice(0, 8)}</span>,
+    },
+    {
+      key: "business_legal_name",
+      label: "Business Name",
+      sortable: true,
+      render: (customer: Customer) => (
+        <div>
+          <div className="font-medium">{customer.business_legal_name || "—"}</div>
+          {customer.dba_name && <div className="text-sm text-muted-foreground">DBA: {customer.dba_name}</div>}
+        </div>
+      ),
+    },
+    {
+      key: "cannabis_license_number",
+      label: "License Number",
+      sortable: true,
+      render: (customer: Customer) => (
+        <div className="font-mono text-sm">{customer.cannabis_license_number || "—"}</div>
+      ),
+    },
+    {
+      key: "license_expiration_date",
+      label: "License Expiration",
+      sortable: true,
+      render: (customer: Customer) => (
+        <div className="flex items-center gap-2">
+          <span className="text-sm">{formatDate(customer.license_expiration_date)}</span>
+          {isLicenseExpired(customer.license_expiration_date) && (
+            <Badge variant="destructive" className="text-xs">
+              Expired
+            </Badge>
+          )}
+          {isLicenseExpiringSoon(customer.license_expiration_date) &&
+            !isLicenseExpired(customer.license_expiration_date) && (
+              <Badge variant="outline" className="text-xs border-orange-500 text-orange-500">
+                Expiring Soon
+              </Badge>
+            )}
+        </div>
+      ),
+    },
+    {
+      key: "customer_type",
+      label: "Type",
+      sortable: true,
+      render: (customer: Customer) => getCustomerTypeBadge(customer.customer_type),
+    },
+    {
+      key: "tier",
+      label: "Tier",
+      sortable: true,
+      render: (customer: Customer) => getTierBadge(customer.tier),
+    },
+    {
+      key: "account_number",
+      label: "Account #",
+      sortable: true,
+      render: (customer: Customer) => <div className="font-mono text-sm">{customer.account_number || "—"}</div>,
+    },
+    {
+      key: "credit_limit",
+      label: "Credit Limit",
+      sortable: true,
+      render: (customer: Customer) => formatCurrency(customer.credit_limit),
+    },
+    {
+      key: "payment_terms",
+      label: "Payment Terms",
+      render: (customer: Customer) => <Badge variant="outline">{customer.payment_terms || "Net 30"}</Badge>,
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (customer: Customer) => (
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <Edit className="h-3 w-3" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <div className="space-y-6">
@@ -174,7 +252,7 @@ export function CustomerManagementDashboard() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pagination.total}</div>
+            <div className="text-2xl font-bold">{filteredData.length}</div>
             <p className="text-xs text-muted-foreground">Active accounts</p>
           </CardContent>
         </Card>
@@ -186,7 +264,7 @@ export function CustomerManagementDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-500">
-              {customers.filter((c) => c.customer_type === "internal").length}
+              {filteredData.filter((c) => c.customer_type === "internal").length}
             </div>
             <p className="text-xs text-muted-foreground">Green Thumb owned</p>
           </CardContent>
@@ -199,7 +277,7 @@ export function CustomerManagementDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-500">
-              {customers.filter((c) => c.customer_type === "external").length}
+              {filteredData.filter((c) => c.customer_type === "external").length}
             </div>
             <p className="text-xs text-muted-foreground">Third-party dispensaries</p>
           </CardContent>
@@ -212,7 +290,7 @@ export function CustomerManagementDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-500">
-              {customers.filter((c) => isLicenseExpiringSoon(c.license_expiration_date)).length}
+              {filteredData.filter((c) => isLicenseExpiringSoon(c.license_expiration_date)).length}
             </div>
             <p className="text-xs text-muted-foreground">Within 30 days</p>
           </CardContent>
@@ -229,7 +307,7 @@ export function CustomerManagementDashboard() {
             <div className="space-y-2">
               <Label htmlFor="search">Search</Label>
               <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <FileText className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="search"
                   placeholder="Business name, license #, account #..."
@@ -280,132 +358,32 @@ export function CustomerManagementDashboard() {
           <CardDescription>Wholesale cannabis business customers and licensing information</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span>Loading customers...</span>
-              </div>
-            </div>
-          ) : customers.length === 0 ? (
-            <div className="text-center py-12">
-              <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Customers Found</h3>
-              <p className="text-muted-foreground mb-4">
-                {filters.search || filters.customerType !== "all" || filters.tier !== "all"
+          <UnifiedDataTable
+            data={paginatedData}
+            columns={columns}
+            loading={loading}
+            sortConfig={sortConfig}
+            onSort={handleSort}
+            pagination={pagination}
+            onPageChange={goToPage}
+            onPageSizeChange={setPageSize}
+            emptyState={{
+              icon: Building2,
+              title: "No Customers Found",
+              description:
+                filters.search || filters.customerType !== "all" || filters.tier !== "all"
                   ? "No customers match your current filters"
-                  : "Add your first B2B customer to get started"}
-              </p>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Customer
-              </Button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Business Name</TableHead>
-                    <TableHead>License Number</TableHead>
-                    <TableHead>License Expiration</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Tier</TableHead>
-                    <TableHead>Account #</TableHead>
-                    <TableHead>Credit Limit</TableHead>
-                    <TableHead>Payment Terms</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell className="font-mono text-xs">{customer.id.slice(0, 8)}</TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{customer.business_legal_name || "—"}</div>
-                          {customer.dba_name && (
-                            <div className="text-sm text-muted-foreground">DBA: {customer.dba_name}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-mono text-sm">{customer.cannabis_license_number || "—"}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{formatDate(customer.license_expiration_date)}</span>
-                          {isLicenseExpired(customer.license_expiration_date) && (
-                            <Badge variant="destructive" className="text-xs">
-                              Expired
-                            </Badge>
-                          )}
-                          {isLicenseExpiringSoon(customer.license_expiration_date) &&
-                            !isLicenseExpired(customer.license_expiration_date) && (
-                              <Badge variant="outline" className="text-xs border-orange-500 text-orange-500">
-                                Expiring Soon
-                              </Badge>
-                            )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getCustomerTypeBadge(customer.customer_type)}</TableCell>
-                      <TableCell>{getTierBadge(customer.tier)}</TableCell>
-                      <TableCell>
-                        <div className="font-mono text-sm">{customer.account_number || "—"}</div>
-                      </TableCell>
-                      <TableCell>{formatCurrency(customer.credit_limit)}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{customer.payment_terms || "Net 30"}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  : "Add your first B2B customer to get started",
+              action: (
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Customer
+                </Button>
+              ),
+            }}
+          />
         </CardContent>
       </Card>
-
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-            {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} customers
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
-              disabled={pagination.page === 1}
-            >
-              Previous
-            </Button>
-            <div className="flex items-center gap-2">
-              <span className="text-sm">
-                Page {pagination.page} of {pagination.totalPages}
-              </span>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
-              disabled={pagination.page >= pagination.totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

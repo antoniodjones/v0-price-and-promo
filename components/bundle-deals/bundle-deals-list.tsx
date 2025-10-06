@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Edit, Copy, Trash2, Play, Pause, Package, Calendar, DollarSign, Settings } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { BundleDealEditModal } from "./bundle-deal-edit-modal"
+import { formatDate, formatCurrency } from "@/lib/table-formatters"
 
 interface BundleDeal {
   id: number
@@ -266,15 +267,14 @@ export function BundleDealsList() {
                       Duration
                     </div>
                     <div className="text-sm font-medium">
-                      {deal.startDate ? new Date(deal.startDate).toLocaleDateString() : "Unknown"} -{" "}
-                      {deal.endDate ? new Date(deal.endDate).toLocaleDateString() : "Unknown"}
+                      {formatDate(deal.startDate)} - {formatDate(deal.endDate)}
                     </div>
                   </div>
 
                   <div className="space-y-1">
                     <div className="text-sm text-ada-secondary">Performance</div>
                     <div className="text-sm font-medium">{deal.bundlesSold || 0} bundles sold</div>
-                    <div className="text-xs text-ada-secondary">${(deal.totalSales || 0).toLocaleString()} revenue</div>
+                    <div className="text-xs text-ada-secondary">{formatCurrency(deal.totalSales || 0)} revenue</div>
                   </div>
                 </div>
 

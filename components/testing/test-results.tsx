@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Filter, Download, Eye, Trash2, Calendar } from "lucide-react"
+import { UnifiedDataTable } from "@/components/shared/unified-data-table"
+import { useTableSort, useTableFilter, useTablePagination } from "@/lib/table-helpers"
 
 interface TestResult {
   id: string
@@ -84,12 +84,9 @@ export function TestResults() {
     },
   ]
 
-  const filteredResults = testResults.filter((result) => {
-    const matchesSearch = result.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || result.status === statusFilter
-    const matchesType = typeFilter === "all" || result.type === typeFilter
-    return matchesSearch && matchesStatus && matchesType
-  })
+  const resultsSort = useTableSort(testResults, { key: "runDate", direction: "desc" })
+  const resultsFilter = useTableFilter(resultsSort.sortedData, ["name", "type", "status", "details"])
+  const resultsPagination = useTablePagination(resultsFilter.filteredData, 10)
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -176,11 +173,10 @@ export function TestResults() {
         <CardContent>
           <div className="flex items-center gap-4 mb-6">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search tests..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={resultsFilter.searchTerm}
+                onChange={resultsFilter.setSearchTerm}
                 className="pl-10"
               />
             </div>
@@ -209,62 +205,84 @@ export function TestResults() {
               </SelectContent>
             </Select>
 
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              More Filters
-            </Button>
+            <Button variant="outline">More Filters</Button>
 
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
+            <Button variant="outline">Export</Button>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Test Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Run Date</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Tests</TableHead>
-                <TableHead>Pass Rate</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredResults.map((result) => (
-                <TableRow key={result.id}>
-                  <TableCell>
+          <UnifiedDataTable
+            data={resultsPagination.paginatedData}
+            columns={[
+              {
+                key: "name",
+                header: "Test Name",
+                sortable: true,
+                render: (result) => (
+                  <div>
                     <div className="font-medium">{result.name}</div>
                     <div className="text-sm text-gray-500">{result.details}</div>
-                  </TableCell>
-                  <TableCell>{getTypeBadge(result.type)}</TableCell>
-                  <TableCell>{getStatusBadge(result.status)}</TableCell>
-                  <TableCell className="text-gray-500">{result.runDate}</TableCell>
-                  <TableCell className="text-gray-500">{result.duration}</TableCell>
-                  <TableCell className="text-gray-500">{result.testCount}</TableCell>
-                  <TableCell>
-                    <span className={`font-medium ${getPassRateColor(result.passRate)}`}>{result.passRate}%</span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 bg-transparent">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </div>
+                ),
+              },
+              {
+                key: "type",
+                header: "Type",
+                sortable: true,
+                render: (result) => getTypeBadge(result.type),
+              },
+              {
+                key: "status",
+                header: "Status",
+                sortable: true,
+                render: (result) => getStatusBadge(result.status),
+              },
+              {
+                key: "runDate",
+                header: "Run Date",
+                sortable: true,
+                render: (result) => <span className="text-gray-500">{result.runDate}</span>,
+              },
+              {
+                key: "duration",
+                header: "Duration",
+                render: (result) => <span className="text-gray-500">{result.duration}</span>,
+              },
+              {
+                key: "testCount",
+                header: "Tests",
+                render: (result) => <span className="text-gray-500">{result.testCount}</span>,
+              },
+              {
+                key: "passRate",
+                header: "Pass Rate",
+                sortable: true,
+                render: (result) => (
+                  <span className={`font-medium ${getPassRateColor(result.passRate)}`}>{result.passRate}%</span>
+                ),
+              },
+              {
+                key: "actions",
+                header: "Actions",
+                render: () => (
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline">
+                      View
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      Download
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 bg-transparent">
+                      Delete
+                    </Button>
+                  </div>
+                ),
+              },
+            ]}
+            sortState={resultsSort}
+            searchValue={resultsFilter.searchTerm}
+            onSearchChange={resultsFilter.setSearchTerm}
+            pagination={resultsPagination}
+          />
         </CardContent>
       </Card>
 
@@ -281,21 +299,18 @@ export function TestResults() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-green-600" />
                     <span className="text-sm">Tests run today</span>
                   </div>
                   <span className="font-medium text-green-600">5</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-blue-600" />
                     <span className="text-sm">Tests run this week</span>
                   </div>
                   <span className="font-medium text-blue-600">23</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-purple-600" />
                     <span className="text-sm">Avg tests per day</span>
                   </div>
                   <span className="font-medium text-purple-600">3.2</span>

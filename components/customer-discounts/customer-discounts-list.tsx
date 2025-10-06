@@ -5,10 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Search, MoreHorizontal, Edit, Trash2, Users, Package, Tag, Loader2 } from "lucide-react"
+import { Search, MoreHorizontal, Edit, Trash2, Users, Package, Tag } from "lucide-react"
 import { CustomerDiscountEditModal } from "./customer-discount-edit-modal"
+import { UnifiedDataTable } from "@/components/shared/unified-data-table"
+import { useTableFilter, useTableSort } from "@/lib/table-helpers"
+import { formatDate, formatCurrency, formatPercentage } from "@/lib/table-formatters"
+import type { ColumnDef } from "@/lib/table-helpers"
 
 interface CustomerDiscount {
   id: string
@@ -89,13 +92,15 @@ const getStatusColor = (status: string) => {
 }
 
 export function CustomerDiscountsList() {
-  const [searchTerm, setSearchTerm] = useState("")
   const [discounts, setDiscounts] = useState<CustomerDiscount[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingDiscountId, setEditingDiscountId] = useState<string | null>(null)
   const [editingStartStep, setEditingStartStep] = useState<number>(1)
+
+  const { filteredData, searchTerm, setSearchTerm } = useTableFilter(discounts, ["name", "target", "customerTiers"])
+  const { sortedData, sortConfig, requestSort } = useTableSort(filteredData)
 
   useEffect(() => {
     const fetchDiscounts = async () => {
@@ -192,51 +197,130 @@ export function CustomerDiscountsList() {
     fetchDiscounts()
   }
 
-  const filteredDiscounts = discounts.filter((discount) => {
-    const searchLower = (searchTerm || "").toLowerCase()
-    const nameMatch = (discount?.name || "").toLowerCase().includes(searchLower)
-    const targetMatch = (discount?.target || "").toLowerCase().includes(searchLower)
-    const tierMatch =
-      Array.isArray(discount?.customerTiers) &&
-      discount.customerTiers.some(
-        (tier) => tier && typeof tier === "string" && (tier || "").toLowerCase().includes(searchLower),
-      )
-
-    return nameMatch || targetMatch || tierMatch
-  })
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Discount Rules</CardTitle>
-          <CardDescription>Manage customer-specific pricing rules and assignments</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="ml-2">Loading discounts...</span>
+  const columns: ColumnDef<CustomerDiscount>[] = [
+    {
+      key: "name",
+      header: "Discount Rule",
+      sortable: true,
+      render: (discount) => <div className="font-medium">{discount.name}</div>,
+    },
+    {
+      key: "level",
+      header: "Level & Target",
+      sortable: true,
+      render: (discount) => (
+        <div className="flex items-center space-x-2">
+          {getLevelIcon(discount.level)}
+          <div>
+            <div className="text-sm font-medium">{discount.level}</div>
+            <div className="text-xs text-muted-foreground">{discount.target}</div>
           </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Discount Rules</CardTitle>
-          <CardDescription>Manage customer-specific pricing rules and assignments</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8 text-red-600">
-            <span>Error loading discounts: {error}</span>
+        </div>
+      ),
+    },
+    {
+      key: "value",
+      header: "Discount",
+      sortable: true,
+      render: (discount) => (
+        <div>
+          <div className="font-medium">
+            {discount.type === "percentage" ? formatPercentage(discount.value) : formatCurrency(discount.value)}
           </div>
-        </CardContent>
-      </Card>
-    )
-  }
+          <div className="text-xs text-muted-foreground">
+            {discount.type === "percentage" ? "Percentage" : "Dollar amount"}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "customerTiers",
+      header: "Customer Tiers",
+      render: (discount) => (
+        <div>
+          <div className="flex items-center space-x-1">
+            <Users className="h-3 w-3 text-muted-foreground" />
+            <span className="text-sm">{discount.customerTiers?.length || 0}</span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {discount.customerTiers && discount.customerTiers.length > 0 ? (
+              <>
+                {discount.customerTiers.slice(0, 2).join(", ")}
+                {discount.customerTiers.length > 2 && ` +${discount.customerTiers.length - 2} more`}
+              </>
+            ) : (
+              "No tiers assigned"
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "startDate",
+      header: "Period",
+      sortable: true,
+      render: (discount) => (
+        <div>
+          <div className="text-sm">{formatDate(discount.startDate)}</div>
+          <div className="text-xs text-muted-foreground">
+            {discount.endDate ? `to ${formatDate(discount.endDate)}` : "No end date"}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "appliedOrders",
+      header: "Performance",
+      sortable: true,
+      render: (discount) => (
+        <div>
+          <div className="text-sm font-medium">{discount.appliedOrders || 0} orders</div>
+          <div className="text-xs text-muted-foreground">{formatCurrency(discount.totalSavings || 0)} saved</div>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      render: (discount) => <Badge className={getStatusColor(discount.status)}>{discount.status}</Badge>,
+    },
+    {
+      key: "actions",
+      header: "",
+      render: (discount) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleEditDiscount(discount.id)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit All
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 2)}>
+              <Package className="mr-2 h-4 w-4" />
+              Manage Products
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 3)}>
+              <Tag className="mr-2 h-4 w-4" />
+              Manage Discount Value
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 5)}>
+              <Users className="mr-2 h-4 w-4" />
+              Manage Customers
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ]
 
   return (
     <>
@@ -261,108 +345,15 @@ export function CustomerDiscountsList() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Discount Rule</TableHead>
-                <TableHead>Level & Target</TableHead>
-                <TableHead>Discount</TableHead>
-                <TableHead>Customer Tiers</TableHead>
-                <TableHead>Period</TableHead>
-                <TableHead>Performance</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDiscounts.map((discount) => (
-                <TableRow key={discount.id}>
-                  <TableCell>
-                    <div className="font-medium">{discount.name}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      {getLevelIcon(discount.level)}
-                      <div>
-                        <div className="text-sm font-medium">{discount.level}</div>
-                        <div className="text-xs text-muted-foreground">{discount.target}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium">
-                      {discount.type === "percentage" ? `${discount.value}%` : `$${discount.value}`}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {discount.type === "percentage" ? "Percentage" : "Dollar amount"}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      <Users className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-sm">{discount.customerTiers?.length || 0}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {discount.customerTiers && discount.customerTiers.length > 0 ? (
-                        <>
-                          {discount.customerTiers.slice(0, 2).join(", ")}
-                          {discount.customerTiers.length > 2 && ` +${discount.customerTiers.length - 2} more`}
-                        </>
-                      ) : (
-                        "No tiers assigned"
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">{new Date(discount.startDate).toLocaleDateString()}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {discount.endDate ? `to ${new Date(discount.endDate).toLocaleDateString()}` : "No end date"}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm font-medium">{discount.appliedOrders || 0} orders</div>
-                    <div className="text-xs text-muted-foreground">
-                      ${(discount.totalSavings || 0).toLocaleString()} saved
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(discount.status)}>{discount.status}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditDiscount(discount.id)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit All
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 2)}>
-                          <Package className="mr-2 h-4 w-4" />
-                          Manage Products
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 3)}>
-                          <Tag className="mr-2 h-4 w-4" />
-                          Manage Discount Value
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 5)}>
-                          <Users className="mr-2 h-4 w-4" />
-                          Manage Customers
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <UnifiedDataTable
+            data={sortedData}
+            columns={columns}
+            loading={loading}
+            error={error}
+            emptyMessage="No discounts found. Create your first discount rule to get started."
+            sortConfig={sortConfig}
+            onSort={requestSort}
+          />
         </CardContent>
       </Card>
 

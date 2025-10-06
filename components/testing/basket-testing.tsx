@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { UnifiedDataTable } from "@/components/shared/unified-data-table"
+import { formatCurrency } from "@/lib/table-formatters"
 import { Plus, Trash2, Play, Save, ShoppingCart } from "lucide-react"
 
 interface BasketItem {
@@ -189,90 +190,104 @@ export function BasketTesting() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product Name</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Base Price</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Brand</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {basketItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <Input
-                        value={item.productName}
-                        onChange={(e) => updateBasketItem(item.id, "productName", e.target.value)}
-                        placeholder="Product name..."
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={item.sku}
-                        onChange={(e) => updateBasketItem(item.id, "sku", e.target.value)}
-                        placeholder="SKU..."
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => updateBasketItem(item.id, "quantity", Number.parseInt(e.target.value))}
-                        className="w-20"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={item.basePrice}
-                        onChange={(e) => updateBasketItem(item.id, "basePrice", Number.parseFloat(e.target.value))}
-                        className="w-24"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={item.category}
-                        onValueChange={(value) => updateBasketItem(item.id, "category", value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue placeholder="Category..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Flower">Flower</SelectItem>
-                          <SelectItem value="Edibles">Edibles</SelectItem>
-                          <SelectItem value="Concentrates">Concentrates</SelectItem>
-                          <SelectItem value="Vapes">Vapes</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={item.brand}
-                        onChange={(e) => updateBasketItem(item.id, "brand", e.target.value)}
-                        placeholder="Brand..."
-                        className="w-32"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => removeBasketItem(item.id)}
-                        disabled={basketItems.length <= 1}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <UnifiedDataTable
+              data={basketItems}
+              columns={[
+                {
+                  key: "productName",
+                  header: "Product Name",
+                  render: (item) => (
+                    <Input
+                      value={item.productName}
+                      onChange={(e) => updateBasketItem(item.id, "productName", e.target.value)}
+                      placeholder="Product name..."
+                    />
+                  ),
+                },
+                {
+                  key: "sku",
+                  header: "SKU",
+                  render: (item) => (
+                    <Input
+                      value={item.sku}
+                      onChange={(e) => updateBasketItem(item.id, "sku", e.target.value)}
+                      placeholder="SKU..."
+                    />
+                  ),
+                },
+                {
+                  key: "quantity",
+                  header: "Quantity",
+                  render: (item) => (
+                    <Input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => updateBasketItem(item.id, "quantity", Number.parseInt(e.target.value))}
+                      className="w-20"
+                    />
+                  ),
+                },
+                {
+                  key: "basePrice",
+                  header: "Base Price",
+                  render: (item) => (
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={item.basePrice}
+                      onChange={(e) => updateBasketItem(item.id, "basePrice", Number.parseFloat(e.target.value))}
+                      className="w-24"
+                    />
+                  ),
+                },
+                {
+                  key: "category",
+                  header: "Category",
+                  render: (item) => (
+                    <Select
+                      value={item.category}
+                      onValueChange={(value) => updateBasketItem(item.id, "category", value)}
+                    >
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Category..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Flower">Flower</SelectItem>
+                        <SelectItem value="Edibles">Edibles</SelectItem>
+                        <SelectItem value="Concentrates">Concentrates</SelectItem>
+                        <SelectItem value="Vapes">Vapes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ),
+                },
+                {
+                  key: "brand",
+                  header: "Brand",
+                  render: (item) => (
+                    <Input
+                      value={item.brand}
+                      onChange={(e) => updateBasketItem(item.id, "brand", e.target.value)}
+                      placeholder="Brand..."
+                      className="w-32"
+                    />
+                  ),
+                },
+                {
+                  key: "actions",
+                  header: "Actions",
+                  render: (item) => (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => removeBasketItem(item.id)}
+                      disabled={basketItems.length <= 1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  ),
+                },
+              ]}
+            />
 
             <div className="flex gap-2">
               <Button onClick={addBasketItem} variant="outline">
@@ -304,39 +319,56 @@ export function BasketTesting() {
             <CardDescription>Pricing calculations and applied discounts</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Base Price</TableHead>
-                  <TableHead>Applied Discount</TableHead>
-                  <TableHead>Discount Amount</TableHead>
-                  <TableHead>Final Price</TableHead>
-                  <TableHead>Reasoning</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {testResults.map((result, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
+            <UnifiedDataTable
+              data={testResults}
+              columns={[
+                {
+                  key: "item",
+                  header: "Product",
+                  render: (result) => (
+                    <div>
                       <div className="font-medium">{result.item.productName}</div>
                       <div className="text-sm text-gray-600">Qty: {result.item.quantity}</div>
-                    </TableCell>
-                    <TableCell>${result.item.basePrice.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge variant={result.appliedDiscount === "No discount" ? "outline" : "default"}>
-                        {result.appliedDiscount}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-red-600 font-medium">
-                      {result.discountAmount > 0 ? `-$${result.discountAmount.toFixed(2)}` : "$0.00"}
-                    </TableCell>
-                    <TableCell className="font-medium text-gti-green">${result.finalPrice.toFixed(2)}</TableCell>
-                    <TableCell className="text-sm text-gray-600 max-w-xs">{result.reasoning}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  ),
+                },
+                {
+                  key: "basePrice",
+                  header: "Base Price",
+                  render: (result) => formatCurrency(result.item.basePrice),
+                },
+                {
+                  key: "appliedDiscount",
+                  header: "Applied Discount",
+                  render: (result) => (
+                    <Badge variant={result.appliedDiscount === "No discount" ? "outline" : "default"}>
+                      {result.appliedDiscount}
+                    </Badge>
+                  ),
+                },
+                {
+                  key: "discountAmount",
+                  header: "Discount Amount",
+                  render: (result) => (
+                    <span className="text-red-600 font-medium">
+                      {result.discountAmount > 0 ? `-${formatCurrency(result.discountAmount)}` : "$0.00"}
+                    </span>
+                  ),
+                },
+                {
+                  key: "finalPrice",
+                  header: "Final Price",
+                  render: (result) => (
+                    <span className="font-medium text-gti-green">{formatCurrency(result.finalPrice)}</span>
+                  ),
+                },
+                {
+                  key: "reasoning",
+                  header: "Reasoning",
+                  render: (result) => <span className="text-sm text-gray-600 max-w-xs">{result.reasoning}</span>,
+                },
+              ]}
+            />
 
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">

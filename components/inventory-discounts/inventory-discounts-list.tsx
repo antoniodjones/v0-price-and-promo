@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   Search,
@@ -16,12 +15,15 @@ import {
   Zap,
   Package,
   AlertTriangle,
-  Loader2,
   Target,
   DollarSign,
   Calendar,
 } from "lucide-react"
 import { InventoryDiscountEditModal } from "./inventory-discount-edit-modal"
+import { UnifiedDataTable } from "@/components/shared/unified-data-table"
+import { useTableFilter, useTableSort } from "@/lib/table-helpers"
+import { formatDate, formatCurrency, formatPercentage } from "@/lib/table-formatters"
+import type { ColumnDef } from "@/lib/table-helpers"
 
 interface InventoryDiscount {
   id: string
@@ -144,13 +146,15 @@ const getTypeColor = (type: string) => {
 }
 
 export function InventoryDiscountsList() {
-  const [searchTerm, setSearchTerm] = useState("")
   const [discounts, setDiscounts] = useState<InventoryDiscount[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingDiscountId, setEditingDiscountId] = useState<string | null>(null)
   const [editingStartStep, setEditingStartStep] = useState<number>(1)
+
+  const { filteredData, searchTerm, setSearchTerm } = useTableFilter(discounts, ["name", "scopeValue", "type"])
+  const { sortedData, sortConfig, requestSort } = useTableSort(filteredData)
 
   useEffect(() => {
     const fetchDiscounts = async () => {
@@ -184,17 +188,6 @@ export function InventoryDiscountsList() {
     fetchDiscounts()
   }, [])
 
-  const filteredDiscounts = discounts.filter((discount) => {
-    if (!discount || !searchTerm) return true
-
-    const searchLower = (searchTerm || "").toLowerCase()
-    const name = (discount.name || "").toLowerCase()
-    const scopeValue = (discount.scopeValue || "").toLowerCase()
-    const type = (discount.type || "").toLowerCase()
-
-    return name.includes(searchLower) || scopeValue.includes(searchLower) || type.includes(searchLower)
-  })
-
   const handleEditDiscount = (discountId: string) => {
     setEditingDiscountId(discountId)
     setEditingStartStep(1)
@@ -225,38 +218,140 @@ export function InventoryDiscountsList() {
     fetchDiscounts()
   }
 
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Automated Discount Rules</CardTitle>
-          <CardDescription>Inventory-based automatic discounting rules and their performance</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="ml-2">Loading inventory discounts...</span>
+  const columns: ColumnDef<InventoryDiscount>[] = [
+    {
+      key: "name",
+      header: "Rule Name",
+      sortable: true,
+      render: (discount) => <div className="font-medium">{discount.name || "Unnamed Rule"}</div>,
+    },
+    {
+      key: "type",
+      header: "Type & Trigger",
+      sortable: true,
+      render: (discount) => (
+        <div className="flex items-center space-x-2">
+          {getTypeIcon(discount.type)}
+          <div>
+            <Badge variant="outline" className={getTypeColor(discount.type)}>
+              {discount.type === "expiration" ? "Expiration" : "THC Level"}
+            </Badge>
+            <div className="text-xs text-muted-foreground mt-1">
+              {discount.type === "expiration"
+                ? `${discount.triggerValue || 0} days before expiry`
+                : `THC ${discount.triggerValue || 0}%+`}
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (error && discounts.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Automated Discount Rules</CardTitle>
-          <CardDescription>Inventory-based automatic discounting rules and their performance</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8 text-red-600">
-            <span>Error loading inventory discounts: {error}</span>
+        </div>
+      ),
+    },
+    {
+      key: "scope",
+      header: "Scope & Target",
+      sortable: true,
+      render: (discount) => (
+        <div>
+          <div className="text-sm font-medium capitalize">{discount.scope || "all"}</div>
+          <div className="text-xs text-muted-foreground">
+            {discount.scope === "all" ? "All Products" : discount.scopeValue || "Not specified"}
           </div>
-        </CardContent>
-      </Card>
-    )
-  }
+        </div>
+      ),
+    },
+    {
+      key: "discountValue",
+      header: "Discount",
+      sortable: true,
+      render: (discount) => (
+        <div>
+          <div className="font-medium">
+            {discount.discountType === "percentage"
+              ? formatPercentage(discount.discountValue || 0)
+              : formatCurrency(discount.discountValue || 0)}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {discount.discountType === "percentage" ? "Percentage" : "Dollar amount"}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "batchesAffected",
+      header: "Performance",
+      sortable: true,
+      render: (discount) => (
+        <div>
+          <div className="text-sm font-medium">{discount.batchesAffected || 0} batches</div>
+          <div className="text-xs text-muted-foreground">{formatCurrency(discount.totalSavings || 0)} saved</div>
+        </div>
+      ),
+    },
+    {
+      key: "updatedAt",
+      header: "Last Updated",
+      sortable: true,
+      render: (discount) => (
+        <div>
+          <div className="text-sm">{formatDate(discount.updatedAt)}</div>
+          {discount.status === "active" && (
+            <div className="flex items-center space-x-1 mt-1">
+              <div className="w-2 h-2 bg-gti-bright-green rounded-full animate-pulse"></div>
+              <span className="text-xs text-gti-bright-green">Active</span>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      render: (discount) => <Badge className={getStatusColor(discount.status)}>{discount.status || "unknown"}</Badge>,
+    },
+    {
+      key: "actions",
+      header: "",
+      render: (discount) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleEditDiscount(discount.id)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit All
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 2)}>
+              <Target className="mr-2 h-4 w-4" />
+              Manage Scope
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 4)}>
+              <DollarSign className="mr-2 h-4 w-4" />
+              Manage Discount Value
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 5)}>
+              <Calendar className="mr-2 h-4 w-4" />
+              Manage Dates
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Package className="mr-2 h-4 w-4" />
+              View Affected Batches
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <AlertTriangle className="mr-2 h-4 w-4" />
+              Pause Rule
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ]
 
   return (
     <>
@@ -285,127 +380,15 @@ export function InventoryDiscountsList() {
           </div>
         </CardHeader>
         <CardContent>
-          {filteredDiscounts.length === 0 ? (
-            <div className="flex items-center justify-center py-8 text-muted-foreground">
-              <span>No inventory discounts found. Create your first automated discount rule.</span>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Rule Name</TableHead>
-                  <TableHead>Type & Trigger</TableHead>
-                  <TableHead>Scope & Target</TableHead>
-                  <TableHead>Discount</TableHead>
-                  <TableHead>Performance</TableHead>
-                  <TableHead>Last Updated</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDiscounts.map((discount) => (
-                  <TableRow key={discount.id}>
-                    <TableCell>
-                      <div className="font-medium">{discount.name || "Unnamed Rule"}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        {getTypeIcon(discount.type)}
-                        <div>
-                          <Badge variant="outline" className={getTypeColor(discount.type)}>
-                            {discount.type === "expiration" ? "Expiration" : "THC Level"}
-                          </Badge>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {discount.type === "expiration"
-                              ? `${discount.triggerValue || 0} days before expiry`
-                              : `THC ${discount.triggerValue || 0}%+`}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="text-sm font-medium capitalize">{discount.scope || "all"}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {discount.scope === "all" ? "All Products" : discount.scopeValue || "Not specified"}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">
-                        {discount.discountType === "percentage"
-                          ? `${discount.discountValue || 0}%`
-                          : `$${discount.discountValue || 0}`}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {discount.discountType === "percentage" ? "Percentage" : "Dollar amount"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm font-medium">{discount.batchesAffected || 0} batches</div>
-                      <div className="text-xs text-muted-foreground">
-                        ${(discount.totalSavings || 0).toLocaleString()} saved
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {discount.updatedAt ? new Date(discount.updatedAt).toLocaleDateString() : "Unknown"}
-                      </div>
-                      {discount.status === "active" && (
-                        <div className="flex items-center space-x-1 mt-1">
-                          <div className="w-2 h-2 bg-gti-bright-green rounded-full animate-pulse"></div>
-                          <span className="text-xs text-gti-bright-green">Active</span>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(discount.status)}>{discount.status || "unknown"}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditDiscount(discount.id)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit All
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 2)}>
-                            <Target className="mr-2 h-4 w-4" />
-                            Manage Scope
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 4)}>
-                            <DollarSign className="mr-2 h-4 w-4" />
-                            Manage Discount Value
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleQuickEdit(discount.id, 5)}>
-                            <Calendar className="mr-2 h-4 w-4" />
-                            Manage Dates
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Package className="mr-2 h-4 w-4" />
-                            View Affected Batches
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <AlertTriangle className="mr-2 h-4 w-4" />
-                            Pause Rule
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <UnifiedDataTable
+            data={sortedData}
+            columns={columns}
+            loading={loading}
+            error={error}
+            emptyMessage="No inventory discounts found. Create your first automated discount rule."
+            sortConfig={sortConfig}
+            onSort={requestSort}
+          />
         </CardContent>
       </Card>
 
