@@ -1,6 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { UnifiedCard } from "@/components/shared/unified-card"
 import { PriceDisplay, DiscountBadge } from "@/components/atoms"
-import { cn } from "@/lib/utils"
 
 interface PricingCardProps {
   originalPrice: number
@@ -25,11 +24,8 @@ export function PricingCard({
   const savings = safeOriginalPrice - safeFinalPrice
 
   return (
-    <Card className={cn("", className)}>
-      <CardHeader>
-        <CardTitle className="text-base">Pricing Details</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <UnifiedCard variant="info" title="Pricing Details" className={className}>
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Original Price:</span>
           <PriceDisplay price={safeOriginalPrice} size="sm" />
@@ -60,7 +56,7 @@ export function PricingCard({
         {safeAppliedRules.length > 0 && (
           <div className="text-xs text-muted-foreground">Applied rules: {safeAppliedRules.join(", ")}</div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </UnifiedCard>
   )
 }

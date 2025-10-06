@@ -1,6 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MetricDisplay } from "@/components/atoms"
-import { cn } from "@/lib/utils"
+import { UnifiedCard } from "@/components/shared/unified-card"
 import type { LucideIcon } from "lucide-react"
 
 interface StatCardProps {
@@ -14,19 +12,15 @@ interface StatCardProps {
   className?: string
 }
 
-export function StatCard({ title, value, change, icon: Icon, className }: StatCardProps) {
-  const safeTitle = title || "Untitled"
-  const safeValue = value ?? 0
-
+export function StatCard({ title, value, change, icon, className }: StatCardProps) {
   return (
-    <Card className={cn("", className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{safeTitle}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <MetricDisplay label="" value={safeValue} change={change} size="md" />
-      </CardContent>
-    </Card>
+    <UnifiedCard
+      variant="stat"
+      title={title}
+      value={value}
+      trend={change ? { value: change.value, isPositive: change.type === "increase" } : undefined}
+      icon={icon}
+      className={className}
+    />
   )
 }

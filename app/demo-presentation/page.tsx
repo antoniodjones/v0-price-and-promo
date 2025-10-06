@@ -13,12 +13,31 @@ const slides = [
     type: "title",
     content: {
       presenter: "Technology Team",
-      date: "Q4 2025", // Updated date from Q1 2025 to Q4 2025
+      date: "Q4 2025",
       tagline: "Transforming Manual Pricing into Intelligent Automation",
     },
   },
   {
     id: 2,
+    title: "Executive Summary",
+    type: "executive-summary",
+    content: {
+      vision: {
+        title: "Vision Statement",
+        text: "Create a flexible, scalable pricing and promotions engine that streamlines the wholesale order-to-cash process, empowering business users to manage complex B2B pricing strategies while maintaining seamless integration across the entire customer lifecycle.",
+      },
+      mission: {
+        title: "Mission",
+        text: "Build a comprehensive pricing and promotions platform that seamlessly integrates across the entire order-to-cash workflow to provide real-time, rule-based pricing decisions that optimize revenue while streamlining wholesale customer transactions from quote generation through payment processing.",
+      },
+      ultimateGoal: {
+        title: "Ultimate Goal",
+        text: "The Order-to-Cash Pricing & Promotions Engine will transform manual pricing processes into an automated, rule-based system that optimizes the complete wholesale customer journey from initial quote through order fulfillment and payment processing.",
+      },
+    },
+  },
+  {
+    id: 3,
     title: "Key Performance Indicators",
     type: "kpi",
     content: {
@@ -27,62 +46,62 @@ const slides = [
         {
           category: "Operational Efficiency",
           metric: "Pricing Configuration Time",
-          current: "40 hrs/week",
+          baseline: "40 hrs/week",
           target: "4 hrs/week",
-          actual: "8 hrs/week",
-          status: "improving",
+          current: "8 hrs/week",
           change: "-80%",
+          status: "improving",
         },
         {
           category: "Financial Impact",
           metric: "Inventory Write-offs",
-          current: "$500K/year",
+          baseline: "$500K/year",
           target: "$200K/year",
-          actual: "$320K/year",
-          status: "improving",
+          current: "$320K/year",
           change: "-36%",
+          status: "improving",
         },
         {
           category: "Quality Metrics",
           metric: "Pricing Errors per Month",
-          current: "15-20 errors",
+          baseline: "15-20 errors",
           target: "<2 errors",
-          actual: "5 errors",
-          status: "improving",
+          current: "5 errors",
           change: "-70%",
+          status: "improving",
         },
         {
           category: "Revenue Growth",
           metric: "Average Order Value",
-          current: "$8,500",
+          baseline: "$8,500",
           target: "$10,625",
-          actual: "$9,350",
-          status: "improving",
+          current: "$9,350",
           change: "+10%",
+          status: "improving",
         },
         {
           category: "Customer Satisfaction",
           metric: "Discount Utilization Rate",
-          current: "45%",
+          baseline: "45%",
           target: "75%",
-          actual: "62%",
-          status: "improving",
+          current: "62%",
           change: "+38%",
+          status: "improving",
         },
         {
           category: "System Performance",
           metric: "API Response Time",
-          current: "N/A",
+          baseline: "N/A",
           target: "<200ms",
-          actual: "145ms",
+          current: "145ms",
+          change: "✓ ✓",
           status: "exceeding",
-          change: "✓",
         },
       ],
     },
   },
   {
-    id: 3,
+    id: 4,
     title: "Application Page Inventory",
     type: "page-inventory",
     content: {
@@ -434,7 +453,7 @@ const slides = [
     },
   },
   {
-    id: 4,
+    id: 5,
     title: "The Challenge",
     type: "problem",
     content: {
@@ -463,7 +482,7 @@ const slides = [
     },
   },
   {
-    id: 5,
+    id: 6,
     title: "The Solution",
     type: "solution",
     content: {
@@ -483,47 +502,47 @@ const slides = [
     },
   },
   {
-    id: 6,
+    id: 7,
     title: "Implementation Status",
     type: "status",
     content: {
-      overall: "60% Complete",
+      overall: "73% Complete",
       phases: [
         {
-          name: "Customer Discount Foundation",
+          name: "Phase 1: Customer Discount Management",
           status: "complete",
           percentage: 95,
-          priority: "Priority #1",
+          priority: "Priority #1 - Must Have",
         },
         {
-          name: "Automated Inventory Discounts",
+          name: "Phase 2: Automated Inventory Discounts",
           status: "complete",
-          percentage: 100,
-          priority: "Priority #2",
+          percentage: 90,
+          priority: "Priority #2 - Must Have",
         },
         {
-          name: "BOGO & Bundle Promotions",
+          name: "Phase 3: Market Pricing Strategy",
           status: "complete",
-          percentage: 100,
-          priority: "Priority #3",
+          percentage: 85,
+          priority: "MVP Scope",
         },
         {
-          name: "Volume & Tiered Pricing",
+          name: "Phase 4: BOGO & Enhanced Features",
+          status: "complete",
+          percentage: 80,
+          priority: "Priority #3 - Nice to Have",
+        },
+        {
+          name: "Phase 5: Future Enhancements",
           status: "partial",
-          percentage: 50,
-          priority: "Priority #4",
-        },
-        {
-          name: "Order System Integration",
-          status: "pending",
-          percentage: 0,
-          priority: "Priority #5",
+          percentage: 40,
+          priority: "Priority #4 - Post-MVP",
         },
       ],
     },
   },
   {
-    id: 7,
+    id: 8,
     title: "Feature #1: Customer Discount Management",
     type: "feature",
     content: {
@@ -543,7 +562,7 @@ const slides = [
     },
   },
   {
-    id: 8,
+    id: 9,
     title: "Feature #2: Automated Inventory Discounts",
     type: "feature",
     content: {
@@ -563,7 +582,7 @@ const slides = [
     },
   },
   {
-    id: 9,
+    id: 10,
     title: "Feature #3: BOGO & Bundle Promotions",
     type: "feature",
     content: {
@@ -583,7 +602,7 @@ const slides = [
     },
   },
   {
-    id: 10,
+    id: 11,
     title: "Feature #4: Analytics & Insights",
     type: "feature",
     content: {
@@ -603,7 +622,7 @@ const slides = [
     },
   },
   {
-    id: 11,
+    id: 12,
     title: "Cloud Migration & Enterprise Authentication Roadmap",
     type: "migration-roadmap",
     content: {
@@ -650,7 +669,7 @@ const slides = [
     },
   },
   {
-    id: 12,
+    id: 13,
     title: "Technical Architecture",
     type: "technical",
     content: {
@@ -689,7 +708,7 @@ const slides = [
     },
   },
   {
-    id: 13,
+    id: 14,
     title: "What's Working Today",
     type: "delivered",
     content: {
@@ -729,7 +748,7 @@ const slides = [
     },
   },
   {
-    id: 14,
+    id: 15,
     title: "In Progress & Planned",
     type: "roadmap",
     content: {
@@ -776,7 +795,7 @@ const slides = [
     },
   },
   {
-    id: 15,
+    id: 16,
     title: "Critical Gaps for Production",
     type: "gaps",
     content: {
@@ -815,7 +834,7 @@ const slides = [
     },
   },
   {
-    id: 16,
+    id: 17,
     title: "Business Impact & ROI",
     type: "roi",
     content: {
@@ -850,7 +869,7 @@ const slides = [
     },
   },
   {
-    id: 17,
+    id: 18,
     title: "Demo Walkthrough",
     type: "demo",
     content: {
@@ -903,7 +922,7 @@ const slides = [
     },
   },
   {
-    id: 18,
+    id: 19,
     title: "Next Steps & Timeline",
     type: "timeline",
     content: {
@@ -937,7 +956,7 @@ const slides = [
     },
   },
   {
-    id: 19,
+    id: 20,
     title: "Questions & Discussion",
     type: "qa",
     content: {
@@ -991,6 +1010,32 @@ export default function DemoPresentationPage() {
               </div>
             )}
 
+            {slide.type === "executive-summary" && (
+              <>
+                <h2 className="mb-8 text-4xl font-bold text-slate-900">{slide.title}</h2>
+
+                <div className="space-y-6">
+                  {/* Vision Statement */}
+                  <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-6">
+                    <h3 className="mb-3 text-xl font-semibold text-blue-900">{slide.content.vision.title}</h3>
+                    <p className="text-base leading-relaxed text-blue-800">{slide.content.vision.text}</p>
+                  </div>
+
+                  {/* Mission */}
+                  <div className="rounded-lg border-2 border-emerald-200 bg-emerald-50 p-6">
+                    <h3 className="mb-3 text-xl font-semibold text-emerald-900">{slide.content.mission.title}</h3>
+                    <p className="text-base leading-relaxed text-emerald-800">{slide.content.mission.text}</p>
+                  </div>
+
+                  {/* Ultimate Goal */}
+                  <div className="rounded-lg border-2 border-amber-200 bg-amber-50 p-6">
+                    <h3 className="mb-3 text-xl font-semibold text-amber-900">{slide.content.ultimateGoal.title}</h3>
+                    <p className="text-base leading-relaxed text-amber-800">{slide.content.ultimateGoal.text}</p>
+                  </div>
+                </div>
+              </>
+            )}
+
             {slide.type === "kpi" && (
               <>
                 <h2 className="mb-6 text-4xl font-bold text-slate-900">{slide.title}</h2>
@@ -1031,7 +1076,7 @@ export default function DemoPresentationPage() {
                       <div className="grid grid-cols-3 gap-2 text-xs">
                         <div>
                           <p className="text-slate-500">Baseline</p>
-                          <p className="font-medium text-slate-700">{kpi.current}</p>
+                          <p className="font-medium text-slate-700">{kpi.baseline}</p>
                         </div>
                         <div>
                           <p className="text-slate-500">Target</p>
@@ -1048,7 +1093,7 @@ export default function DemoPresentationPage() {
                                   : "text-amber-700"
                             }`}
                           >
-                            {kpi.actual}
+                            {kpi.current}
                           </p>
                         </div>
                       </div>

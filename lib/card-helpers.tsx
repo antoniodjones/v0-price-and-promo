@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react"
 import { TrendingUp, TrendingDown, Minus } from "lucide-react"
+import type { JSX } from "react"
 
 export type CardVariant = "stat" | "metric" | "action" | "info" | "product"
 export type TrendDirection = "up" | "down" | "neutral"
@@ -30,6 +31,13 @@ export function calculateTrendPercentage(current: number, previous: number): num
 export function formatTrendValue(value: number): string {
   const sign = value > 0 ? "+" : ""
   return `${sign}${value.toFixed(1)}%`
+}
+
+export interface TrendResult {
+  change: number
+  percentage: number
+  direction: TrendDirection
+  icon: JSX.Element
 }
 
 // Trend icon helpers
@@ -105,4 +113,23 @@ export function formatCurrency(value: number): string {
 
 export function formatPercentage(value: number): string {
   return `${value.toFixed(1)}%`
+}
+
+export function calculateTrend(current: number, previous: number): TrendResult {
+  const change = current - previous
+  const percentage = previous === 0 ? 0 : ((current - previous) / previous) * 100
+  const direction = calculateTrendDirection(current, previous)
+
+  const iconMap = {
+    up: <TrendingUp className="h-4 w-4" />,
+    down: <TrendingDown className="h-4 w-4" />,
+    neutral: <Minus className="h-4 w-4" />,
+  }
+
+  return {
+    change,
+    percentage,
+    direction,
+    icon: iconMap[direction],
+  }
 }

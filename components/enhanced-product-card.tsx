@@ -1,15 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { UnifiedCard } from "@/components/shared/unified-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { TrendingUp, TrendingDown, Minus, Heart, Bell, ExternalLink } from "lucide-react"
+import { Heart, Bell, ExternalLink } from "lucide-react"
 import { addToWatchlist, removeFromWatchlist, isInWatchlist } from "@/lib/services/watchlist"
 import { createPriceAlert } from "@/lib/services/price-alerts"
 import { getProductPriceDataClient } from "@/lib/services/products"
 import type { Product, PriceData } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
+import { useCardState } from "@/lib/hooks/use-card-state"
+import { useCardActions } from "@/lib/hooks/use-card-actions"
+import { calculateTrend, formatCurrency } from "@/lib/card-helpers"
 
 interface EnhancedProductCardProps {
   product: Product
@@ -20,13 +23,26 @@ interface EnhancedProductCardProps {
 export function EnhancedProductCard({ product, userId, showActions = true }: EnhancedProductCardProps) {
   const [priceData, setPriceData] = useState<PriceData | null>(null)
   const [isWatchlisted, setIsWatchlisted] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+
+  const { isLoading, error, setLoading, setError } = useCardState()
+
+  const { handleClick } = useCardActions({
+    onClick: () => {},
+    disabled: isLoading,
+  })
 
   useEffect(() => {
     const loadPriceData = async () => {
-      const data = await getProductPriceDataClient(product.id)
-      setPriceData(data)
+      setLoading(true)
+      try {
+        const data = await getProductPriceDataClient(product.id)
+        setPriceData(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load price data")
+      } finally {
+        setLoading(false)
+      }
     }
 
     const checkWatchlistStatus = async () => {
@@ -38,7 +54,7 @@ export function EnhancedProductCard({ product, userId, showActions = true }: Enh
 
     loadPriceData()
     checkWatchlistStatus()
-  }, [product.id, userId])
+  }, [product.id, userId, setLoading, setError])
 
   const handleWatchlistToggle = async () => {
     if (!userId) {
@@ -50,7 +66,7 @@ export function EnhancedProductCard({ product, userId, showActions = true }: Enh
       return
     }
 
-    setIsLoading(true)
+    setLoading(true)
     try {
       if (isWatchlisted) {
         await removeFromWatchlist(userId, product.id)
@@ -74,7 +90,7 @@ export function EnhancedProductCard({ product, userId, showActions = true }: Enh
         variant: "destructive",
       })
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
@@ -89,13 +105,13 @@ export function EnhancedProductCard({ product, userId, showActions = true }: Enh
     }
 
     const currentPrice = priceData?.current_price || product.price
-    const alertPrice = currentPrice * 0.9 // 10% discount alert
+    const alertPrice = currentPrice * 0.9
 
     try {
       await createPriceAlert(userId, product.id, alertPrice)
       toast({
         title: "Price alert set",
-        description: `You'll be notified when ${product.name} drops below $${alertPrice.toFixed(2)}.`,
+        description: `You'll be notified when ${product.name} drops below ${formatCurrency(alertPrice)}.`,
       })
     } catch (error) {
       toast({
@@ -108,91 +124,78 @@ export function EnhancedProductCard({ product, userId, showActions = true }: Enh
 
   const currentPrice = priceData?.current_price || product.price
   const previousPrice = priceData?.previous_price || product.price
-  const priceChange = priceData?.price_change || 0
-  const priceChangePercent = priceData?.price_change_percentage || 0
+  const trend = calculateTrend(currentPrice, previousPrice)
 
-  const getPriceIcon = () => {
-    if (priceChange > 0) return <TrendingUp className="h-4 w-4 text-red-500" />
-    if (priceChange < 0) return <TrendingDown className="h-4 w-4 text-green-500" />
-    return <Minus className="h-4 w-4 text-muted-foreground" />
-  }
-
-  const getPriceChangeClass = () => {
-    if (priceChange > 0) return "price-up"
-    if (priceChange < 0) return "price-down"
-    return "price-neutral"
-  }
-
-  return (
-    <Card className="hover:shadow-lg transition-shadow duration-200">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-lg font-semibold text-balance">{product.name}</CardTitle>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>{product.brand}</span>
-              <span>•</span>
-              <span>{product.category}</span>
-            </div>
-          </div>
-          {showActions && (
-            <div className="flex gap-1">
-              <Button
-                variant={isWatchlisted ? "default" : "ghost"}
-                size="sm"
-                onClick={handleWatchlistToggle}
-                disabled={isLoading}
-                className="h-8 w-8 p-0"
-              >
-                <Heart className={`h-4 w-4 ${isWatchlisted ? "fill-current" : ""}`} />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleSetAlert} className="h-8 w-8 p-0">
-                <Bell className="h-4 w-4" />
-              </Button>
+  const productContent = (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <div className="text-2xl font-bold">{formatCurrency(currentPrice)}</div>
+          {trend.change !== 0 && (
+            <div
+              className={`flex items-center gap-1 text-sm ${trend.direction === "up" ? "text-red-500" : trend.direction === "down" ? "text-green-500" : "text-muted-foreground"}`}
+            >
+              {trend.icon}
+              <span>
+                {formatCurrency(Math.abs(trend.change))} ({Math.abs(trend.percentage).toFixed(1)}%)
+              </span>
             </div>
           )}
         </div>
-      </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="text-2xl font-bold">${currentPrice.toFixed(2)}</div>
-            {priceChange !== 0 && (
-              <div className={`flex items-center gap-1 text-sm ${getPriceChangeClass()}`}>
-                {getPriceIcon()}
-                <span>
-                  ${Math.abs(priceChange).toFixed(2)} ({Math.abs(priceChangePercent).toFixed(1)}%)
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="text-right space-y-1">
-            <div className="text-sm text-muted-foreground">Stock: {product.inventory_count}</div>
-            {product.inventory_count < 10 && (
-              <Badge variant="destructive" className="text-xs">
-                Low Stock
-              </Badge>
-            )}
-          </div>
+        <div className="text-right space-y-1">
+          <div className="text-sm text-muted-foreground">Stock: {product.inventory_count}</div>
+          {product.inventory_count < 10 && (
+            <Badge variant="destructive" className="text-xs">
+              Low Stock
+            </Badge>
+          )}
         </div>
+      </div>
 
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">SKU: {product.sku}</span>
-          {product.thc_percentage && <Badge variant="secondary">{product.thc_percentage}% THC</Badge>}
-        </div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">SKU: {product.sku}</span>
+        {product.thc_percentage && <Badge variant="secondary">{product.thc_percentage}% THC</Badge>}
+      </div>
 
-        <div className="flex gap-2">
-          <Button className="flex-1" size="sm">
-            View Details
-          </Button>
-          <Button variant="outline" size="sm">
-            <ExternalLink className="h-4 w-4 mr-1" />
-            Compare
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      <div className="flex gap-2">
+        <Button className="flex-1" size="sm">
+          View Details
+        </Button>
+        <Button variant="outline" size="sm">
+          <ExternalLink className="h-4 w-4 mr-1" />
+          Compare
+        </Button>
+      </div>
+    </div>
+  )
+
+  const productActions = showActions ? (
+    <div className="flex gap-1">
+      <Button
+        variant={isWatchlisted ? "default" : "ghost"}
+        size="sm"
+        onClick={handleWatchlistToggle}
+        disabled={isLoading}
+        className="h-8 w-8 p-0"
+      >
+        <Heart className={`h-4 w-4 ${isWatchlisted ? "fill-current" : ""}`} />
+      </Button>
+      <Button variant="ghost" size="sm" onClick={handleSetAlert} className="h-8 w-8 p-0">
+        <Bell className="h-4 w-4" />
+      </Button>
+    </div>
+  ) : undefined
+
+  return (
+    <UnifiedCard
+      variant="product"
+      title={product.name}
+      subtitle={`${product.brand} • ${product.category}`}
+      content={productContent}
+      actions={productActions}
+      isLoading={isLoading}
+      error={error}
+    />
   )
 }

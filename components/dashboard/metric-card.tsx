@@ -1,6 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { UnifiedCard } from "@/components/shared/unified-card"
 import type { LucideIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
 
 interface MetricCardProps {
   title: string
@@ -12,36 +11,23 @@ interface MetricCardProps {
   className?: string
 }
 
-export function MetricCard({
-  title,
-  value,
-  change,
-  changeLabel,
-  icon: Icon,
-  trend = "neutral",
-  className,
-}: MetricCardProps) {
-  const trendColors = {
-    up: "text-chart-2",
-    down: "text-destructive",
-    neutral: "text-muted-foreground",
-  }
-
+export function MetricCard({ title, value, change, changeLabel, icon, trend = "neutral", className }: MetricCardProps) {
   return (
-    <Card className={cn("border-border/50", className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {change !== undefined && (
-          <p className={cn("text-xs mt-1", trendColors[trend])}>
-            {change > 0 ? "+" : ""}
-            {change}% {changeLabel || "from last period"}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+    <UnifiedCard
+      variant="stat"
+      title={title}
+      value={value}
+      trend={
+        change !== undefined
+          ? {
+              value: change,
+              isPositive: trend === "up",
+              label: changeLabel || "from last period",
+            }
+          : undefined
+      }
+      icon={icon}
+      className={className}
+    />
   )
 }
