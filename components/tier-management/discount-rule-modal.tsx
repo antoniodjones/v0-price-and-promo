@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { UnifiedModal } from "@/components/shared/unified-modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -109,181 +109,15 @@ export function DiscountRuleModal({ isOpen, onClose, rule, onSuccess }: Discount
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{rule ? "Edit Discount Rule" : "Create Discount Rule"}</DialogTitle>
-          <DialogDescription>Configure tiered pricing with A/B/C customer segments</DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Basic Information */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="rule-name">Rule Name</Label>
-              <Input
-                id="rule-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Premium Brand Tiered Pricing"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="rule-description">Description</Label>
-              <Textarea
-                id="rule-description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Describe this pricing rule..."
-                rows={2}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Rule Configuration */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Rule Type</Label>
-              <Select
-                value={formData.rule_type}
-                onValueChange={(value: any) => setFormData({ ...formData, rule_type: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tiered_pricing">Tiered Pricing</SelectItem>
-                  <SelectItem value="customer_discount">Customer Discount</SelectItem>
-                  <SelectItem value="volume_pricing">Volume Pricing</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Level</Label>
-              <Select value={formData.level} onValueChange={(value: any) => setFormData({ ...formData, level: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="brand">Brand</SelectItem>
-                  <SelectItem value="category">Category</SelectItem>
-                  <SelectItem value="subcategory">Sub-category</SelectItem>
-                  <SelectItem value="product">Product</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="target-name">Target Name</Label>
-              <Input
-                id="target-name"
-                value={formData.target_name}
-                onChange={(e) => setFormData({ ...formData, target_name: e.target.value })}
-                placeholder="e.g., Premium Cannabis Co"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="target-id">Target ID (Optional)</Label>
-              <Input
-                id="target-id"
-                value={formData.target_id}
-                onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
-                placeholder="Product/Brand ID"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="start-date">Start Date</Label>
-              <Input
-                id="start-date"
-                type="date"
-                value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="end-date">End Date (Optional)</Label>
-              <Input
-                id="end-date"
-                type="date"
-                value={formData.end_date}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Tier Configuration */}
-          <div className="space-y-4">
-            <Label className="text-base font-semibold">Tier Pricing Configuration</Label>
-
-            {(["A", "B", "C"] as const).map((tierLetter) => {
-              const tier = tiers.find((t) => t.tier === tierLetter)
-              if (!tier) return null
-
-              return (
-                <div key={tierLetter} className="border rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline" className="text-base">
-                      Tier {tierLetter}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-2">
-                      <Label>Discount Type</Label>
-                      <Select
-                        value={tier.discount_type}
-                        onValueChange={(value: any) => updateTier(tierLetter, "discount_type", value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="percentage">Percentage</SelectItem>
-                          <SelectItem value="fixed_amount">Fixed Amount</SelectItem>
-                          <SelectItem value="price_override">Price Override</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Discount Value</Label>
-                      <Input
-                        type="number"
-                        value={tier.discount_value}
-                        onChange={(e) => updateTier(tierLetter, "discount_value", Number(e.target.value))}
-                        placeholder="0"
-                        step="0.01"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Min Quantity</Label>
-                      <Input
-                        type="number"
-                        value={tier.min_quantity || ""}
-                        onChange={(e) =>
-                          updateTier(tierLetter, "min_quantity", e.target.value ? Number(e.target.value) : undefined)
-                        }
-                        placeholder="Optional"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 pt-4">
+    <UnifiedModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={rule ? "Edit Discount Rule" : "Create Discount Rule"}
+      description="Configure tiered pricing with A/B/C customer segments"
+      size="xl"
+      showFooter={true}
+      footerContent={
+        <div className="flex justify-end gap-3 w-full">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
@@ -295,7 +129,174 @@ export function DiscountRuleModal({ isOpen, onClose, rule, onSuccess }: Discount
             {saving ? "Saving..." : rule ? "Update Rule" : "Create Rule"}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      }
+    >
+      <div className="space-y-6">
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="rule-name">Rule Name</Label>
+            <Input
+              id="rule-name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g., Premium Brand Tiered Pricing"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="rule-description">Description</Label>
+            <Textarea
+              id="rule-description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Describe this pricing rule..."
+              rows={2}
+            />
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Rule Configuration */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Rule Type</Label>
+            <Select
+              value={formData.rule_type}
+              onValueChange={(value: any) => setFormData({ ...formData, rule_type: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tiered_pricing">Tiered Pricing</SelectItem>
+                <SelectItem value="customer_discount">Customer Discount</SelectItem>
+                <SelectItem value="volume_pricing">Volume Pricing</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Level</Label>
+            <Select value={formData.level} onValueChange={(value: any) => setFormData({ ...formData, level: value })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="brand">Brand</SelectItem>
+                <SelectItem value="category">Category</SelectItem>
+                <SelectItem value="subcategory">Sub-category</SelectItem>
+                <SelectItem value="product">Product</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="target-name">Target Name</Label>
+            <Input
+              id="target-name"
+              value={formData.target_name}
+              onChange={(e) => setFormData({ ...formData, target_name: e.target.value })}
+              placeholder="e.g., Premium Cannabis Co"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="target-id">Target ID (Optional)</Label>
+            <Input
+              id="target-id"
+              value={formData.target_id}
+              onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
+              placeholder="Product/Brand ID"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="start-date">Start Date</Label>
+            <Input
+              id="start-date"
+              type="date"
+              value={formData.start_date}
+              onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="end-date">End Date (Optional)</Label>
+            <Input
+              id="end-date"
+              type="date"
+              value={formData.end_date}
+              onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Tier Configuration */}
+        <div className="space-y-4">
+          <Label className="text-base font-semibold">Tier Pricing Configuration</Label>
+
+          {(["A", "B", "C"] as const).map((tierLetter) => {
+            const tier = tiers.find((t) => t.tier === tierLetter)
+            if (!tier) return null
+
+            return (
+              <div key={tierLetter} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="text-base">
+                    Tier {tierLetter}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label>Discount Type</Label>
+                    <Select
+                      value={tier.discount_type}
+                      onValueChange={(value: any) => updateTier(tierLetter, "discount_type", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentage</SelectItem>
+                        <SelectItem value="fixed_amount">Fixed Amount</SelectItem>
+                        <SelectItem value="price_override">Price Override</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Discount Value</Label>
+                    <Input
+                      type="number"
+                      value={tier.discount_value}
+                      onChange={(e) => updateTier(tierLetter, "discount_value", Number(e.target.value))}
+                      placeholder="0"
+                      step="0.01"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Min Quantity</Label>
+                    <Input
+                      type="number"
+                      value={tier.min_quantity || ""}
+                      onChange={(e) =>
+                        updateTier(tierLetter, "min_quantity", e.target.value ? Number(e.target.value) : undefined)
+                      }
+                      placeholder="Optional"
+                    />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </UnifiedModal>
   )
 }

@@ -1,10 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { ChevronLeft, ChevronRight, X, Check } from "lucide-react"
+import { UnifiedModal } from "@/components/shared/unified-modal"
+import { useWizard } from "@/lib/modal-helpers"
 import { DiscountTriggerStep } from "./wizard-steps/discount-trigger-step"
 import { DiscountScopeStep } from "./wizard-steps/discount-scope-step"
 import { TriggerValueStep } from "./wizard-steps/trigger-value-step"
@@ -38,8 +36,6 @@ export function InventoryDiscountEditModal({
   initialStep = 1,
   onSuccess,
 }: InventoryDiscountEditModalProps) {
-  const [currentStep, setCurrentStep] = useState(initialStep)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [formData, setFormData] = useState<AutoDiscountFormData>({
     name: "",
@@ -55,11 +51,11 @@ export function InventoryDiscountEditModal({
 
   const { toast } = useToast()
 
-  useEffect(() => {
-    if (isOpen) {
-      setCurrentStep(initialStep)
-    }
-  }, [initialStep, isOpen])
+  const wizard = useWizard({
+    steps,
+    initialStep,
+    onComplete: handleSubmit,
+  })
 
   useEffect(() => {
     if (isOpen && discountId) {
@@ -71,9 +67,7 @@ export function InventoryDiscountEditModal({
     try {
       setIsLoading(true)
       const response = await fetch(`/api/discounts/inventory/${discountId}`)
-      if (!response.ok) {
-        throw new Error("Failed to load discount data")
-      }
+      if (!response.ok) throw new Error("Failed to load discount data")
 
       const result = await response.json()
       if (result.success) {
@@ -104,44 +98,21 @@ export function InventoryDiscountEditModal({
     }
   }
 
-  const progress = (currentStep / steps.length) * 100
-
-  const handleNext = () => {
-    if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1)
-    }
-  }
-
-  const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
-    }
-  }
-
-  const handleStepClick = (stepId: number) => {
-    setCurrentStep(stepId)
-  }
-
   const handleDataChange = (data: Partial<AutoDiscountFormData>) => {
     setFormData({ ...formData, ...data })
   }
 
-  const handleSubmit = async () => {
-    setIsSubmitting(true)
-
+  async function handleSubmit() {
     try {
       const response = await fetch(`/api/discounts/inventory/${discountId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       })
 
       const result = await response.json()
-
       if (!response.ok) {
-        throw new Error(result.message || result.error || `HTTP ${response.status}: Failed to update discount`)
+        throw new Error(result.message || result.error || "Failed to update discount")
       }
 
       toast({
@@ -157,132 +128,42 @@ export function InventoryDiscountEditModal({
         description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       })
-    } finally {
-      setIsSubmitting(false)
+      throw error
     }
   }
 
   const renderStep = () => {
-    try {
-      switch (currentStep) {
-        case 1:
-          return <DiscountTriggerStep formData={formData} updateFormData={handleDataChange} />
-        case 2:
-          return <DiscountScopeStep formData={formData} updateFormData={handleDataChange} />
-        case 3:
-          return <TriggerValueStep formData={formData} updateFormData={handleDataChange} />
-        case 4:
-          return <AutoDiscountValueStep formData={formData} updateFormData={handleDataChange} />
-        case 5:
-          return <AutoDiscountDatesStep formData={formData} updateFormData={handleDataChange} />
-        case 6:
-          return <AutoDiscountReviewStep formData={formData} updateFormData={handleDataChange} />
-        default:
-          return null
-      }
-    } catch (error) {
-      console.error("[v0] InventoryDiscountEditModal: Error rendering step", currentStep, error)
-      return <div className="text-red-500">Error loading step {currentStep}</div>
+    switch (wizard.currentStep) {
+      case 1:
+        return <DiscountTriggerStep formData={formData} updateFormData={handleDataChange} />
+      case 2:
+        return <DiscountScopeStep formData={formData} updateFormData={handleDataChange} />
+      case 3:
+        return <TriggerValueStep formData={formData} updateFormData={handleDataChange} />
+      case 4:
+        return <AutoDiscountValueStep formData={formData} updateFormData={handleDataChange} />
+      case 5:
+        return <AutoDiscountDatesStep formData={formData} updateFormData={handleDataChange} />
+      case 6:
+        return <AutoDiscountReviewStep formData={formData} updateFormData={handleDataChange} />
+      default:
+        return null
     }
   }
 
-  const handleClose = () => {
-    setCurrentStep(initialStep)
-    onClose()
-  }
-
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle>Edit Inventory Discount</DialogTitle>
-              <DialogDescription>
-                {isLoading
-                  ? "Loading discount data..."
-                  : `Step ${currentStep} of ${steps.length}: ${steps[currentStep - 1].description}`}
-              </DialogDescription>
-            </div>
-            <Button variant="ghost" size="icon" onClick={handleClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          {!isLoading && (
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-sm text-muted-foreground">{Math.round(progress)}% Complete</div>
-            </div>
-          )}
-          {!isLoading && <Progress value={progress} className="h-2" />}
-        </DialogHeader>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gti-bright-green mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading discount data...</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="flex justify-center mb-6">
-              <div className="flex items-center space-x-4">
-                {steps.map((step, index) => (
-                  <div key={step.id} className="flex items-center">
-                    <button
-                      onClick={() => handleStepClick(step.id)}
-                      className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-colors ${
-                        index + 1 < currentStep
-                          ? "bg-gti-bright-green border-gti-bright-green text-white cursor-pointer hover:bg-gti-medium-green"
-                          : index + 1 === currentStep
-                            ? "border-gti-bright-green text-gti-bright-green cursor-pointer hover:border-gti-medium-green"
-                            : "border-gray-300 text-gray-300 cursor-pointer hover:border-gray-400"
-                      }`}
-                    >
-                      {index + 1 < currentStep ? (
-                        <Check className="w-4 h-4" />
-                      ) : (
-                        <span className="text-sm font-medium">{step.id}</span>
-                      )}
-                    </button>
-                    {index < steps.length - 1 && (
-                      <div
-                        className={`w-12 h-0.5 ${index + 1 < currentStep ? "bg-gti-bright-green" : "bg-gray-300"}`}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="py-6">{renderStep()}</div>
-
-            <div className="flex items-center justify-between pt-4 border-t">
-              <Button variant="outline" onClick={handlePrevious} disabled={currentStep === 1}>
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Previous
-              </Button>
-
-              <div className="flex items-center space-x-2">
-                {currentStep < steps.length ? (
-                  <Button onClick={handleNext} className="bg-gti-bright-green hover:bg-gti-medium-green">
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-2" />
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    className="bg-gti-bright-green hover:bg-gti-medium-green"
-                  >
-                    {isSubmitting ? "Updating..." : "Update Discount"}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+    <UnifiedModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit Inventory Discount"
+      description={isLoading ? "Loading discount data..." : undefined}
+      mode="wizard"
+      size="lg"
+      wizard={wizard}
+      isLoading={isLoading}
+      loadingMessage="Loading discount data..."
+    >
+      {renderStep()}
+    </UnifiedModal>
   )
 }
