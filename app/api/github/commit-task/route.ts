@@ -92,8 +92,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Return task's git information
-    const supabase = createClient()
+    const supabase = await createClient()
 
     const { data, error } = await supabase
       .from("user_stories")

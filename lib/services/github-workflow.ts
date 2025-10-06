@@ -5,6 +5,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js"
+import { createTaskEventsService } from "./task-events"
 
 export interface GitHubWorkflowConfig {
   taskId: string
@@ -55,8 +56,10 @@ export class GitHubWorkflowService {
   async executeWorkflow(config: GitHubWorkflowConfig, files: FileChange[]): Promise<GitHubWorkflowResult> {
     console.log(`[v0] Starting GitHub workflow for task ${config.taskId}`)
 
+    const eventsService = createTaskEventsService()
+
     try {
-      // 1. Check if task has auto-commit disabled
+      // Check if task has auto-commit disabled
       const autoCommitEnabled = await this.isAutoCommitEnabled(config.taskId)
       if (config.auto && !autoCommitEnabled) {
         console.log(`[v0] Auto-commit disabled for task ${config.taskId}, skipping workflow`)
@@ -67,11 +70,15 @@ export class GitHubWorkflowService {
         }
       }
 
-      // 2. Get or create branch
+      // Get or create branch
       const branchName = config.branchName || this.generateBranchName(config.taskId)
       await this.createOrSwitchBranch(branchName)
 
-      // 3. Commit changes
+      await eventsService.logEvent(config.taskId, "branch_created", config.auto ? "agent" : config.userId || "user", {
+        branch_name: branchName,
+      })
+
+      // Commit changes
       const commitMessage = config.commitMessage || this.generateCommitMessage(config.taskId, files)
       const commitResult = await this.commitFiles(branchName, files, commitMessage, config.taskId)
 
@@ -83,10 +90,29 @@ export class GitHubWorkflowService {
         }
       }
 
-      // 4. Log to code_change_log
+      const linesAdded = files.reduce(
+        (sum, f) => sum + (f.operation !== "delete" ? f.content.split("\n").length : 0),
+        0,
+      )
+      const linesRemoved = files.reduce(
+        (sum, f) => sum + (f.operation === "delete" ? f.content.split("\n").length : 0),
+        0,
+      )
+
+      await eventsService.logEvent(config.taskId, "commit_created", config.auto ? "agent" : config.userId || "user", {
+        commit_sha: commitResult.sha,
+        commit_message: commitMessage,
+        commit_url: commitResult.url,
+        branch_name: branchName,
+        files_changed: files.length,
+        lines_added: linesAdded,
+        lines_removed: linesRemoved,
+      })
+
+      // Log to code_change_log
       await this.logCodeChanges(config.taskId, files, commitResult.sha!, branchName, commitMessage, config.userId)
 
-      // 5. Create PR if requested
+      // Create PR if requested
       let prUrl: string | undefined
       if (config.createPR) {
         const prResult = await this.createPullRequest(
@@ -95,9 +121,16 @@ export class GitHubWorkflowService {
           config.prBody || `Automated PR for task ${config.taskId}`,
         )
         prUrl = prResult.url
+
+        await eventsService.logEvent(config.taskId, "pr_opened", config.auto ? "agent" : config.userId || "user", {
+          pr_number: prResult.number,
+          pr_url: prResult.url,
+          pr_title: config.prTitle || `[${config.taskId}] ${commitMessage}`,
+          branch_name: branchName,
+        })
       }
 
-      // 6. Update task metadata
+      // Update task metadata
       await this.updateTaskMetadata(config.taskId, branchName, commitResult.sha!)
 
       console.log(`[v0] ✓ GitHub workflow completed for task ${config.taskId}`)
