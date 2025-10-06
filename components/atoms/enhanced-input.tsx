@@ -2,6 +2,23 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { AlertCircle, Check } from "lucide-react"
 
+/**
+ * @deprecated This component is deprecated. Use the new form system instead:
+ *
+ * For enhanced inputs with validation:
+ * - Use components/ui/input.tsx with FormField from components/ui/form.tsx
+ * - Or use TextField/NumberField from lib/form-helpers.tsx
+ *
+ * The new system provides:
+ * - Automatic validation with Zod schemas
+ * - Type-safe form handling with react-hook-form
+ * - Consistent error display and accessibility
+ *
+ * See docs/FORM_PATTERNS.md for migration guide
+ *
+ * This component will be removed in a future version.
+ */
+
 interface EnhancedInputProps extends React.ComponentProps<"input"> {
   error?: string
   success?: boolean

@@ -2,6 +2,22 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import crypto from "crypto"
 
+type SupabaseClient = ReturnType<typeof createServerClient>
+
+interface GitHubCommit {
+  id: string
+  message?: string
+  author?: {
+    name?: string
+    email?: string
+  }
+  timestamp?: string
+  url?: string
+  added?: string[]
+  modified?: string[]
+  removed?: string[]
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log("[v0] GitHub Webhook: Received request")
@@ -121,7 +137,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function processCommit(supabase: any, commit: any, branch: string, repository: string) {
+async function processCommit(supabase: SupabaseClient, commit: GitHubCommit, branch: string, repository: string) {
   const commitSha = commit.id
   const commitMessage = commit.message || ""
   const author = commit.author?.name || "unknown"
@@ -269,7 +285,7 @@ function extractTaskIds(message: string): string[] {
   return Array.from(new Set(taskIds))
 }
 
-function getChangeType(file: string, commit: any): string {
+function getChangeType(file: string, commit: GitHubCommit): string {
   if (commit.added?.includes(file)) {
     return "created"
   } else if (commit.removed?.includes(file)) {

@@ -62,7 +62,6 @@ export default function ManagePromotionsPage() {
     try {
       setLoading(true)
 
-      // Fetch all promotion types in parallel
       const [bogoRes, customerRes, inventoryRes, bundleRes, promoCodeRes] = await Promise.all([
         fetch("/api/promotions/bogo"),
         fetch("/api/discounts/customer"),
@@ -79,105 +78,98 @@ export default function ManagePromotionsPage() {
         promoCodeRes.json(),
       ])
 
-      // Transform and combine all promotions
       const allPromotions: Promotion[] = []
 
-      // BOGO promotions
-      if (bogoData.success && bogoData.data) {
-        bogoData.data.forEach((promo: any) => {
+      if (bogoData.success && Array.isArray(bogoData.data)) {
+        bogoData.data.forEach((promo: Record<string, unknown>) => {
           allPromotions.push({
-            id: promo.id,
-            name: promo.name,
+            id: String(promo.id || ""),
+            name: String(promo.name || ""),
             type: "bogo",
-            status: promo.status,
-            startDate: promo.start_date || promo.startDate,
-            endDate: promo.end_date || promo.endDate,
-            discountType: promo.reward_type || promo.rewardType,
-            discountValue: promo.reward_value || promo.rewardValue,
+            status: String(promo.status || "inactive") as Promotion["status"],
+            startDate: String(promo.start_date || promo.startDate || ""),
+            endDate: String(promo.end_date || promo.endDate || ""),
+            discountType: String(promo.reward_type || promo.rewardType || ""),
+            discountValue: Number(promo.reward_value || promo.rewardValue || 0),
             usageCount: 0,
             revenueImpact: 0,
-            createdAt: promo.created_at || promo.createdAt,
+            createdAt: String(promo.created_at || promo.createdAt || ""),
           })
         })
       }
 
-      // Customer discounts
-      if (customerData.success && customerData.data) {
-        customerData.data.forEach((discount: any) => {
+      if (customerData.success && Array.isArray(customerData.data)) {
+        customerData.data.forEach((discount: Record<string, unknown>) => {
           allPromotions.push({
-            id: discount.id,
-            name: discount.name,
+            id: String(discount.id || ""),
+            name: String(discount.name || ""),
             type: "customer_discount",
-            status: discount.status,
-            startDate: discount.start_date || discount.startDate,
-            endDate: discount.end_date || discount.endDate,
-            discountType: discount.type,
-            discountValue: discount.value,
+            status: String(discount.status || "inactive") as Promotion["status"],
+            startDate: String(discount.start_date || discount.startDate || ""),
+            endDate: String(discount.end_date || discount.endDate || ""),
+            discountType: String(discount.type || ""),
+            discountValue: Number(discount.value || 0),
             usageCount: 0,
             revenueImpact: 0,
-            createdAt: discount.created_at || discount.createdAt,
+            createdAt: String(discount.created_at || discount.createdAt || ""),
           })
         })
       }
 
-      // Inventory discounts
-      if (inventoryData.success && inventoryData.data) {
-        inventoryData.data.forEach((discount: any) => {
+      if (inventoryData.success && Array.isArray(inventoryData.data)) {
+        inventoryData.data.forEach((discount: Record<string, unknown>) => {
           allPromotions.push({
-            id: discount.id,
-            name: discount.name,
+            id: String(discount.id || ""),
+            name: String(discount.name || ""),
             type: "inventory_discount",
-            status: discount.status,
-            startDate: discount.created_at || discount.createdAt,
+            status: String(discount.status || "inactive") as Promotion["status"],
+            startDate: String(discount.created_at || discount.createdAt || ""),
             endDate: "Ongoing",
-            discountType: discount.discount_type || discount.discountType,
-            discountValue: discount.discount_value || discount.discountValue,
+            discountType: String(discount.discount_type || discount.discountType || ""),
+            discountValue: Number(discount.discount_value || discount.discountValue || 0),
             usageCount: 0,
             revenueImpact: 0,
-            createdAt: discount.created_at || discount.createdAt,
+            createdAt: String(discount.created_at || discount.createdAt || ""),
           })
         })
       }
 
-      // Bundle deals
-      if (bundleData.success && bundleData.data) {
-        bundleData.data.forEach((bundle: any) => {
+      if (bundleData.success && Array.isArray(bundleData.data)) {
+        bundleData.data.forEach((bundle: Record<string, unknown>) => {
           allPromotions.push({
-            id: bundle.id,
-            name: bundle.name,
+            id: String(bundle.id || ""),
+            name: String(bundle.name || ""),
             type: "bundle_deal",
-            status: bundle.status,
-            startDate: bundle.start_date || bundle.startDate,
-            endDate: bundle.end_date || bundle.endDate,
-            discountType: bundle.discount_type || bundle.discountType,
-            discountValue: bundle.discount_value || bundle.discountValue,
+            status: String(bundle.status || "inactive") as Promotion["status"],
+            startDate: String(bundle.start_date || bundle.startDate || ""),
+            endDate: String(bundle.end_date || bundle.endDate || ""),
+            discountType: String(bundle.discount_type || bundle.discountType || ""),
+            discountValue: Number(bundle.discount_value || bundle.discountValue || 0),
             usageCount: 0,
             revenueImpact: 0,
-            createdAt: bundle.created_at || bundle.createdAt,
+            createdAt: String(bundle.created_at || bundle.createdAt || ""),
           })
         })
       }
 
-      // Promo codes
-      if (promoCodeData.success && promoCodeData.data) {
-        promoCodeData.data.forEach((code: any) => {
+      if (promoCodeData.success && Array.isArray(promoCodeData.data)) {
+        promoCodeData.data.forEach((code: Record<string, unknown>) => {
           allPromotions.push({
-            id: code.id,
-            name: code.code,
+            id: String(code.id || ""),
+            name: String(code.code || ""),
             type: "promo_code",
-            status: code.status,
-            startDate: code.start_date || code.startDate,
-            endDate: code.end_date || code.endDate,
-            discountType: code.discount_type || code.discountType,
-            discountValue: code.discount_value || code.discountValue,
-            usageCount: code.usage_count || code.usageCount || 0,
+            status: String(code.status || "inactive") as Promotion["status"],
+            startDate: String(code.start_date || code.startDate || ""),
+            endDate: String(code.end_date || code.endDate || ""),
+            discountType: String(code.discount_type || code.discountType || ""),
+            discountValue: Number(code.discount_value || code.discountValue || 0),
+            usageCount: Number(code.usage_count || code.usageCount || 0),
             revenueImpact: 0,
-            createdAt: code.created_at || code.createdAt,
+            createdAt: String(code.created_at || code.createdAt || ""),
           })
         })
       }
 
-      // Sort by created date (newest first)
       allPromotions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
       setPromotions(allPromotions)

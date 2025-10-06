@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCustomerDiscount, updateCustomerDiscount, deleteCustomerDiscount } from "@/lib/actions/customer-discounts"
 
+interface CustomerAssignment {
+  customer_id: string
+  [key: string]: unknown
+}
+
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     console.log("[v0] Fetching discount with ID:", params.id)
@@ -15,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
-    const customerIds = result.data.assignments?.map((a: any) => a.customer_id) || []
+    const customerIds = (result.data.assignments as CustomerAssignment[] | undefined)?.map((a) => a.customer_id) || []
     console.log("[v0] Extracted customer IDs:", customerIds)
 
     const responseData = {

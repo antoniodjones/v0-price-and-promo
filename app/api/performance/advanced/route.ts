@@ -1,6 +1,33 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 
+interface PerformanceMetric {
+  metric_name: string
+  metric_category: string
+  value: string
+  timestamp: string
+  [key: string]: unknown
+}
+
+interface PerformanceAlert {
+  id: string
+  resolved: boolean
+  created_at: string
+  performance_alert_rules?: {
+    description: string
+    severity: string
+  }
+  [key: string]: unknown
+}
+
+interface SystemHealth {
+  overall_status: string
+  health_score: number
+  active_issues: number
+  issues_detail: unknown[]
+  [key: string]: unknown
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -75,33 +102,37 @@ export async function GET(request: NextRequest) {
       console.error("Error fetching health data:", healthError)
     }
 
-    // Group metrics by name and get latest values
-    const latestMetrics = metrics?.reduce((acc: any, metric: any) => {
-      if (!acc[metric.metric_name] || new Date(metric.timestamp) > new Date(acc[metric.metric_name].timestamp)) {
-        acc[metric.metric_name] = metric
-      }
-      return acc
-    }, {})
+    const latestMetrics = (metrics as PerformanceMetric[] | null)?.reduce(
+      (acc: Record<string, PerformanceMetric>, metric: PerformanceMetric) => {
+        if (!acc[metric.metric_name] || new Date(metric.timestamp) > new Date(acc[metric.metric_name].timestamp)) {
+          acc[metric.metric_name] = metric
+        }
+        return acc
+      },
+      {},
+    )
 
-    // Get historical data for charts
-    const historicalData = metrics?.reduce((acc: any, metric: any) => {
-      if (!acc[metric.metric_name]) {
-        acc[metric.metric_name] = []
-      }
-      acc[metric.metric_name].push({
-        timestamp: metric.timestamp,
-        value: Number.parseFloat(metric.value),
-      })
-      return acc
-    }, {})
+    const historicalData = (metrics as PerformanceMetric[] | null)?.reduce(
+      (acc: Record<string, Array<{ timestamp: string; value: number }>>, metric: PerformanceMetric) => {
+        if (!acc[metric.metric_name]) {
+          acc[metric.metric_name] = []
+        }
+        acc[metric.metric_name].push({
+          timestamp: metric.timestamp,
+          value: Number.parseFloat(metric.value),
+        })
+        return acc
+      },
+      {},
+    )
 
     return NextResponse.json({
       success: true,
       data: {
         metrics: Object.values(latestMetrics || {}),
         historicalData,
-        alerts: alerts || [],
-        systemHealth: healthData || {
+        alerts: (alerts as PerformanceAlert[] | null) || [],
+        systemHealth: (healthData as SystemHealth | null) || {
           overall_status: "unknown",
           health_score: 0,
           active_issues: 0,

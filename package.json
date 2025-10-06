@@ -4,12 +4,16 @@
   "private": true,
   "scripts": {
     "build": "next build",
+    "build:production": "pnpm run validate && pnpm run build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "test:build": "pnpm run validate && SKIP_ENV_VALIDATION=true pnpm run build",
+    "type-check": "tsc --noEmit",
+    "validate": "pnpm run type-check && pnpm run lint"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.10.0",
+    "@hookform/resolvers": "latest",
     "@neondatabase/serverless": "1.0.2",
     "@prisma/client": "latest",
     "@radix-ui/react-accordion": "1.2.2",
@@ -57,7 +61,7 @@
     "react": "^18",
     "react-day-picker": "latest",
     "react-dom": "^18",
-    "react-hook-form": "^7.60.0",
+    "react-hook-form": "latest",
     "recharts": "latest",
     "socket.io": "latest",
     "socket.io-client": "latest",

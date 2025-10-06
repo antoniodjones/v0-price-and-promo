@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: process.env.NODE_ENV === 'development',
+    // Only ignore during builds if explicitly set via env var
+    ignoreDuringBuilds: process.env.SKIP_LINT === 'true',
   },
   typescript: {
-    ignoreBuildErrors: process.env.NODE_ENV === 'development',
+    // Only ignore during builds if explicitly set via env var
+    ignoreBuildErrors: process.env.SKIP_TYPE_CHECK === 'true',
   },
   images: {
     unoptimized: process.env.NODE_ENV === 'development',

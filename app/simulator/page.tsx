@@ -151,7 +151,10 @@ export default function SimulatorPage() {
                   {/* Promotion Type */}
                   <div className="space-y-3">
                     <Label className="text-sm font-medium">Promotion Type</Label>
-                    <Select value={promoType} onValueChange={(value: any) => setPromoType(value)}>
+                    <Select
+                      value={promoType}
+                      onValueChange={(value) => setPromoType(value as "percentage" | "dollar" | "bogo" | "bundle")}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -191,7 +194,10 @@ export default function SimulatorPage() {
                   {/* Target Scope */}
                   <div className="space-y-3">
                     <Label className="text-sm font-medium">Target Scope</Label>
-                    <Select value={targetScope} onValueChange={(value: any) => setTargetScope(value)}>
+                    <Select
+                      value={targetScope}
+                      onValueChange={(value) => setTargetScope(value as "item" | "brand" | "category")}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>

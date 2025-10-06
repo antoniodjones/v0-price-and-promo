@@ -23,6 +23,58 @@ interface DiscountCalculation {
   priority: number
 }
 
+interface Customer {
+  id: string
+  business_legal_name: string
+  tier: string
+  [key: string]: unknown
+}
+
+interface Product {
+  id: string
+  basePrice: number
+  brand: string
+  category: string
+  subCategory: string
+  expirationDate: string
+  thcPercentage: number
+  [key: string]: unknown
+}
+
+interface Discount {
+  id: string
+  name: string
+  status: string
+  level?: string
+  target?: string
+  type?: string
+  value?: number
+  discountType?: string
+  discountValue?: number
+  customerTiers?: string[]
+  markets?: string[]
+  startDate?: string
+  endDate?: string
+  scope?: string
+  scopeValue?: string
+  triggerValue?: number
+  priority?: number
+  [key: string]: unknown
+}
+
+interface BogoPromotion {
+  id: string
+  name: string
+  status: string
+  startDate?: string
+  endDate?: string
+  triggerLevel?: string
+  triggerTarget?: string
+  rewardType?: string
+  rewardValue?: number
+  [key: string]: unknown
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: ValidationRequest = await request.json()
@@ -90,18 +142,16 @@ export async function POST(request: NextRequest) {
 
 async function calculateSingleProductDiscount(
   productId: string,
-  customer: any,
+  customer: Customer,
   market: string,
   quantity: number,
 ): Promise<DiscountCalculation | null> {
   try {
-    // Get product data with error handling
     const product = await db.getProductById(productId).catch(() => null)
     if (!product) {
       throw new Error(`Product not found: ${productId}`)
     }
 
-    // Get all active discounts with error handling
     const [customerDiscounts, inventoryDiscounts, bogoPromotions] = await Promise.allSettled([
       db.getCustomerDiscounts(),
       db.getInventoryDiscounts(),
@@ -109,29 +159,27 @@ async function calculateSingleProductDiscount(
     ])
 
     const activeCustomerDiscounts = (customerDiscounts.status === "fulfilled" ? customerDiscounts.value : []).filter(
-      (d: any) =>
+      (d: Discount) =>
         d.status === "active" &&
         d.customerTiers?.includes(customer.tier) &&
         d.markets?.includes(market) &&
-        new Date(d.startDate) <= new Date() &&
+        new Date(d.startDate || "") <= new Date() &&
         (!d.endDate || new Date(d.endDate) >= new Date()),
     )
 
     const activeInventoryDiscounts = (inventoryDiscounts.status === "fulfilled" ? inventoryDiscounts.value : []).filter(
-      (d: any) => d.status === "active",
+      (d: Discount) => d.status === "active",
     )
 
     const activeBogoPromotions = (bogoPromotions.status === "fulfilled" ? bogoPromotions.value : []).filter(
-      (p: any) =>
+      (p: BogoPromotion) =>
         p.status === "active" &&
         (!p.startDate || new Date(p.startDate) <= new Date()) &&
         (!p.endDate || new Date(p.endDate) >= new Date()),
     )
 
-    // Find applicable discounts
-    const applicableDiscounts: any[] = []
+    const applicableDiscounts: Array<Discount & { discountType: string; priority: number }> = []
 
-    // Check customer discounts
     for (const discount of activeCustomerDiscounts) {
       if (isDiscountApplicable(discount, product)) {
         applicableDiscounts.push({
@@ -142,7 +190,6 @@ async function calculateSingleProductDiscount(
       }
     }
 
-    // Check inventory discounts
     for (const discount of activeInventoryDiscounts) {
       if (isInventoryDiscountApplicable(discount, product)) {
         applicableDiscounts.push({
@@ -153,7 +200,6 @@ async function calculateSingleProductDiscount(
       }
     }
 
-    // Check BOGO promotions
     for (const promo of activeBogoPromotions) {
       if (isBogoApplicable(promo, product, quantity)) {
         applicableDiscounts.push({
@@ -164,7 +210,6 @@ async function calculateSingleProductDiscount(
       }
     }
 
-    // Apply best deal logic (highest discount wins, no stacking)
     let bestDiscount = null
     let bestDiscountAmount = 0
 
@@ -200,7 +245,7 @@ async function calculateSingleProductDiscount(
 
 async function calculateBasketDiscounts(
   products: Array<{ id: string; quantity: number }>,
-  customer: any,
+  customer: Customer,
   market: string,
 ): Promise<DiscountCalculation[]> {
   const results: DiscountCalculation[] = []
@@ -215,7 +260,7 @@ async function calculateBasketDiscounts(
   return results
 }
 
-function isDiscountApplicable(discount: any, product: any): boolean {
+function isDiscountApplicable(discount: Discount, product: Product): boolean {
   switch (discount.level) {
     case "item":
       return discount.target === product.id
@@ -230,21 +275,20 @@ function isDiscountApplicable(discount: any, product: any): boolean {
   }
 }
 
-function isInventoryDiscountApplicable(discount: any, product: any): boolean {
+function isInventoryDiscountApplicable(discount: Discount, product: Product): boolean {
   let triggerMet = false
 
   if (discount.type === "expiration") {
     const daysUntilExpiration = Math.ceil(
       (new Date(product.expirationDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
     )
-    triggerMet = daysUntilExpiration <= discount.triggerValue
+    triggerMet = daysUntilExpiration <= (discount.triggerValue || 0)
   } else if (discount.type === "thc") {
-    triggerMet = product.thcPercentage <= discount.triggerValue
+    triggerMet = product.thcPercentage <= (discount.triggerValue || 0)
   }
 
   if (!triggerMet) return false
 
-  // Check scope
   return (
     discount.scope === "all" ||
     (discount.scope === "category" && discount.scopeValue === product.category) ||
@@ -252,8 +296,7 @@ function isInventoryDiscountApplicable(discount: any, product: any): boolean {
   )
 }
 
-function isBogoApplicable(promo: any, product: any, quantity: number): boolean {
-  // BOGO requires at least 2 items
+function isBogoApplicable(promo: BogoPromotion, product: Product, quantity: number): boolean {
   if (quantity < 2) return false
 
   switch (promo.triggerLevel) {
@@ -268,30 +311,29 @@ function isBogoApplicable(promo: any, product: any, quantity: number): boolean {
   }
 }
 
-function calculateDiscountAmount(discount: any, product: any, quantity: number): number {
+function calculateDiscountAmount(discount: Discount, product: Product, quantity: number): number {
   const basePrice = product.basePrice * quantity
 
   if (discount.discountType === "customer") {
     if (discount.type === "percentage") {
-      return basePrice * (discount.value / 100)
+      return basePrice * ((discount.value || 0) / 100)
     } else {
-      return discount.value * quantity
+      return (discount.value || 0) * quantity
     }
   } else if (discount.discountType === "inventory") {
-    if (discount.discountType === "percentage") {
-      return basePrice * (discount.discountValue / 100)
+    if (discount.type === "percentage") {
+      return basePrice * ((discount.discountValue || 0) / 100)
     } else {
-      return discount.discountValue * quantity
+      return (discount.discountValue || 0) * quantity
     }
   } else if (discount.discountType === "bogo") {
-    // BOGO calculation: get discount on every second item
     const discountableItems = Math.floor(quantity / 2)
     if (discount.rewardType === "percentage") {
-      return product.basePrice * discountableItems * (discount.rewardValue / 100)
+      return product.basePrice * discountableItems * ((discount.rewardValue || 0) / 100)
     } else if (discount.rewardType === "free") {
       return product.basePrice * discountableItems
     } else {
-      return discount.rewardValue * discountableItems
+      return (discount.rewardValue || 0) * discountableItems
     }
   }
 
@@ -308,7 +350,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(createApiResponse(null, "Customer ID and Market are required", false), { status: 400 })
     }
 
-    // Get customer's applicable discount summary
     const customer = await db.getCustomerById(customerId).catch(() => null)
     if (!customer) {
       return NextResponse.json(createApiResponse(null, "Customer not found", false), { status: 404 })
@@ -320,11 +361,11 @@ export async function GET(request: NextRequest) {
     ])
 
     const activeCustomerDiscounts = (customerDiscounts.status === "fulfilled" ? customerDiscounts.value : []).filter(
-      (d: any) => d.status === "active" && d.customerTiers?.includes(customer.tier) && d.markets?.includes(market),
+      (d: Discount) => d.status === "active" && d.customerTiers?.includes(customer.tier) && d.markets?.includes(market),
     ).length
 
     const activeInventoryDiscounts = (inventoryDiscounts.status === "fulfilled" ? inventoryDiscounts.value : []).filter(
-      (d: any) => d.status === "active",
+      (d: Discount) => d.status === "active",
     ).length
 
     return NextResponse.json(

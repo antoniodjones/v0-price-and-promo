@@ -2,6 +2,22 @@ import type { NextRequest } from "next/server"
 import { PricingEngine } from "@/lib/pricing-engine"
 import { createClient } from "@/lib/supabase/server"
 
+interface CartItem {
+  productId: string
+  productName?: string
+  quantity: number
+  basePrice: number
+}
+
+interface Product {
+  id: string
+  name: string
+  price: number
+  category?: string
+  brand?: string
+  [key: string]: unknown
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { items, customerId } = await request.json()
@@ -19,9 +35,8 @@ export async function POST(request: NextRequest) {
       customerTier = customer?.tier
     }
 
-    // Calculate pricing for each item
     const pricingResults = await Promise.all(
-      items.map(async (item: any) => {
+      (items as CartItem[]).map(async (item) => {
         const { data: product } = await supabase.from("products").select("*").eq("id", item.productId).single()
 
         if (!product) {
@@ -36,14 +51,16 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        const typedProduct = product as Product
+
         const pricingResult = await PricingEngine.calculatePrice({
           productId: item.productId,
           customerId,
           customerTier,
           quantity: item.quantity,
-          basePrice: Number(product.price),
-          productCategory: product.category,
-          productBrand: product.brand,
+          basePrice: Number(typedProduct.price),
+          productCategory: typedProduct.category,
+          productBrand: typedProduct.brand,
         })
 
         const appliedRules: string[] = []
@@ -56,7 +73,7 @@ export async function POST(request: NextRequest) {
 
         return {
           productId: item.productId,
-          productName: item.productName || product.name,
+          productName: item.productName || typedProduct.name,
           quantity: item.quantity,
           basePrice: pricingResult.originalPrice,
           finalPrice: pricingResult.finalPrice,

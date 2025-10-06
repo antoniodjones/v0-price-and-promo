@@ -656,7 +656,12 @@ export default function PromotionDetectionPage() {
                       <Label htmlFor="detection-frequency">Detection Frequency</Label>
                       <Select
                         value={settings.detection_frequency}
-                        onValueChange={(value: any) => setSettings({ ...settings, detection_frequency: value })}
+                        onValueChange={(value) =>
+                          setSettings({
+                            ...settings,
+                            detection_frequency: value as "real_time" | "hourly" | "daily" | "weekly",
+                          })
+                        }
                       >
                         <SelectTrigger className="w-48">
                           <SelectValue />

@@ -5,6 +5,18 @@ import type React from "react"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
+/**
+ * @deprecated This component is deprecated. Use the new form system instead:
+ *
+ * Import from: lib/form-helpers.tsx
+ * - Use FormItem, FormLabel, FormControl from components/ui/form.tsx
+ * - Or use TextField/NumberField helpers that include labels and validation
+ *
+ * See docs/FORM_PATTERNS.md for migration guide
+ *
+ * This component will be removed in a future version.
+ */
+
 interface FormFieldWrapperProps {
   label: string
   error?: string

@@ -17,6 +17,18 @@ interface FormFieldProps {
   id?: string
 }
 
+/**
+ * @deprecated This component is deprecated. Use the new form system instead:
+ *
+ * Import from: lib/form-helpers.tsx
+ * - TextField, NumberField, SelectField, etc. for component-based forms
+ * - Or use components/ui/form.tsx with react-hook-form + Zod for full forms
+ *
+ * See docs/FORM_PATTERNS.md for migration guide
+ *
+ * This component will be removed in a future version.
+ */
+
 export function FormField({
   label,
   value,

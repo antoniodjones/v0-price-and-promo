@@ -1,6 +1,14 @@
 import { createClient } from "@/lib/supabase/server"
 import type { NextRequest } from "next/server"
 
+interface VolumePricingTier {
+  min_quantity: number
+  max_quantity: number | null
+  discount_type: string
+  discount_value: number
+  tier_label?: string
+}
+
 export async function GET() {
   try {
     const supabase = await createClient()
@@ -46,7 +54,7 @@ export async function POST(request: NextRequest) {
     if (ruleError) throw ruleError
 
     if (body.tiers && body.tiers.length > 0) {
-      const tiersToInsert = body.tiers.map((tier: any) => ({
+      const tiersToInsert = (body.tiers as VolumePricingTier[]).map((tier) => ({
         rule_id: rule.id,
         min_quantity: tier.min_quantity,
         max_quantity: tier.max_quantity,
