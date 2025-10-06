@@ -1,9 +1,9 @@
-import { createServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import type { NextRequest } from "next/server"
 
 export async function GET() {
   try {
-    const supabase = await createServerClient()
+    const supabase = await createClient()
 
     const { data: rules, error } = await supabase
       .from("volume_pricing_rules")
@@ -26,7 +26,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
+    const supabase = await createClient()
     const body = await request.json()
 
     const { data: rule, error: ruleError } = await supabase
