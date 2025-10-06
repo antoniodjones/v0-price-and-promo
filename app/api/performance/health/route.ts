@@ -29,15 +29,15 @@ export async function GET(request: NextRequest) {
 
     // Determine overall health status
     const dbHealthy = health.database.database && health.database.cache
-    const cacheHealthy = health.cache?.hitRate > 50
-    const queryHealthy = health.queries?.healthScore > 70
-    const memoryHealthy = health.memory?.healthScore > 70
+    const cacheHealthy = (health.cache?.hitRate ?? 0) > 50
+    const queryHealthy = (health.queries?.healthScore ?? 0) > 70
+    const memoryHealthy = (health.memory?.healthScore ?? 0) > 70
 
     if (!dbHealthy || !cacheHealthy || !queryHealthy || !memoryHealthy) {
       health.status = "degraded"
     }
 
-    if (!dbHealthy || (health.memory?.healthScore || 0) < 50) {
+    if (!dbHealthy || (health.memory?.healthScore ?? 0) < 50) {
       health.status = "unhealthy"
     }
 
@@ -57,9 +57,9 @@ export async function GET(request: NextRequest) {
         memory: memoryHealthy,
       },
       scores: {
-        query: health.queries?.healthScore || 0,
-        memory: health.memory?.healthScore || 0,
-        cache: health.cache?.hitRate || 0,
+        query: health.queries?.healthScore ?? 0,
+        memory: health.memory?.healthScore ?? 0,
+        cache: health.cache?.hitRate ?? 0,
       },
     }
 
