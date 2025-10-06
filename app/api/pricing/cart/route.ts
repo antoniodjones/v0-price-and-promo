@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server"
 import { PricingEngine } from "@/lib/pricing-engine"
-import { createServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ success: false, error: "Invalid items" }, { status: 400 })
     }
 
-    const supabase = await createServerClient()
+    const supabase = await createClient()
 
     // Get customer tier if customerId provided
     let customerTier: string | undefined

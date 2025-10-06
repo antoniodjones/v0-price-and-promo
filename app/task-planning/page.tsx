@@ -223,8 +223,10 @@ export default function UnifiedTaskManagerPage() {
 
   const handleTaskUpdate = async (updatedTask: UserStory) => {
     console.log("[v0] Task Planning Page: Task updated:", updatedTask)
-    // Reload tasks to reflect changes
-    await loadTasks()
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => (task.id === updatedTask.id ? convertToUnifiedTask(updatedTask) : task)),
+    )
+    // Update statistics without reloading tasks
     await loadStatistics()
   }
 

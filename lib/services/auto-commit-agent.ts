@@ -37,20 +37,47 @@ export class AutoCommitAgent {
   }
 
   /**
+   * Check if auto-commit is enabled for a specific task
+   */
+  private async isTaskAutoCommitEnabled(taskId: string): Promise<boolean> {
+    try {
+      const { createClient } = await import("@/lib/supabase/server")
+      const supabase = await createClient()
+
+      const { data, error } = await supabase.from("user_stories").select("metadata").eq("task_id", taskId).single()
+
+      if (error) {
+        console.error(`[v0] Failed to fetch task auto-commit setting for ${taskId}:`, error)
+        return true // Default to enabled if we can't fetch
+      }
+
+      const metadata = data?.metadata || {}
+      return metadata.auto_commit_enabled ?? true // Default to enabled
+    } catch (error) {
+      console.error(`[v0] Error checking task auto-commit setting:`, error)
+      return true // Default to enabled on error
+    }
+  }
+
+  /**
    * Detect and queue code changes for auto-commit
    */
   async detectChanges(detection: CodeChangeDetection): Promise<void> {
     if (!this.config.enabled) {
-      console.log(`[v0] Auto-commit disabled, skipping detection`)
+      console.log(`[v0] Auto-commit disabled globally, skipping detection`)
+      return
+    }
+
+    const taskAutoCommitEnabled = await this.isTaskAutoCommitEnabled(detection.taskId)
+    if (!taskAutoCommitEnabled) {
+      console.log(`[v0] Auto-commit disabled for task ${detection.taskId}, skipping detection`)
       return
     }
 
     console.log(`[v0] Detected ${detection.files.length} file changes for task ${detection.taskId}`)
 
-    // Add to pending changes
     const existing = this.pendingChanges.get(detection.taskId)
     if (existing) {
-      // Merge file changes
       const mergedFiles = this.mergeFileChanges(existing.files, detection.files)
       this.pendingChanges.set(detection.taskId, {
         ...detection,
@@ -60,7 +87,6 @@ export class AutoCommitAgent {
       this.pendingChanges.set(detection.taskId, detection)
     }
 
-    // Reset or create commit timer
     this.scheduleCommit(detection.taskId)
   }
 
@@ -68,13 +94,11 @@ export class AutoCommitAgent {
    * Schedule a commit after the batch window
    */
   private scheduleCommit(taskId: string): void {
-    // Clear existing timer
     const existingTimer = this.commitTimers.get(taskId)
     if (existingTimer) {
       clearTimeout(existingTimer)
     }
 
-    // Schedule new commit
     const timer = setTimeout(() => {
       this.executeAutoCommit(taskId)
     }, this.config.batchWindow)
@@ -90,6 +114,14 @@ export class AutoCommitAgent {
     const detection = this.pendingChanges.get(taskId)
     if (!detection) {
       console.log(`[v0] No pending changes for ${taskId}`)
+      return
+    }
+
+    const taskAutoCommitEnabled = await this.isTaskAutoCommitEnabled(taskId)
+    if (!taskAutoCommitEnabled) {
+      console.log(`[v0] Auto-commit disabled for task ${taskId}, cancelling scheduled commit`)
+      this.pendingChanges.delete(taskId)
+      this.commitTimers.delete(taskId)
       return
     }
 
@@ -117,7 +149,6 @@ export class AutoCommitAgent {
         console.error(`[v0] ✗ Auto-commit failed for ${taskId}: ${result.error}`)
       }
 
-      // Clean up
       this.pendingChanges.delete(taskId)
       this.commitTimers.delete(taskId)
     } catch (error) {
@@ -131,12 +162,10 @@ export class AutoCommitAgent {
   private mergeFileChanges(existing: FileChange[], newChanges: FileChange[]): FileChange[] {
     const fileMap = new Map<string, FileChange>()
 
-    // Add existing files
     for (const file of existing) {
       fileMap.set(file.path, file)
     }
 
-    // Merge new changes (overwrites existing)
     for (const file of newChanges) {
       fileMap.set(file.path, file)
     }
@@ -187,7 +216,6 @@ export class AutoCommitAgent {
   }
 }
 
-// Singleton instance
 let autoCommitAgentInstance: AutoCommitAgent | null = null
 
 /**

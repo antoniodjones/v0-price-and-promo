@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,7 @@ import { Copy, User, Link2, CheckSquare, MessageSquare, Send } from "lucide-reac
 import { formatDistanceToNow } from "date-fns"
 import { RichTextEditor } from "@/components/user-stories/rich-text-editor"
 import { TaskActionsMenu } from "@/components/user-stories/task-actions-menu"
+import { TaskModeToggle } from "@/components/user-stories/task-mode-toggle"
 
 interface UserStory {
   id: string
@@ -57,54 +58,153 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
   const [newComment, setNewComment] = useState("")
   const [comments, setComments] = useState<Comment[]>([])
   const [autoCommitEnabled, setAutoCommitEnabled] = useState(true)
+  const [loadingSettings, setLoadingSettings] = useState(false)
+  const [mode, setMode] = useState<"agent" | "user">("agent")
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-  useEffect(() => {
-    if (task) {
-      console.log("[v0] TaskDetailSheet: Task changed, updating state:", task.id)
-      setEditedTask(task)
-      setComments([
-        {
-          id: "1",
-          author: "System",
-          content: "Task created",
-          timestamp: new Date(task.created_at),
-        },
-      ])
+  const saveTaskToDatabase = async (taskToSave: UserStory) => {
+    if (!taskToSave) return
+
+    try {
+      setIsSaving(true)
+      console.log("[v0] Saving task to database:", taskToSave.id)
+
+      const response = await fetch(`/api/user-stories/${taskToSave.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(taskToSave),
+      })
+
+      if (response.ok) {
+        console.log("[v0] Task saved successfully")
+        setHasUnsavedChanges(false)
+
+        if (onUpdate) {
+          onUpdate(taskToSave)
+        }
+      } else {
+        console.error("[v0] Failed to save task:", response.status)
+      }
+    } catch (error) {
+      console.error("[v0] Error saving task:", error)
+    } finally {
+      setIsSaving(false)
     }
-  }, [task])
+  }
 
-  console.log("[v0] TaskDetailSheet: Rendering, open=", open, "task=", task?.id, "editedTask=", editedTask?.id)
+  const debouncedSave = (taskToSave: UserStory) => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+    }
 
-  if (!editedTask) {
-    console.log("[v0] TaskDetailSheet: No edited task, returning null")
-    return null
+    saveTimerRef.current = setTimeout(() => {
+      saveTaskToDatabase(taskToSave)
+    }, 1500)
+  }
+
+  const handleModeChange = async (newMode: "agent" | "user") => {
+    if (!editedTask) return
+
+    const oldMode = mode
+    setMode(newMode)
+
+    const newAutoCommit = newMode === "agent"
+    setAutoCommitEnabled(newAutoCommit)
+
+    try {
+      const response = await fetch(`/api/user-stories/${editedTask.id}/settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: newMode, auto_commit_enabled: newAutoCommit }),
+      })
+
+      if (!response.ok) {
+        console.error("[v0] Failed to update mode setting")
+        setMode(oldMode)
+        setAutoCommitEnabled(!newAutoCommit)
+      } else {
+        console.log("[v0] Mode setting updated:", newMode)
+      }
+    } catch (error) {
+      console.error("[v0] Error updating mode setting:", error)
+      setMode(oldMode)
+      setAutoCommitEnabled(!newAutoCommit)
+    }
+  }
+
+  const handleAutoCommitToggle = async (enabled: boolean) => {
+    if (!editedTask) return
+
+    setAutoCommitEnabled(enabled)
+
+    try {
+      const response = await fetch(`/api/user-stories/${editedTask.id}/settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ auto_commit_enabled: enabled }),
+      })
+
+      if (!response.ok) {
+        console.error("[v0] Failed to update auto-commit setting")
+        setAutoCommitEnabled(!enabled)
+      } else {
+        console.log("[v0] Auto-commit setting updated:", enabled)
+      }
+    } catch (error) {
+      console.error("[v0] Error updating auto-commit setting:", error)
+      setAutoCommitEnabled(!enabled)
+    }
+  }
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!editedTask) {
+      console.warn("[v0] Cannot update status - no task loaded")
+      return
+    }
+
+    const oldStatus = editedTask.status
+
+    handleFieldChange("status", newStatus)
+
+    try {
+      const response = await fetch(`/api/user-stories/${editedTask.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.auto_commit_enabled !== undefined) {
+          setAutoCommitEnabled(data.auto_commit_enabled)
+        }
+        console.log("[v0] Task status updated:", { oldStatus, newStatus, autoCommitEnabled: data.auto_commit_enabled })
+      } else {
+        console.error("[v0] Failed to update task status")
+        handleFieldChange("status", oldStatus)
+      }
+    } catch (error) {
+      console.error("[v0] Error updating task status:", error)
+      handleFieldChange("status", oldStatus)
+    }
   }
 
   const handleFieldChange = (field: keyof UserStory, value: any) => {
+    if (!editedTask) {
+      console.warn("[v0] Cannot update field - no task loaded")
+      return
+    }
+
     console.log("[v0] Field change triggered:", field, value)
     const updated = { ...editedTask, [field]: value, updated_at: new Date().toISOString() }
     setEditedTask(updated)
+    setHasUnsavedChanges(true)
 
-    console.log("[v0] Task field updated:", { taskId: editedTask.id, field, value, timestamp: new Date() })
+    console.log("[v0] Task field updated locally:", { taskId: editedTask.id, field, value, timestamp: new Date() })
 
-    if (onUpdate) {
-      onUpdate(updated)
-    }
-  }
-
-  const handleAddComment = () => {
-    if (!newComment.trim()) return
-
-    const comment: Comment = {
-      id: Date.now().toString(),
-      author: "Current User",
-      content: newComment,
-      timestamp: new Date(),
-    }
-
-    setComments([...comments, comment])
-    console.log("[v0] Comment added:", { taskId: editedTask.id, comment, timestamp: new Date() })
-    setNewComment("")
+    debouncedSave(updated)
   }
 
   const copyToClipboard = (text: string) => {
@@ -135,6 +235,90 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
       default:
         return "outline"
     }
+  }
+
+  const handleAddComment = () => {
+    if (!newComment.trim()) return
+
+    const comment: Comment = {
+      id: Date.now().toString(),
+      author: "Current User",
+      content: newComment,
+      timestamp: new Date(),
+    }
+
+    setComments([...comments, comment])
+    console.log("[v0] Comment added:", { taskId: editedTask.id, comment, timestamp: new Date() })
+    setNewComment("")
+  }
+
+  const isEditable = mode === "user"
+
+  useEffect(() => {
+    if (task) {
+      console.log("[v0] TaskDetailSheet: Task changed, updating state:", task.id)
+      setEditedTask(task)
+      setHasUnsavedChanges(false)
+      setComments([
+        {
+          id: "1",
+          author: "System",
+          content: "Task created",
+          timestamp: new Date(task.created_at),
+        },
+      ])
+      loadTaskSettings(task.id)
+    }
+  }, [task])
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current)
+      }
+    }
+  }, [])
+
+  const loadTaskSettings = async (taskId: string) => {
+    try {
+      setLoadingSettings(true)
+      console.log("[v0] Loading settings for task:", taskId)
+      const response = await fetch(`/api/user-stories/${taskId}/settings`)
+
+      if (!response.ok) {
+        console.error("[v0] Settings API returned error status:", response.status)
+        setMode("agent")
+        setAutoCommitEnabled(true)
+        return
+      }
+
+      const text = await response.text()
+      console.log("[v0] Settings API response text:", text)
+
+      try {
+        const data = JSON.parse(text)
+        console.log("[v0] Parsed settings data:", data)
+        setMode(data.settings?.mode || "agent")
+        setAutoCommitEnabled(data.settings?.auto_commit_enabled ?? true)
+      } catch (parseError) {
+        console.error("[v0] Failed to parse settings response:", parseError, "Response:", text)
+        setMode("agent")
+        setAutoCommitEnabled(true)
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching task settings:", error)
+      setMode("agent")
+      setAutoCommitEnabled(true)
+    } finally {
+      setLoadingSettings(false)
+    }
+  }
+
+  console.log("[v0] TaskDetailSheet: Rendering, open=", open, "task=", task?.id, "editedTask=", editedTask?.id)
+
+  if (!editedTask) {
+    console.log("[v0] TaskDetailSheet: No edited task, returning null")
+    return null
   }
 
   return (
@@ -180,8 +364,12 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                       taskId={editedTask.id}
                       taskTitle={editedTask.title}
                       autoCommitEnabled={autoCommitEnabled}
-                      onAutoCommitToggle={setAutoCommitEnabled}
+                      onAutoCommitToggle={handleAutoCommitToggle}
                     />
+                    {isSaving && <span className="text-xs text-muted-foreground">Saving...</span>}
+                    {hasUnsavedChanges && !isSaving && (
+                      <span className="text-xs text-muted-foreground">Unsaved changes</span>
+                    )}
                   </div>
                   <Input
                     value={editedTask.title}
@@ -193,10 +381,11 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                     onClick={(e) => e.stopPropagation()}
                     className="text-xl font-semibold border-none px-0 focus-visible:ring-0"
                     placeholder="Task title"
+                    disabled={!isEditable}
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Select value={editedTask.status} onValueChange={(value) => handleFieldChange("status", value)}>
+                  <Select value={editedTask.status} onValueChange={handleStatusChange} disabled={!isEditable}>
                     <SelectTrigger className="w-[140px]">
                       <SelectValue />
                     </SelectTrigger>
@@ -210,6 +399,8 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                 </div>
               </div>
             </SheetHeader>
+
+            <TaskModeToggle mode={mode} onModeChange={handleModeChange} disabled={loadingSettings} />
 
             <Separator />
 
@@ -229,6 +420,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                       onClick={(e) => e.stopPropagation()}
                       className="flex-1 h-7 text-sm"
                       placeholder="user type"
+                      disabled={!isEditable}
                     />
                   </div>
                   <div className="flex gap-2">
@@ -243,6 +435,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                       onClick={(e) => e.stopPropagation()}
                       className="flex-1 h-7 text-sm"
                       placeholder="goal"
+                      disabled={!isEditable}
                     />
                   </div>
                   <div className="flex gap-2">
@@ -257,6 +450,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                       onClick={(e) => e.stopPropagation()}
                       className="flex-1 h-7 text-sm"
                       placeholder="reason"
+                      disabled={!isEditable}
                     />
                   </div>
                 </div>
@@ -275,6 +469,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                 onClick={(e) => e.stopPropagation()}
                 placeholder="Add a description..."
                 className="min-h-[100px]"
+                disabled={!isEditable}
               />
             </div>
 
@@ -287,6 +482,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                 content={editedTask.acceptance_criteria || ""}
                 onChange={(content) => handleFieldChange("acceptance_criteria", content)}
                 placeholder="Define what 'done' means... Use the toolbar to format text with bullets, headers, and more."
+                disabled={!isEditable}
               />
             </div>
 
@@ -303,6 +499,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                   onClick={(e) => e.stopPropagation()}
                   placeholder="List subtasks..."
                   className="min-h-[60px]"
+                  disabled={!isEditable}
                 />
               </div>
             )}
@@ -315,6 +512,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                 <Select
                   value={editedTask.priority || "Medium"}
                   onValueChange={(value) => handleFieldChange("priority", value)}
+                  disabled={!isEditable}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -339,6 +537,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                   onKeyDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="0"
+                  disabled={!isEditable}
                 />
               </div>
 
@@ -353,6 +552,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                   onKeyDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="Epic name"
+                  disabled={!isEditable}
                 />
               </div>
 
@@ -367,6 +567,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                   onKeyDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="tag1, tag2"
+                  disabled={!isEditable}
                 />
               </div>
             </div>
@@ -388,6 +589,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                   onKeyDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="task-001, task-002"
+                  disabled={!isEditable}
                 />
               </div>
 
@@ -402,6 +604,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                   onKeyDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                   placeholder="issue-001, issue-002"
+                  disabled={!isEditable}
                 />
               </div>
             </div>
@@ -426,6 +629,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                     onClick={(e) => e.stopPropagation()}
                     placeholder="Unassigned"
                     className="mt-1 h-8"
+                    disabled={!isEditable}
                   />
                 </div>
                 <div>
@@ -440,6 +644,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, onUpdate }: TaskDeta
                     onClick={(e) => e.stopPropagation()}
                     placeholder="Reporter"
                     className="mt-1 h-8"
+                    disabled={!isEditable}
                   />
                 </div>
                 <div>

@@ -33,6 +33,61 @@ export interface FileChange {
   operation: "create" | "update" | "delete"
 }
 
+export interface GitHubIssue {
+  number: number
+  title: string
+  body: string
+  state: "open" | "closed"
+  url: string
+  labels: string[]
+  assignees: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateIssueParams {
+  title: string
+  body: string
+  labels?: string[]
+  assignees?: string[]
+  milestone?: number
+}
+
+export interface UpdateIssueParams {
+  title?: string
+  body?: string
+  state?: "open" | "closed"
+  labels?: string[]
+  assignees?: string[]
+}
+
+export interface GitHubPullRequest {
+  number: number
+  title: string
+  body: string
+  state: "open" | "closed" | "merged"
+  url: string
+  head: string
+  base: string
+  mergeable: boolean | null
+  merged: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface UpdatePRParams {
+  title?: string
+  body?: string
+  state?: "open" | "closed"
+  base?: string
+}
+
+export interface GitHubLabel {
+  name: string
+  color: string
+  description: string
+}
+
 const GITHUB_API = "https://api.github.com"
 const GITHUB_OWNER = process.env.GITHUB_OWNER || "antoniodjones"
 const GITHUB_REPO = process.env.GITHUB_REPO || "v0-price-and-promo"
@@ -581,6 +636,533 @@ export class GitHubWorkflowService {
       .eq("task_id", taskId)
 
     console.log(`[v0] ✓ Updated task metadata for ${taskId}`)
+  }
+
+  /**
+   * Create a GitHub issue
+   */
+  async createIssue(params: CreateIssueParams): Promise<GitHubIssue> {
+    console.log(`[v0] Creating GitHub issue: ${params.title}`)
+
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: params.title,
+        body: params.body,
+        labels: params.labels || [],
+        assignees: params.assignees || [],
+        milestone: params.milestone,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Failed to create issue: ${error}`)
+    }
+
+    const data = await response.json()
+    console.log(`[v0] ✓ Created issue #${data.number}: ${data.html_url}`)
+
+    return {
+      number: data.number,
+      title: data.title,
+      body: data.body,
+      state: data.state,
+      url: data.html_url,
+      labels: data.labels.map((l: any) => l.name),
+      assignees: data.assignees.map((a: any) => a.login),
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    }
+  }
+
+  /**
+   * Get an issue by number
+   */
+  async getIssue(issueNumber: number): Promise<GitHubIssue> {
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueNumber}`, {
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to get issue: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+
+    return {
+      number: data.number,
+      title: data.title,
+      body: data.body,
+      state: data.state,
+      url: data.html_url,
+      labels: data.labels.map((l: any) => l.name),
+      assignees: data.assignees.map((a: any) => a.login),
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    }
+  }
+
+  /**
+   * Update an issue
+   */
+  async updateIssue(issueNumber: number, params: UpdateIssueParams): Promise<GitHubIssue> {
+    console.log(`[v0] Updating issue #${issueNumber}`)
+
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueNumber}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Failed to update issue: ${error}`)
+    }
+
+    const data = await response.json()
+    console.log(`[v0] ✓ Updated issue #${issueNumber}`)
+
+    return {
+      number: data.number,
+      title: data.title,
+      body: data.body,
+      state: data.state,
+      url: data.html_url,
+      labels: data.labels.map((l: any) => l.name),
+      assignees: data.assignees.map((a: any) => a.login),
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    }
+  }
+
+  /**
+   * Close an issue
+   */
+  async closeIssue(issueNumber: number): Promise<GitHubIssue> {
+    return this.updateIssue(issueNumber, { state: "closed" })
+  }
+
+  /**
+   * List issues
+   */
+  async listIssues(state: "open" | "closed" | "all" = "open", labels?: string[]): Promise<GitHubIssue[]> {
+    const params = new URLSearchParams({ state })
+    if (labels && labels.length > 0) {
+      params.append("labels", labels.join(","))
+    }
+
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues?${params}`, {
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to list issues: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+
+    return data.map((issue: any) => ({
+      number: issue.number,
+      title: issue.title,
+      body: issue.body,
+      state: issue.state,
+      url: issue.html_url,
+      labels: issue.labels.map((l: any) => l.name),
+      assignees: issue.assignees.map((a: any) => a.login),
+      createdAt: issue.created_at,
+      updatedAt: issue.updated_at,
+    }))
+  }
+
+  /**
+   * Add a comment to an issue
+   */
+  async addIssueComment(issueNumber: number, body: string): Promise<{ id: number; url: string }> {
+    console.log(`[v0] Adding comment to issue #${issueNumber}`)
+
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueNumber}/comments`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ body }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Failed to add comment: ${error}`)
+    }
+
+    const data = await response.json()
+    console.log(`[v0] ✓ Added comment to issue #${issueNumber}`)
+
+    return {
+      id: data.id,
+      url: data.html_url,
+    }
+  }
+
+  /**
+   * Get a pull request by number
+   */
+  async getPullRequest(prNumber: number): Promise<GitHubPullRequest> {
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls/${prNumber}`, {
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to get pull request: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+
+    return {
+      number: data.number,
+      title: data.title,
+      body: data.body,
+      state: data.state,
+      url: data.html_url,
+      head: data.head.ref,
+      base: data.base.ref,
+      mergeable: data.mergeable,
+      merged: data.merged,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    }
+  }
+
+  /**
+   * Update a pull request
+   */
+  async updatePullRequest(prNumber: number, params: UpdatePRParams): Promise<GitHubPullRequest> {
+    console.log(`[v0] Updating PR #${prNumber}`)
+
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls/${prNumber}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Failed to update pull request: ${error}`)
+    }
+
+    const data = await response.json()
+    console.log(`[v0] ✓ Updated PR #${prNumber}`)
+
+    return {
+      number: data.number,
+      title: data.title,
+      body: data.body,
+      state: data.state,
+      url: data.html_url,
+      head: data.head.ref,
+      base: data.base.ref,
+      mergeable: data.mergeable,
+      merged: data.merged,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    }
+  }
+
+  /**
+   * Merge a pull request
+   */
+  async mergePullRequest(
+    prNumber: number,
+    commitTitle?: string,
+    commitMessage?: string,
+    mergeMethod: "merge" | "squash" | "rebase" = "merge",
+  ): Promise<{ sha: string; merged: boolean; message: string }> {
+    console.log(`[v0] Merging PR #${prNumber} using ${mergeMethod}`)
+
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls/${prNumber}/merge`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        commit_title: commitTitle,
+        commit_message: commitMessage,
+        merge_method: mergeMethod,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Failed to merge pull request: ${error}`)
+    }
+
+    const data = await response.json()
+    console.log(`[v0] ✓ Merged PR #${prNumber}`)
+
+    return {
+      sha: data.sha,
+      merged: data.merged,
+      message: data.message,
+    }
+  }
+
+  /**
+   * Close a pull request
+   */
+  async closePullRequest(prNumber: number): Promise<GitHubPullRequest> {
+    return this.updatePullRequest(prNumber, { state: "closed" })
+  }
+
+  /**
+   * List pull requests
+   */
+  async listPullRequests(state: "open" | "closed" | "all" = "open"): Promise<GitHubPullRequest[]> {
+    const params = new URLSearchParams({ state })
+
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls?${params}`, {
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to list pull requests: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+
+    return data.map((pr: any) => ({
+      number: pr.number,
+      title: pr.title,
+      body: pr.body,
+      state: pr.state,
+      url: pr.html_url,
+      head: pr.head.ref,
+      base: pr.base.ref,
+      mergeable: pr.mergeable,
+      merged: pr.merged,
+      createdAt: pr.created_at,
+      updatedAt: pr.updated_at,
+    }))
+  }
+
+  /**
+   * Add a comment to a pull request
+   */
+  async addPRComment(prNumber: number, body: string): Promise<{ id: number; url: string }> {
+    console.log(`[v0] Adding comment to PR #${prNumber}`)
+
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${prNumber}/comments`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ body }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Failed to add comment: ${error}`)
+    }
+
+    const data = await response.json()
+    console.log(`[v0] ✓ Added comment to PR #${prNumber}`)
+
+    return {
+      id: data.id,
+      url: data.html_url,
+    }
+  }
+
+  /**
+   * Add labels to an issue or PR
+   */
+  async addLabels(issueNumber: number, labels: string[]): Promise<string[]> {
+    console.log(`[v0] Adding labels to #${issueNumber}: ${labels.join(", ")}`)
+
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueNumber}/labels`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ labels }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Failed to add labels: ${error}`)
+    }
+
+    const data = await response.json()
+    console.log(`[v0] ✓ Added labels to #${issueNumber}`)
+
+    return data.map((label: any) => label.name)
+  }
+
+  /**
+   * Remove a label from an issue or PR
+   */
+  async removeLabel(issueNumber: number, label: string): Promise<void> {
+    console.log(`[v0] Removing label "${label}" from #${issueNumber}`)
+
+    const response = await fetch(
+      `${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueNumber}/labels/${encodeURIComponent(label)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${this.githubToken}`,
+          Accept: "application/vnd.github.v3+json",
+        },
+      },
+    )
+
+    if (!response.ok && response.status !== 404) {
+      const error = await response.text()
+      throw new Error(`Failed to remove label: ${error}`)
+    }
+
+    console.log(`[v0] ✓ Removed label "${label}" from #${issueNumber}`)
+  }
+
+  /**
+   * Set labels for an issue or PR (replaces all existing labels)
+   */
+  async setLabels(issueNumber: number, labels: string[]): Promise<string[]> {
+    console.log(`[v0] Setting labels for #${issueNumber}: ${labels.join(", ")}`)
+
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueNumber}/labels`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ labels }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Failed to set labels: ${error}`)
+    }
+
+    const data = await response.json()
+    console.log(`[v0] ✓ Set labels for #${issueNumber}`)
+
+    return data.map((label: any) => label.name)
+  }
+
+  /**
+   * Create a label in the repository
+   */
+  async createLabel(name: string, color: string, description?: string): Promise<GitHubLabel> {
+    console.log(`[v0] Creating label: ${name}`)
+
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/labels`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        color: color.replace("#", ""), // Remove # if present
+        description: description || "",
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`Failed to create label: ${error}`)
+    }
+
+    const data = await response.json()
+    console.log(`[v0] ✓ Created label: ${name}`)
+
+    return {
+      name: data.name,
+      color: data.color,
+      description: data.description,
+    }
+  }
+
+  /**
+   * List all labels in the repository
+   */
+  async listLabels(): Promise<GitHubLabel[]> {
+    const response = await fetch(`${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/labels`, {
+      headers: {
+        Authorization: `Bearer ${this.githubToken}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to list labels: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+
+    return data.map((label: any) => ({
+      name: label.name,
+      color: label.color,
+      description: label.description,
+    }))
+  }
+
+  /**
+   * Delete a label from the repository
+   */
+  async deleteLabel(name: string): Promise<void> {
+    console.log(`[v0] Deleting label: ${name}`)
+
+    const response = await fetch(
+      `${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/labels/${encodeURIComponent(name)}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${this.githubToken}`,
+          Accept: "application/vnd.github.v3+json",
+        },
+      },
+    )
+
+    if (!response.ok && response.status !== 404) {
+      const error = await response.text()
+      throw new Error(`Failed to delete label: ${error}`)
+    }
+
+    console.log(`[v0] ✓ Deleted label: ${name}`)
   }
 }
 

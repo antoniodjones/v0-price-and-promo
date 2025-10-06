@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { GitBranch, GitCommit, GitPullRequest, Code2, Send as Sync, Eye, MoreVertical, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { githubUrls } from "@/lib/utils/github-urls"
 
 interface TaskActionsMenuProps {
   taskId: string
@@ -143,16 +144,28 @@ export function TaskActionsMenu({
 
   const handleViewChanges = async () => {
     try {
-      const response = await fetch(`/api/code-changes/detect?taskId=${taskId}`)
+      const response = await fetch(`/api/code-changes/detect?taskId=${taskId}&view=history`)
       if (!response.ok) throw new Error("Failed to fetch changes")
 
       const data = await response.json()
-      if (data.pendingCommit) {
+
+      if (data.commits && data.commits.length > 0) {
+        const latestCommit = data.commits[0]
+        const commitUrl = githubUrls.commit(latestCommit.commit_sha)
+
+        toast.success(`${data.commits.length} commit(s) found`, {
+          description: `Latest: ${latestCommit.commit_message}`,
+          action: {
+            label: "View on GitHub",
+            onClick: () => window.open(commitUrl, "_blank"),
+          },
+        })
+      } else if (data.pendingCommit) {
         toast.info(`${data.pendingCommit.files.length} file(s) changed`, {
           description: data.pendingCommit.files.slice(0, 3).join(", "),
         })
       } else {
-        toast.info("No pending changes")
+        toast.info("No changes found for this task")
       }
     } catch (error) {
       toast.error("Failed to fetch changes")
@@ -166,12 +179,26 @@ export function TaskActionsMenu({
       const response = await fetch("/api/code-changes/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId }),
+        body: JSON.stringify({
+          taskId,
+          action: "sync",
+        }),
       })
 
       if (!response.ok) throw new Error("Failed to sync")
 
-      toast.success("Changes synced to GitHub")
+      const data = await response.json()
+
+      if (data.commitUrl) {
+        toast.success("Changes synced to GitHub", {
+          action: {
+            label: "View Commit",
+            onClick: () => window.open(data.commitUrl, "_blank"),
+          },
+        })
+      } else {
+        toast.success("Changes synced to GitHub")
+      }
     } catch (error) {
       toast.error("Failed to sync to GitHub")
       console.error(error)
@@ -180,12 +207,15 @@ export function TaskActionsMenu({
     }
   }
 
+  console.log("[v0] TaskActionsMenu: Rendering for task", taskId, "autoCommitEnabled:", autoCommitEnabled)
+
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
+          <Button variant="outline" size="sm" className="gap-2 bg-transparent">
             <MoreVertical className="h-4 w-4" />
+            <span className="text-xs">Actions</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">

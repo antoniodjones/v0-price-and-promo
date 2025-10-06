@@ -11,6 +11,8 @@ import { GitBranch, GitCommit, GitPullRequest, CheckCircle2, Play, ToggleLeft as
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { GitHubLink } from "@/components/ui/github-link"
+import { githubUrls, formatCommitSha } from "@/lib/utils/github-urls"
 
 interface TaskEvent {
   id: string
@@ -99,15 +101,53 @@ export function TaskEventTimeline({ taskId }: TaskEventTimelineProps) {
   const formatEventTitle = (event: TaskEvent) => {
     switch (event.event_type) {
       case "branch_created":
-        return `Branch created: ${event.metadata.branch_name}`
+        return (
+          <span>
+            Branch created:{" "}
+            {event.metadata.branch_url ? (
+              <GitHubLink href={event.metadata.branch_url} className="font-mono text-xs">
+                {event.metadata.branch_name}
+              </GitHubLink>
+            ) : (
+              <span className="font-mono text-xs">{event.metadata.branch_name}</span>
+            )}
+          </span>
+        )
       case "commit_created":
         return event.metadata.commit_message || "Commit created"
       case "pr_opened":
-        return `PR #${event.metadata.pr_number} opened`
+        return (
+          <span>
+            {event.metadata.pr_url ? (
+              <GitHubLink href={event.metadata.pr_url}>PR #{event.metadata.pr_number}</GitHubLink>
+            ) : (
+              `PR #${event.metadata.pr_number}`
+            )}{" "}
+            opened
+          </span>
+        )
       case "pr_merged":
-        return `PR #${event.metadata.pr_number} merged`
+        return (
+          <span>
+            {event.metadata.pr_url ? (
+              <GitHubLink href={event.metadata.pr_url}>PR #{event.metadata.pr_number}</GitHubLink>
+            ) : (
+              `PR #${event.metadata.pr_number}`
+            )}{" "}
+            merged
+          </span>
+        )
       case "pr_closed":
-        return `PR #${event.metadata.pr_number} closed`
+        return (
+          <span>
+            {event.metadata.pr_url ? (
+              <GitHubLink href={event.metadata.pr_url}>PR #{event.metadata.pr_number}</GitHubLink>
+            ) : (
+              `PR #${event.metadata.pr_number}`
+            )}{" "}
+            closed
+          </span>
+        )
       case "task_completed":
         return "Task marked as complete"
       case "task_started":
@@ -205,24 +245,12 @@ export function TaskEventTimeline({ taskId }: TaskEventTimelineProps) {
 
                     {/* Additional metadata */}
                     {event.metadata.commit_sha && (
-                      <a
-                        href={event.metadata.commit_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:underline mt-1 block"
+                      <GitHubLink
+                        href={event.metadata.commit_url || githubUrls.commit(event.metadata.commit_sha)}
+                        className="text-xs font-mono mt-1 block"
                       >
-                        {event.metadata.commit_sha.substring(0, 7)}
-                      </a>
-                    )}
-                    {event.metadata.pr_url && (
-                      <a
-                        href={event.metadata.pr_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:underline mt-1 block"
-                      >
-                        View Pull Request
-                      </a>
+                        {formatCommitSha(event.metadata.commit_sha)}
+                      </GitHubLink>
                     )}
                     {(event.metadata.lines_added || event.metadata.lines_removed) && (
                       <div className="text-xs text-muted-foreground mt-1">

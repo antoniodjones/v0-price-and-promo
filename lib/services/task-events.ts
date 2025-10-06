@@ -16,6 +16,7 @@ export type TaskEventType =
   | "task_started"
   | "auto_commit_toggled"
   | "manual_sync"
+  | "task_updated" // Added task_updated event type
 
 export interface TaskEvent {
   id: string
