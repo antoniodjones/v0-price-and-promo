@@ -26,7 +26,7 @@ export async function GET() {
       {
         status: "error",
         message: "Health check failed",
-        error: error.message,
+        error: error instanceof Error ? error.message : "Unknown error",
         timestamp: new Date().toISOString(),
       },
       { status: 500 },
