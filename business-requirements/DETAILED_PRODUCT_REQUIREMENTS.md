@@ -16,7 +16,7 @@ This document contains the detailed product requirements for the Order-to-Cash P
 
 #### Acceptance Criteria
 
-```gherkin
+\`\`\`gherkin
 Feature: Product Base Pricing Configuration
 
 Background:
