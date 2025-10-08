@@ -12,6 +12,7 @@ import { Building2, RefreshCw, Plus, Edit, FileText } from "lucide-react"
 import { UnifiedDataTable } from "@/components/shared/unified-data-table"
 import { useTableSort, useTableFilter, useTablePagination } from "@/lib/table-helpers"
 import { formatCurrency, formatDate } from "@/lib/table-formatters"
+import { apiGet, FetchError } from "@/lib/utils/fetch"
 
 interface Customer {
   id: string
@@ -72,30 +73,22 @@ export function CustomerManagementDashboard() {
       if (filters.search) params.append("search", filters.search)
       if (filters.customerType !== "all") params.append("customer_type", filters.customerType)
 
-      const response = await fetch(`/api/customers?${params}`)
-      const result = await response.json()
+      const result = await apiGet<{ customers: Customer[] }>(`/api/customers?${params}`)
 
-      if (result.success) {
-        let customerData = result.data.customers || []
+      let customerData = result.customers || []
 
-        // Apply tier filter on client side
-        if (filters.tier !== "all") {
-          customerData = customerData.filter((c: Customer) => c.tier === filters.tier)
-        }
-
-        setCustomers(customerData)
-      } else {
-        toast({
-          title: "Error",
-          description: result.message || "Failed to load customers",
-          variant: "destructive",
-        })
+      // Apply tier filter on client side
+      if (filters.tier !== "all") {
+        customerData = customerData.filter((c: Customer) => c.tier === filters.tier)
       }
+
+      setCustomers(customerData)
     } catch (error) {
+      const message = error instanceof FetchError ? error.message : "Failed to load customers. Please try again."
       console.error("Error loading customers:", error)
       toast({
         title: "Error",
-        description: "Failed to load customers. Please try again.",
+        description: message,
         variant: "destructive",
       })
     } finally {

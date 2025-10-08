@@ -115,26 +115,26 @@ export async function POST(request: NextRequest) {
 
       // Mock competitive analysis
       const mockCompetitors = [
-        { name: "Competitor A", price: product.basePrice * (0.95 + Math.random() * 0.1) },
-        { name: "Competitor B", price: product.basePrice * (0.9 + Math.random() * 0.2) },
-        { name: "Competitor C", price: product.basePrice * (0.85 + Math.random() * 0.3) },
+        { name: "Competitor A", price: product.price * (0.95 + Math.random() * 0.1) },
+        { name: "Competitor B", price: product.price * (0.9 + Math.random() * 0.2) },
+        { name: "Competitor C", price: product.price * (0.85 + Math.random() * 0.3) },
       ].map((comp) => ({ ...comp, market: body.market, price: Math.round(comp.price * 100) / 100 }))
 
       const marketAverage = mockCompetitors.reduce((sum, c) => sum + c.price, 0) / mockCompetitors.length
       const pricePosition =
-        product.basePrice > marketAverage * 1.05
+        product.price > marketAverage * 1.05
           ? "above_market"
-          : product.basePrice < marketAverage * 0.95
+          : product.price < marketAverage * 0.95
             ? "below_market"
             : "competitive"
 
       const recommendedPrice = Math.round(marketAverage * 0.98 * 100) / 100
-      const potentialRevenue = Math.abs(recommendedPrice - product.basePrice) * 100 // Mock calculation
+      const potentialRevenue = Math.abs(recommendedPrice - product.price) * 100 // Mock calculation
 
       results.push({
         productId: product.id,
         productName: product.name,
-        ourPrice: product.basePrice,
+        ourPrice: product.price,
         competitors: mockCompetitors,
         marketAverage: Math.round(marketAverage * 100) / 100,
         pricePosition,

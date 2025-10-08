@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { TrendingUp, TrendingDown, Minus, DollarSign, Target, BarChart3 } from "lucide-react"
+import { apiGet, apiPost, FetchError } from "@/lib/utils/fetch"
+import { toast } from "sonner"
 
 interface PriceComparison {
   productId: string
@@ -49,13 +51,12 @@ export function PriceComparisonDashboard() {
   const fetchComparisons = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/pricing/compare?market=${selectedMarket}`)
-      const data = await response.json()
-      if (data.success) {
-        setComparisons(data.data.comparisons)
-      }
+      const data = await apiGet<{ comparisons: PriceComparison[] }>(`/api/pricing/compare?market=${selectedMarket}`)
+      setComparisons(data.comparisons)
     } catch (error) {
+      const message = error instanceof FetchError ? error.message : "Failed to fetch price comparisons"
       console.error("Failed to fetch price comparisons:", error)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -66,21 +67,17 @@ export function PriceComparisonDashboard() {
 
     setLoading(true)
     try {
-      const response = await fetch("/api/pricing/optimize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: selectedProduct,
-          market: selectedMarket,
-          objective: optimizationObjective,
-        }),
+      const data = await apiPost<{ recommendations: OptimizationRecommendation[] }>("/api/pricing/optimize", {
+        productId: selectedProduct,
+        market: selectedMarket,
+        objective: optimizationObjective,
       })
-      const data = await response.json()
-      if (data.success) {
-        setRecommendations(data.data.recommendations)
-      }
+      setRecommendations(data.recommendations)
+      toast.success("Optimization recommendations generated")
     } catch (error) {
+      const message = error instanceof FetchError ? error.message : "Failed to generate optimization"
       console.error("Failed to generate optimization:", error)
+      toast.error(message)
     } finally {
       setLoading(false)
     }

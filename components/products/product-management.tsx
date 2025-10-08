@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, Loader2, Download, Upload, Eye, TrendingUp } from "lucide-react"
+import { apiGet, apiPost, apiPut, apiDelete, FetchError } from "@/lib/utils/fetch"
 
 interface Product {
   id: string
@@ -87,20 +88,11 @@ export function ProductManagement() {
     try {
       setLoading(true)
       setError(null)
-      const response = await fetch("/api/products")
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch products: ${response.status}`)
-      }
-
-      const result = await response.json()
-      if (result.success) {
-        setProducts(result.data)
-      } else {
-        throw new Error(result.message || "Failed to fetch products")
-      }
+      const products = await apiGet<Product[]>("/api/products")
+      setProducts(products)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      const message = err instanceof FetchError ? err.message : "An error occurred"
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -143,17 +135,10 @@ export function ProductManagement() {
     setSubmitting(true)
 
     try {
-      const url = editingProduct ? `/api/products/${editingProduct.id}` : "/api/products"
-      const method = editingProduct ? "PUT" : "POST"
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to ${editingProduct ? "update" : "create"} product`)
+      if (editingProduct) {
+        await apiPut(`/api/products/${editingProduct.id}`, formData)
+      } else {
+        await apiPost("/api/products", formData)
       }
 
       await fetchProducts()
@@ -162,7 +147,8 @@ export function ProductManagement() {
       setFormData(initialFormData)
       setEditingProduct(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      const message = err instanceof FetchError ? err.message : "An error occurred"
+      setError(message)
     } finally {
       setSubmitting(false)
     }
@@ -191,17 +177,11 @@ export function ProductManagement() {
     if (!confirm("Are you sure you want to delete this product?")) return
 
     try {
-      const response = await fetch(`/api/products/${productId}`, {
-        method: "DELETE",
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to delete product")
-      }
-
+      await apiDelete(`/api/products/${productId}`)
       await fetchProducts()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      const message = err instanceof FetchError ? err.message : "An error occurred"
+      setError(message)
     }
   }
 

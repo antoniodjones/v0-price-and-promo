@@ -45,25 +45,31 @@ export function NumberField({ form, name, label, description, placeholder, disab
     <FormField
       control={form.control}
       name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>
-            {label}
-            {required && <span className="text-destructive ml-1">*</span>}
-          </FormLabel>
-          <FormControl>
-            <Input
-              type="number"
-              placeholder={placeholder}
-              disabled={disabled}
-              {...field}
-              onChange={(e) => field.onChange(Number.parseFloat(e.target.value))}
-            />
-          </FormControl>
-          {description && <FormDescription>{description}</FormDescription>}
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field }) => {
+        const { value, onChange, name: fieldName, onBlur, ref } = field
+        return (
+          <FormItem>
+            <FormLabel>
+              {label}
+              {required && <span className="text-destructive ml-1">*</span>}
+            </FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                placeholder={placeholder}
+                disabled={disabled}
+                name={fieldName}
+                onBlur={onBlur}
+                ref={ref}
+                value={value === null || value === undefined ? "" : String(value)}
+                onChange={(e) => onChange(Number.parseFloat(e.target.value) || 0)}
+              />
+            </FormControl>
+            {description && <FormDescription>{description}</FormDescription>}
+            <FormMessage />
+          </FormItem>
+        )
+      }}
     />
   )
 }
@@ -208,19 +214,30 @@ export function DateField({ form, name, label, description, disabled, required }
     <FormField
       control={form.control}
       name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>
-            {label}
-            {required && <span className="text-destructive ml-1">*</span>}
-          </FormLabel>
-          <FormControl>
-            <Input type="datetime-local" disabled={disabled} {...field} />
-          </FormControl>
-          {description && <FormDescription>{description}</FormDescription>}
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field }) => {
+        const { value, onChange, name: fieldName, onBlur, ref } = field
+        return (
+          <FormItem>
+            <FormLabel>
+              {label}
+              {required && <span className="text-destructive ml-1">*</span>}
+            </FormLabel>
+            <FormControl>
+              <Input
+                type="datetime-local"
+                disabled={disabled}
+                name={fieldName}
+                onBlur={onBlur}
+                ref={ref}
+                value={value ? new Date(value).toISOString().slice(0, 16) : ""}
+                onChange={(e) => onChange(e.target.value ? new Date(e.target.value) : null)}
+              />
+            </FormControl>
+            {description && <FormDescription>{description}</FormDescription>}
+            <FormMessage />
+          </FormItem>
+        )
+      }}
     />
   )
 }
@@ -262,28 +279,30 @@ export function createNumberField(
     <FormField
       control={form.control}
       name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>
-            {label}
-            {options?.required && <span className="text-destructive ml-1">*</span>}
-          </FormLabel>
-          <FormControl>
-            <Input
-              type="number"
-              placeholder={options?.placeholder}
-              disabled={options?.disabled}
-              min={options?.min}
-              max={options?.max}
-              step={options?.step}
-              {...field}
-              onChange={(e) => field.onChange(Number.parseFloat(e.target.value) || 0)}
-            />
-          </FormControl>
-          {options?.description && <FormDescription>{options.description}</FormDescription>}
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field }) => {
+        return (
+          <FormItem>
+            <FormLabel>
+              {label}
+              {options?.required && <span className="text-destructive ml-1">*</span>}
+            </FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                placeholder={options?.placeholder}
+                disabled={options?.disabled}
+                min={options?.min}
+                max={options?.max}
+                step={options?.step}
+                value={field.value === null || field.value === undefined ? "" : String(field.value)}
+                onChange={(e) => field.onChange(Number.parseFloat(e.target.value) || 0)}
+              />
+            </FormControl>
+            {options?.description && <FormDescription>{options.description}</FormDescription>}
+            <FormMessage />
+          </FormItem>
+        )
+      }}
     />
   )
 }
@@ -336,27 +355,31 @@ export function createDateField(
     <FormField
       control={form.control}
       name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>
-            {label}
-            {options?.required && <span className="text-destructive ml-1">*</span>}
-          </FormLabel>
-          <FormControl>
-            <Input
-              type="date"
-              disabled={options?.disabled}
-              min={options?.disablePast ? new Date().toISOString().split("T")[0] : undefined}
-              max={options?.disableFuture ? new Date().toISOString().split("T")[0] : undefined}
-              {...field}
-              value={field.value ? new Date(field.value).toISOString().split("T")[0] : ""}
-              onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
-            />
-          </FormControl>
-          {options?.description && <FormDescription>{options.description}</FormDescription>}
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field }) => {
+        const { value, onChange, ...fieldProps } = field
+
+        return (
+          <FormItem>
+            <FormLabel>
+              {label}
+              {options?.required && <span className="text-destructive ml-1">*</span>}
+            </FormLabel>
+            <FormControl>
+              <Input
+                type="date"
+                disabled={options?.disabled}
+                min={options?.disablePast ? new Date().toISOString().split("T")[0] : undefined}
+                max={options?.disableFuture ? new Date().toISOString().split("T")[0] : undefined}
+                {...fieldProps}
+                value={value ? new Date(value).toISOString().split("T")[0] : ""}
+                onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
+              />
+            </FormControl>
+            {options?.description && <FormDescription>{options.description}</FormDescription>}
+            <FormMessage />
+          </FormItem>
+        )
+      }}
     />
   )
 }

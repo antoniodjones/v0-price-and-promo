@@ -100,7 +100,8 @@ export default function UnifiedTaskManagerPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [priorityFilter, setPriorityFilter] = useState<string>("all")
   const [epicFilter, setEpicFilter] = useState<string>("all")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchInput, setSearchInput] = useState("")
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false)
 
   const [selectedTask, setSelectedTask] = useState<UserStory | null>(null)
   const [isDetailSheetOpen, setIsDetailSheetOpen] = useState(false)
@@ -116,7 +117,7 @@ export default function UnifiedTaskManagerPage() {
       console.log("[v0] Task Planning Page: Filters changed, reloading tasks")
       loadTasks()
     }
-  }, [typeFilter, statusFilter, priorityFilter, epicFilter, searchTerm])
+  }, [typeFilter, statusFilter, priorityFilter, epicFilter])
 
   const loadTasks = async () => {
     try {
@@ -129,7 +130,6 @@ export default function UnifiedTaskManagerPage() {
         status: statusFilter,
         priority: priorityFilter,
         epic: epicFilter,
-        search: searchTerm,
       })
 
       console.log("[v0] Task Planning Page: Loaded", stories.length, "tasks")
@@ -172,9 +172,29 @@ export default function UnifiedTaskManagerPage() {
     if (statusFilter !== "all" && task.status !== statusFilter) return false
     if (priorityFilter !== "all" && task.priority !== priorityFilter) return false
     if (epicFilter !== "all" && task.epic !== epicFilter) return false
-    if (searchTerm && !task.title.toLowerCase().includes(searchTerm.toLowerCase())) return false
+    if (searchInput) {
+      const searchLower = searchInput.toLowerCase()
+      return (
+        task.title.toLowerCase().includes(searchLower) ||
+        task.description.toLowerCase().includes(searchLower) ||
+        task.id.toLowerCase().includes(searchLower)
+      )
+    }
     return true
   })
+
+  const searchSuggestions = searchInput
+    ? tasks
+        .filter((task) => {
+          const searchLower = searchInput.toLowerCase()
+          return (
+            task.title.toLowerCase().includes(searchLower) ||
+            task.description.toLowerCase().includes(searchLower) ||
+            task.id.toLowerCase().includes(searchLower)
+          )
+        })
+        .slice(0, 10) // Limit to 10 suggestions
+    : []
 
   const allTaskTypes = ["Build", "Testing", "Design", "Requirements", "Documentation", "Framework", "Component"]
   const uniqueEpics = Array.from(new Set(tasks.map((task) => task.epic)))
@@ -783,7 +803,62 @@ export default function UnifiedTaskManagerPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Search</label>
-              <Input placeholder="Search tasks..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Popover
+                open={showSearchSuggestions && searchSuggestions.length > 0}
+                onOpenChange={setShowSearchSuggestions}
+              >
+                <PopoverTrigger asChild>
+                  <div className="relative">
+                    <Input
+                      placeholder="Search tasks..."
+                      value={searchInput}
+                      onChange={(e) => {
+                        setSearchInput(e.target.value)
+                        setShowSearchSuggestions(true)
+                      }}
+                      onFocus={() => setShowSearchSuggestions(true)}
+                      onBlur={() => {
+                        // Delay to allow clicking on suggestions
+                        setTimeout(() => setShowSearchSuggestions(false), 200)
+                      }}
+                    />
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <Command>
+                    <CommandList>
+                      <CommandEmpty>No tasks found.</CommandEmpty>
+                      <CommandGroup heading="Matching Tasks">
+                        {searchSuggestions.map((task) => {
+                          const TypeIcon = getTypeIcon(task.type)
+                          return (
+                            <CommandItem
+                              key={task.id}
+                              value={task.id}
+                              onSelect={() => {
+                                handleTaskDoubleClick(task.id)
+                                setShowSearchSuggestions(false)
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <div className="flex items-center gap-3 w-full">
+                                <TypeIcon className="h-4 w-4 text-gti-green flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-sm truncate">{task.title}</div>
+                                  <div className="text-xs text-muted-foreground truncate">{task.id}</div>
+                                </div>
+                                <Badge variant="outline" className="text-xs flex-shrink-0">
+                                  {task.storyPoints} SP
+                                </Badge>
+                              </div>
+                            </CommandItem>
+                          )
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </CardContent>

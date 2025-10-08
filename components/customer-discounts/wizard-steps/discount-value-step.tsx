@@ -86,7 +86,7 @@ export function DiscountValueStep({ formData, updateFormData }: DiscountValueSte
                 <Input
                   type="number"
                   placeholder={formData.discountType === "percentage" ? "8" : "5.00"}
-                  value={formData.discountValue || ""}
+                  value={formData.discountValue === 0 ? "" : String(formData.discountValue)}
                   onChange={(e) => handleValueChange(e.target.value)}
                   className="pl-10"
                   step={formData.discountType === "percentage" ? "1" : "0.01"}

@@ -75,7 +75,7 @@ export function handleApiError(error: unknown, context?: string): NextResponse {
     return handleError(error, context)
   } catch (handlerError) {
     logError("Error in handleApiError", handlerError)
-    return new NextResponse(JSON.stringify(createApiResponse(null, "Internal server error", false)), { status: 500 })
+    return NextResponse.json(createApiResponse(null, "Internal server error", false), { status: 500 })
   }
 }
 

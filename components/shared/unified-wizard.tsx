@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { useState, type ComponentType } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -12,7 +12,7 @@ export interface UnifiedWizardStep<T = any> {
   id: number
   name: string
   description: string
-  component: (props: { formData: T; updateFormData: (updates: Partial<T>) => void }) => ReactNode
+  component: ComponentType<{ formData: T; updateFormData: (updates: Partial<T>) => void }>
   validate?: (formData: T) => boolean
 }
 
@@ -86,6 +86,8 @@ export function UnifiedWizard<T = any>({ config }: UnifiedWizardProps<T>) {
   const PrevIcon = navigationStyle === "chevrons" ? ChevronLeft : ArrowLeft
   const NextIcon = navigationStyle === "chevrons" ? ChevronRight : CustomArrow
 
+  const StepComponent = currentStepData.component
+
   return (
     <div className="space-y-6">
       {/* Progress Header */}
@@ -149,7 +151,9 @@ export function UnifiedWizard<T = any>({ config }: UnifiedWizardProps<T>) {
 
       {/* Step Content */}
       <Card>
-        <CardContent className="p-6">{currentStepData.component({ formData, updateFormData })}</CardContent>
+        <CardContent className="p-6">
+          <StepComponent formData={formData} updateFormData={updateFormData} />
+        </CardContent>
       </Card>
 
       {/* Navigation Buttons */}
