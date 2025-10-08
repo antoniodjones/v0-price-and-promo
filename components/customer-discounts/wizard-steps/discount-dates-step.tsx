@@ -5,11 +5,12 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Form } from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Clock, AlertCircle } from "lucide-react"
 import { format } from "date-fns"
-import { createDateField, createCheckboxField } from "@/lib/form-helpers"
+import { createCheckboxField } from "@/lib/form-helpers"
 import type { DiscountFormData } from "../customer-discount-wizard"
 
 const dateSchema = z
@@ -66,6 +67,11 @@ export function DiscountDatesStep({ formData, updateFormData }: DiscountDatesSte
 
   const noEndDate = form.watch("noEndDate")
 
+  const formatDateForInput = (date: Date | null | undefined) => {
+    if (!date) return ""
+    return date.toISOString().split("T")[0]
+  }
+
   const setQuickStartDate = (date: Date) => {
     form.setValue("startDate", date, { shouldValidate: true })
   }
@@ -100,9 +106,24 @@ export function DiscountDatesStep({ formData, updateFormData }: DiscountDatesSte
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {createDateField(form, "startDate", "Effective Start Date", {
-                    disablePast: true,
-                  })}
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Effective Start Date</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            value={formatDateForInput(field.value)}
+                            onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
+                            min={new Date().toISOString().split("T")[0]}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   {/* Quick date options */}
                   <div className="flex flex-wrap gap-2">
@@ -153,9 +174,24 @@ export function DiscountDatesStep({ formData, updateFormData }: DiscountDatesSte
 
                   {!noEndDate && (
                     <>
-                      {createDateField(form, "endDate", "Effective End Date", {
-                        disablePast: true,
-                      })}
+                      <FormField
+                        control={form.control}
+                        name="endDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Effective End Date</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="date"
+                                value={formatDateForInput(field.value)}
+                                onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
+                                min={new Date().toISOString().split("T")[0]}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
                       {/* Quick end date options */}
                       {form.getValues("startDate") && (
