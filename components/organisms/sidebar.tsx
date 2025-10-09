@@ -19,6 +19,7 @@ import {
   Zap,
   Ticket,
   Sparkles,
+  Users,
 } from "lucide-react"
 import { useAppContext } from "@/lib/context/app-context"
 import { useRouter, usePathname } from "next/navigation"
@@ -51,6 +52,12 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
     label: "Products",
     icon: Package,
     href: "/products",
+  },
+  {
+    id: "customers",
+    label: "Customers",
+    icon: Users,
+    href: "/customers",
   },
   {
     id: "pricing",

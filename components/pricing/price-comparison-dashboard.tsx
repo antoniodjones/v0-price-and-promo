@@ -51,11 +51,16 @@ export function PriceComparisonDashboard() {
   const fetchComparisons = async () => {
     setLoading(true)
     try {
-      const data = await apiGet<{ comparisons: PriceComparison[] }>(`/api/pricing/compare?market=${selectedMarket}`)
+      console.log("[v0] PriceComparison: Fetching comparisons for market:", selectedMarket)
+      const data = await apiGet<{ comparisons: PriceComparison[]; summary?: any }>(
+        `/api/pricing/compare?market=${selectedMarket}`,
+      )
+      console.log("[v0] PriceComparison: Received data:", data)
+      console.log("[v0] PriceComparison: Comparisons array:", data.comparisons)
       setComparisons(data.comparisons)
     } catch (error) {
       const message = error instanceof FetchError ? error.message : "Failed to fetch price comparisons"
-      console.error("Failed to fetch price comparisons:", error)
+      console.error("[v0] PriceComparison: Error fetching comparisons:", error)
       toast.error(message)
     } finally {
       setLoading(false)

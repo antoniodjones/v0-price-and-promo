@@ -13,6 +13,7 @@ import { PerformanceMetrics } from "@/components/analytics/performance-metrics"
 import { CustomerInsights } from "@/components/analytics/customer-insights"
 import { AdvancedAnalyticsDashboard } from "@/components/analytics/advanced-analytics-dashboard"
 import type { DateRange } from "react-day-picker"
+import { DocumentationLink } from "@/components/shared/documentation-link"
 
 export default function AnalyticsPage() {
   const [selectedMarket, setSelectedMarket] = useState("all")
@@ -85,6 +86,7 @@ export default function AnalyticsPage() {
           <p className="text-muted-foreground mt-2">Pricing performance insights and discount analysis</p>
         </div>
         <div className="flex items-center gap-3">
+          <DocumentationLink pageId="analytics" />
           <Select value={selectedMarket} onValueChange={setSelectedMarket}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Select market..." />

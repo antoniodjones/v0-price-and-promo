@@ -40,10 +40,14 @@ const competitivePricing = [
 
 export async function GET(request: NextRequest) {
   try {
+    console.log("[v0] Pricing compare API: Starting GET request")
+
     const searchParams = request.nextUrl.searchParams
     const productId = searchParams.get("productId")
     const market = searchParams.get("market")
     const category = searchParams.get("category")
+
+    console.log("[v0] Pricing compare API: Query params", { productId, market, category })
 
     let comparisons = competitivePricing
 
@@ -75,6 +79,11 @@ export async function GET(request: NextRequest) {
       priceOptimizationOpportunities: comparisons.filter((c) => c.recommendedPrice !== c.ourPrice).length,
     }
 
+    console.log("[v0] Pricing compare API: Returning", {
+      comparisonsCount: comparisons.length,
+      summary,
+    })
+
     return NextResponse.json(
       createApiResponse(
         {
@@ -85,6 +94,7 @@ export async function GET(request: NextRequest) {
       ),
     )
   } catch (error) {
+    console.error("[v0] Pricing compare API: Error", error)
     return handleApiError(error)
   }
 }

@@ -142,6 +142,17 @@ const navigationGroups: NavigationGroup[] = [
     ],
   },
   {
+    name: "Customers",
+    items: [
+      {
+        name: "Customer Management",
+        href: "/customers",
+        icon: Users,
+        permission: PERMISSIONS.CUSTOMERS_VIEW,
+      },
+    ],
+  },
+  {
     name: "System",
     items: [
       {

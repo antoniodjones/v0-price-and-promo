@@ -3,7 +3,10 @@ import { getCustomers } from "@/lib/actions/customers"
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await getCustomers()
+    const searchParams = request.nextUrl.searchParams
+    const search = searchParams.get("search") || undefined
+
+    const result = await getCustomers(search)
 
     if (!result.success) {
       return NextResponse.json(
@@ -18,6 +21,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Customers retrieved successfully",
+      customers: result.data,
       data: result.data,
     })
   } catch (error) {

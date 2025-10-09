@@ -24,6 +24,7 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { MetricCard } from "@/components/dashboard/metric-card"
 import { MiniChart } from "@/components/dashboard/mini-chart"
+import { DocumentationLink } from "@/components/shared/documentation-link"
 
 interface DashboardData {
   overview: {
@@ -228,6 +229,7 @@ export default function DashboardPage() {
                 <p className="text-muted-foreground mt-1">Comprehensive view of your pricing engine</p>
               </div>
               <div className="flex items-center gap-3">
+                <DocumentationLink pageId="dashboard" />
                 <Select value={timeRange} onValueChange={setTimeRange}>
                   <SelectTrigger className="w-[140px]">
                     <Clock className="mr-2 h-4 w-4" />

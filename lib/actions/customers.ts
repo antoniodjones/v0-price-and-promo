@@ -2,15 +2,21 @@
 
 import { createClient } from "@/lib/supabase/server"
 
-export async function getCustomers() {
+export async function getCustomers(search?: string) {
   try {
-    console.log("[v0] getCustomers: Starting")
+    console.log("[v0] getCustomers: Starting", search ? `with search: ${search}` : "")
     const supabase = await createClient()
 
-    const { data: customers, error } = await supabase
-      .from("customers")
-      .select("*")
-      .order("business_legal_name", { ascending: true })
+    let query = supabase.from("customers").select("*")
+
+    if (search && search.trim()) {
+      const searchTerm = search.trim()
+      query = query.or(
+        `business_legal_name.ilike.%${searchTerm}%,dba_name.ilike.%${searchTerm}%,cannabis_license_number.ilike.%${searchTerm}%,account_number.ilike.%${searchTerm}%`,
+      )
+    }
+
+    const { data: customers, error } = await query.order("business_legal_name", { ascending: true })
 
     if (error) {
       console.error("[v0] getCustomers: Supabase error:", error)

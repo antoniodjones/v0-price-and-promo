@@ -6,6 +6,8 @@ import { PageErrorBoundary } from "@/components/error/enhanced-error-boundary"
 import { ThemeProvider } from "@/components/theme/theme-provider"
 import { AppProvider } from "@/lib/context/app-context"
 import { AuthProvider } from "@/lib/context/auth-context"
+import { DocumentationProvider } from "@/lib/contexts/documentation-context"
+import { DocumentationViewer } from "@/components/shared/documentation-viewer"
 import { AppLayout } from "@/components/organisms/app-layout"
 import { Header } from "@/components/organisms/header"
 import { Sidebar } from "@/components/organisms/sidebar"
@@ -13,7 +15,7 @@ import { Sidebar } from "@/components/organisms/sidebar"
 export const metadata: Metadata = {
   title: "Promotions Engine",
   description: "Pricing and Promotion Management System",
-    generator: 'v0.app'
+  generator: "v0.app",
 }
 
 export default function RootLayout({
@@ -29,9 +31,12 @@ export default function RootLayout({
             <ThemeProvider>
               <AuthProvider>
                 <AppProvider>
-                  <AppLayout header={<Header />} sidebar={<Sidebar />}>
-                    {children}
-                  </AppLayout>
+                  <DocumentationProvider>
+                    <AppLayout header={<Header />} sidebar={<Sidebar />}>
+                      {children}
+                    </AppLayout>
+                    <DocumentationViewer />
+                  </DocumentationProvider>
                 </AppProvider>
               </AuthProvider>
             </ThemeProvider>

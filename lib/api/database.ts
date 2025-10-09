@@ -202,6 +202,13 @@ export interface DiscountRule {
   created_by?: string
   created_at: string
   updated_at: string
+  tiers?: Array<{
+    tier: "A" | "B" | "C"
+    discount_type: "percentage" | "fixed_amount" | "price_override"
+    discount_value: number
+    min_quantity?: number
+    max_quantity?: number
+  }>
 }
 
 export interface DiscountRuleTier {
@@ -956,7 +963,23 @@ export const db = {
 
       if (error) throw error
 
-      return data || []
+      const rulesWithTiers = await Promise.all(
+        (data || []).map(async (rule) => {
+          const tiers = await this.getRuleTiers(rule.id)
+          return {
+            ...rule,
+            tiers: tiers.map((tier) => ({
+              tier: tier.tier,
+              discount_type: tier.discount_type,
+              discount_value: tier.discount_value,
+              min_quantity: tier.min_quantity,
+              max_quantity: tier.max_quantity,
+            })),
+          }
+        }),
+      )
+
+      return rulesWithTiers
     } catch (error) {
       logError("Error fetching discount rules", error)
       throw error

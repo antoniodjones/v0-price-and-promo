@@ -81,25 +81,30 @@ export class AdminDatabase {
         .from("price_sources")
         .select(`
           *,
-          products!inner(count)
+          price_history(product_id)
         `)
         .order("created_at", { ascending: false })
 
       if (error) throw error
 
       return (
-        data?.map((source) => ({
-          id: source.id,
-          name: source.name,
-          url: source.url,
-          api_endpoint: source.api_endpoint,
-          last_sync: this.formatLastSync(source.last_sync),
-          status: source.status,
-          products_count: source.products?.length || 0,
-          sync_frequency: source.sync_frequency,
-          created_at: source.created_at,
-          updated_at: source.updated_at,
-        })) || []
+        data?.map((source) => {
+          // Count unique products from price_history
+          const uniqueProducts = new Set(source.price_history?.map((ph: any) => ph.product_id) || [])
+
+          return {
+            id: source.id,
+            name: source.name,
+            url: source.website_url || source.url || "",
+            api_endpoint: source.api_endpoint,
+            last_sync: this.formatLastSync(source.updated_at),
+            status: source.is_active ? "active" : "inactive",
+            products_count: uniqueProducts.size,
+            sync_frequency: "Daily", // Default since not in schema
+            created_at: source.created_at,
+            updated_at: source.updated_at,
+          }
+        }) || []
       )
     } catch (error) {
       console.error("Error fetching price sources:", error)

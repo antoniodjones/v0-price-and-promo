@@ -6,15 +6,23 @@ import { Button } from "@/components/ui/button"
 import { Menu, Search, Bell } from "lucide-react"
 import { useAppContext } from "@/lib/context/app-context"
 import { UserMenu } from "@/components/auth/user-menu"
+import { DocumentationLink } from "@/components/shared/documentation-link"
 
 interface HeaderProps {
   showSearch?: boolean
   showNotifications?: boolean
   showUserMenu?: boolean
+  pageId?: string
   className?: string
 }
 
-export function Header({ showSearch = true, showNotifications = true, showUserMenu = true, className }: HeaderProps) {
+export function Header({
+  showSearch = true,
+  showNotifications = true,
+  showUserMenu = true,
+  pageId,
+  className,
+}: HeaderProps) {
   const [searchQuery, setSearchQuery] = React.useState("")
   const { toggleMobileSidebar } = useAppContext()
 
@@ -52,6 +60,9 @@ export function Header({ showSearch = true, showNotifications = true, showUserMe
             <Search className="h-5 w-5" />
           </Button>
         )}
+
+        {/* Documentation Link */}
+        {pageId && <DocumentationLink pageId={pageId} />}
 
         {/* Notifications */}
         {showNotifications && (
