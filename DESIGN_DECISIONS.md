@@ -46,6 +46,14 @@
 
 This codebase follows Clean Code principles alongside Clean Architecture, Domain Driven Design, and Atomic Design to ensure maintainability, readability, and scalability.
 
+### No Hardcoding Principle
+- **Dynamic Discovery**: Components should discover data dynamically, not use hardcoded lists
+- **Configuration Over Code**: Use configuration files or database queries instead of hardcoded arrays
+- **Example Violations to Fix**:
+  - ❌ ScriptRunner component has hardcoded script list - should read from `/api/admin/scripts` endpoint
+  - ✅ Dynamic script discovery from file system or database
+- **Benefits**: Easier maintenance, automatic updates when new items added, follows Open/Closed Principle
+
 ### Naming Conventions
 - **Meaningful Names**: Use intention-revealing names that explain purpose without comments
   - ✅ `calculateTierDiscount()` not `calc()` or `getTD()`

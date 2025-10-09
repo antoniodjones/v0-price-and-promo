@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Play, AlertCircle, Clock } from "lucide-react"
+import { CheckCircle, Play, AlertCircle, Clock, Loader2 } from "lucide-react"
 
 interface Script {
   name: string
@@ -17,85 +17,34 @@ interface Script {
 }
 
 export function ScriptRunner() {
-  const [scripts, setScripts] = useState<Script[]>([
-    {
-      name: "Price Tracking Tables",
-      description: "Create price_sources and price_history tables",
-      file: "001_create_price_tracking_tables.sql",
-      order: 1,
-      status: "pending",
-    },
-    {
-      name: "Price Sources Seed Data",
-      description: "Load initial price source competitors",
-      file: "002_seed_price_sources.sql",
-      order: 2,
-      status: "pending",
-    },
-    {
-      name: "Complete Database Setup",
-      description: "Run all database setup scripts in proper order",
-      file: "run_all_setup.sql",
-      order: 3,
-      status: "pending",
-    },
-    {
-      name: "Seed Basic Data",
-      description: "Load initial customer and product data",
-      file: "run-seed-data.sql",
-      order: 4,
-      status: "pending",
-    },
-    {
-      name: "Price Tracking Data",
-      description: "Initialize price tracking and history",
-      file: "seed_price_tracking_data.sql",
-      order: 5,
-      status: "pending",
-    },
-    {
-      name: "Performance Monitoring",
-      description: "Create performance monitoring and analytics tables",
-      file: "015_create_performance_monitoring_tables.sql",
-      order: 6,
-      status: "pending",
-    },
-    {
-      name: "CI Testing Infrastructure",
-      description: "Create continuous integration testing infrastructure",
-      file: "018_create_ci_testing_tables.sql",
-      order: 7,
-      status: "pending",
-    },
-    {
-      name: "Integration Test Data",
-      description: "Load comprehensive test data for validation",
-      file: "019_create_final_integration_test_data.sql",
-      order: 8,
-      status: "pending",
-    },
-    {
-      name: "B2B Customer Enhancement",
-      description: "Add business fields for wholesale cannabis operations",
-      file: "020_enhance_customers_b2b.sql",
-      order: 9,
-      status: "pending",
-    },
-    {
-      name: "Tier Management Tables",
-      description: "Create discount rules and tier assignment tables",
-      file: "021_create_tier_management_tables.sql",
-      order: 10,
-      status: "pending",
-    },
-    {
-      name: "Tier Management Seed Data",
-      description: "Load sample tier management data",
-      file: "022_seed_tier_management_data.sql",
-      order: 11,
-      status: "pending",
-    },
-  ])
+  const [scripts, setScripts] = useState<Script[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadScripts = async () => {
+      try {
+        console.log("[v0] Loading scripts from API...")
+        const response = await fetch("/api/admin/scripts/list")
+
+        if (!response.ok) {
+          throw new Error(`Failed to load scripts: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        console.log(`[v0] Loaded ${data.scripts.length} scripts`)
+        setScripts(data.scripts)
+        setError(null)
+      } catch (err) {
+        console.error("[v0] Error loading scripts:", err)
+        setError(err instanceof Error ? err.message : "Failed to load scripts")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadScripts()
+  }, [])
 
   const runScript = async (scriptIndex: number) => {
     const newScripts = [...scripts]
@@ -176,12 +125,32 @@ export function ScriptRunner() {
     )
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <span className="ml-3 text-lg">Loading scripts...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+        <h3 className="font-semibold text-red-900 mb-2">Error Loading Scripts</h3>
+        <p className="text-sm text-red-700">{error}</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Database Script Runner</h2>
-          <p className="text-muted-foreground">Execute database setup and seeding scripts in the correct order</p>
+          <p className="text-muted-foreground">
+            Execute database setup and seeding scripts in the correct order ({scripts.length} scripts available)
+          </p>
         </div>
         <Button
           onClick={runAllScripts}

@@ -72,11 +72,10 @@ export async function GET(request: NextRequest) {
     if (view === "history") {
       const supabase = await createClient()
 
-      // Get task info
       const { data: task, error: taskError } = await supabase
         .from("user_stories")
-        .select("task_id, git_branch, git_commits, pull_request_url")
-        .eq("task_id", taskId)
+        .select("id, git_branch, git_commits, pull_request_url")
+        .eq("id", taskId)
         .single()
 
       if (taskError || !task) {

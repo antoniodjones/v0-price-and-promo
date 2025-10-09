@@ -25,6 +25,7 @@ import {
   TrendingUp,
   BarChart3,
   Loader2,
+  Link2,
 } from "lucide-react"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { ProtectedRoute } from "@/components/auth/protected-route"
@@ -56,6 +57,8 @@ export default function AdminDashboard() {
     api_endpoint: "",
     sync_frequency: "Every 4 hours",
   })
+
+  const [linkingStories, setLinkingStories] = useState(false)
 
   useEffect(() => {
     loadDashboardData()
@@ -176,6 +179,35 @@ export default function AdminDashboard() {
       title: "Success",
       description: "Dashboard data refreshed successfully.",
     })
+  }
+
+  const handleLinkStories = async () => {
+    try {
+      setLinkingStories(true)
+      const response = await fetch("/api/admin/link-stories", {
+        method: "POST",
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: `Linked ${result.linked} stories to code. ${result.skipped} stories skipped.`,
+        })
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error("Error linking stories:", error)
+      toast({
+        title: "Error",
+        description: "Failed to link stories to code. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLinkingStories(false)
+    }
   }
 
   const getStatusIcon = (status: string) => {
@@ -303,6 +335,7 @@ export default function AdminDashboard() {
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="settings">System Settings</TabsTrigger>
               <TabsTrigger value="scripts">Database Scripts</TabsTrigger>
+              <TabsTrigger value="story-linking">Story Linking</TabsTrigger>
             </TabsList>
 
             {/* Price Sources Tab */}
@@ -620,6 +653,54 @@ export default function AdminDashboard() {
             {/* Database Scripts Tab */}
             <TabsContent value="scripts" className="space-y-4">
               <ScriptRunner />
+            </TabsContent>
+
+            {/* Story Linking Tab */}
+            <TabsContent value="story-linking" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Link Stories to Code</CardTitle>
+                  <CardDescription>
+                    Automatically link user stories to their implementation files for traceability
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      This tool will analyze all 172 user stories and automatically link them to:
+                    </p>
+                    <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-4">
+                      <li>Implementation files (components, pages, API routes)</li>
+                      <li>Related components used in the story</li>
+                      <li>File modification counts</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-muted p-4 rounded-lg space-y-2">
+                    <h4 className="font-semibold text-sm">How it works:</h4>
+                    <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-1 ml-4">
+                      <li>Extracts keywords from each story title</li>
+                      <li>Maps epics to their implementation directories</li>
+                      <li>Finds matching files based on keywords and epic location</li>
+                      <li>Updates stories with related_files and related_components</li>
+                    </ol>
+                  </div>
+
+                  <Button onClick={handleLinkStories} disabled={linkingStories}>
+                    {linkingStories ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Linking Stories...
+                      </>
+                    ) : (
+                      <>
+                        <Link2 className="mr-2 h-4 w-4" />
+                        Link All Stories to Code
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
