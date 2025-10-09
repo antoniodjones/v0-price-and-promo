@@ -2,9 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createTaskEventsService } from "@/lib/services/task-events"
 
-export async function PATCH(request: NextRequest, { params }: { params: { taskId: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
   try {
-    const { taskId } = params
+    const { taskId } = await params
     const body = await request.json()
 
     console.log("[v0] Updating task:", taskId, "with data:", Object.keys(body))

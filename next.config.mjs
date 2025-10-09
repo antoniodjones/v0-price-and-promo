@@ -12,7 +12,7 @@ const nextConfig = {
     unoptimized: process.env.NODE_ENV === 'development',
     domains: ['localhost'],
   },
-  serverExternalPackages: ['winston'],
+  serverExternalPackages: ['winston', '@supabase/supabase-js', '@supabase/ssr', '@supabase/realtime-js'],
   async headers() {
     return [
       {

@@ -7,9 +7,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createTaskEventsService } from "@/lib/services/task-events"
 
-export async function GET(request: NextRequest, { params }: { params: { taskId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
   try {
-    const { taskId } = params
+    const { taskId } = await params
 
     if (!taskId) {
       return NextResponse.json({ error: "Task ID is required" }, { status: 400 })

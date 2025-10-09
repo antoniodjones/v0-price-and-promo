@@ -4,16 +4,17 @@ import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/api/database"
 import { createApiResponse, handleApiError } from "@/lib/api/utils"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const rule = await db.getDiscountRule(params.id)
+    const { id } = await params
+    const rule = await db.getDiscountRule(id)
 
     if (!rule) {
       return NextResponse.json(createApiResponse(null, "Discount rule not found", false), { status: 404 })
     }
 
     // Get tiers for this rule
-    const tiers = await db.getRuleTiers(params.id)
+    const tiers = await db.getRuleTiers(id)
 
     return NextResponse.json(createApiResponse({ ...rule, tiers }, "Discount rule retrieved successfully"))
   } catch (error) {
@@ -21,9 +22,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const rule = await db.getDiscountRule(params.id)
+    const { id } = await params
+    const rule = await db.getDiscountRule(id)
 
     if (!rule) {
       return NextResponse.json(createApiResponse(null, "Discount rule not found", false), { status: 404 })
@@ -44,7 +46,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       }
     }
 
-    const updatedRule = await db.updateDiscountRule(params.id, body)
+    const updatedRule = await db.updateDiscountRule(id, body)
 
     return NextResponse.json(createApiResponse(updatedRule, "Discount rule updated successfully"))
   } catch (error) {
@@ -52,15 +54,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const rule = await db.getDiscountRule(params.id)
+    const { id } = await params
+    const rule = await db.getDiscountRule(id)
 
     if (!rule) {
       return NextResponse.json(createApiResponse(null, "Discount rule not found", false), { status: 404 })
     }
 
-    await db.deleteDiscountRule(params.id)
+    await db.deleteDiscountRule(id)
 
     return NextResponse.json(createApiResponse(null, "Discount rule deleted successfully"))
   } catch (error) {

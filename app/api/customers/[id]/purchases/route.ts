@@ -2,8 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { handleApiError } from "@/lib/api/utils"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const supabase = createServerClient()
 
     const { data: purchases, error } = await supabase
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           name
         )
       `)
-      .eq("customer_id", params.id)
+      .eq("customer_id", id)
       .order("applied_at", { ascending: false })
       .limit(100)
 

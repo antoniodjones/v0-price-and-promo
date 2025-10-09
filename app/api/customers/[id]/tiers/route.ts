@@ -4,9 +4,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/api/database"
 import { createApiResponse, handleApiError } from "@/lib/api/utils"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const customerId = params.id
+    const { id: customerId } = await params
 
     // Verify customer exists
     const customer = await db.getCustomer(customerId)

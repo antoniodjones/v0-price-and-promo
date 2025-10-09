@@ -2,8 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { handleApiError } from "@/lib/api/utils"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const supabase = createServerClient()
 
     // Get customer discount assignments
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           end_date
         )
       `)
-      .eq("customer_id", params.id)
+      .eq("customer_id", id)
 
     if (assignError) throw assignError
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const { data: applications, error: appsError } = await supabase
       .from("pricing_applications")
       .select("*")
-      .eq("customer_id", params.id)
+      .eq("customer_id", id)
 
     if (appsError) throw appsError
 

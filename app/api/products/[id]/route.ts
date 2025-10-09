@@ -6,9 +6,10 @@ import { createApiResponse, handleApiError } from "@/lib/api/utils"
 import { UpdateProductSchema } from "@/lib/schemas"
 import { validateRequestBody } from "@/lib/api/utils"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const product = await db.getProduct(params.id)
+    const { id } = await params
+    const product = await db.getProduct(id)
 
     if (!product) {
       return NextResponse.json(createApiResponse(null, "Product not found", false), { status: 404 })
@@ -20,9 +21,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const product = await db.getProduct(params.id)
+    const { id } = await params
+    const product = await db.getProduct(id)
 
     if (!product) {
       return NextResponse.json(createApiResponse(null, "Product not found", false), { status: 404 })
@@ -31,7 +33,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const body = await request.json()
     const validatedData = validateRequestBody(UpdateProductSchema, body)
 
-    const updatedProduct = await db.updateProduct(params.id, validatedData)
+    const updatedProduct = await db.updateProduct(id, validatedData)
 
     return NextResponse.json(createApiResponse(updatedProduct, "Product updated successfully"))
   } catch (error) {
@@ -39,15 +41,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const product = await db.getProduct(params.id)
+    const { id } = await params
+    const product = await db.getProduct(id)
 
     if (!product) {
       return NextResponse.json(createApiResponse(null, "Product not found", false), { status: 404 })
     }
 
-    await db.deleteProduct(params.id)
+    await db.deleteProduct(id)
 
     return NextResponse.json(createApiResponse(null, "Product deleted successfully"))
   } catch (error) {

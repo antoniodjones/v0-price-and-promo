@@ -4,10 +4,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/api/database"
 import { createApiResponse, handleApiError } from "@/lib/api/utils"
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string; customerId: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; customerId: string }> },
+) {
   try {
-    const ruleId = params.id
-    const customerId = params.customerId
+    const { id: ruleId, customerId } = await params
 
     // Verify rule exists
     const rule = await db.getDiscountRule(ruleId)

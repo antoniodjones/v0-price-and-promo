@@ -4,9 +4,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/api/database"
 import { createApiResponse, handleApiError } from "@/lib/api/utils"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const customer = await db.getCustomerById(params.id)
+    const { id } = await params
+    const customer = await db.getCustomerById(id)
 
     if (!customer) {
       return NextResponse.json(createApiResponse(null, "Customer not found", false), { status: 404 })
@@ -18,9 +19,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const customer = await db.getCustomerById(params.id)
+    const { id } = await params
+    const customer = await db.getCustomerById(id)
 
     if (!customer) {
       return NextResponse.json(createApiResponse(null, "Customer not found", false), { status: 404 })
@@ -54,9 +56,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const customer = await db.getCustomerById(params.id)
+    const { id } = await params
+    const customer = await db.getCustomerById(id)
 
     if (!customer) {
       return NextResponse.json(createApiResponse(null, "Customer not found", false), { status: 404 })

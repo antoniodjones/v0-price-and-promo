@@ -4,9 +4,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/api/database"
 import { createApiResponse, handleApiError, validateRequiredFields } from "@/lib/api/utils"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const ruleId = params.id
+    const { id: ruleId } = await params
 
     // Verify rule exists
     const rule = await db.getDiscountRule(ruleId)
@@ -34,9 +34,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const ruleId = params.id
+    const { id: ruleId } = await params
     const body = await request.json()
 
     // Verify rule exists

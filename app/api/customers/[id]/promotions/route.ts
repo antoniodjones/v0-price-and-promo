@@ -2,15 +2,16 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { handleApiError } from "@/lib/api/utils"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const supabase = createServerClient()
 
     // Get customer to check their tier
     const { data: customer, error: customerError } = await supabase
       .from("customers")
       .select("tier, market")
-      .eq("id", params.id)
+      .eq("id", id)
       .single()
 
     if (customerError) throw customerError

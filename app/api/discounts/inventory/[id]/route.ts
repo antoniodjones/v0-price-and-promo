@@ -4,10 +4,11 @@ import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/api/database"
 import { createApiResponse, handleApiError } from "@/lib/api/utils"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const discounts = await db.getInventoryDiscounts()
-    const discount = discounts.find((d) => d.id === params.id)
+    const discount = discounts.find((d) => d.id === id)
 
     if (!discount) {
       return NextResponse.json(createApiResponse(null, "Inventory discount not found", false), { status: 404 })
@@ -19,10 +20,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const discounts = await db.getInventoryDiscounts()
-    const discount = discounts.find((d) => d.id === params.id)
+    const discount = discounts.find((d) => d.id === id)
 
     if (!discount) {
       return NextResponse.json(createApiResponse(null, "Inventory discount not found", false), { status: 404 })
@@ -60,10 +62,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const discounts = await db.getInventoryDiscounts()
-    const discount = discounts.find((d) => d.id === params.id)
+    const discount = discounts.find((d) => d.id === id)
 
     if (!discount) {
       return NextResponse.json(createApiResponse(null, "Inventory discount not found", false), { status: 404 })

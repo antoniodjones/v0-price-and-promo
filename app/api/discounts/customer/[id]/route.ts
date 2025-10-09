@@ -6,10 +6,11 @@ interface CustomerAssignment {
   [key: string]: unknown
 }
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log("[v0] Fetching discount with ID:", params.id)
-    const result = await getCustomerDiscount(params.id)
+    const { id } = await params
+    console.log("[v0] Fetching discount with ID:", id)
+    const result = await getCustomerDiscount(id)
     console.log("[v0] getCustomerDiscount result:", result)
 
     if (!result.success) {
@@ -39,11 +40,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const body = await request.json()
 
-    console.log("[v0] Updating discount:", params.id, body)
+    console.log("[v0] Updating discount:", id, body)
 
     // Validate fields if provided
     if (body.type && !["percentage", "fixed"].includes(body.type)) {
@@ -59,7 +61,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       }
     }
 
-    const result = await updateCustomerDiscount(params.id, {
+    const result = await updateCustomerDiscount(id, {
       name: body.name,
       value: body.value,
       start_date: body.startDate,
@@ -82,9 +84,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const result = await deleteCustomerDiscount(params.id)
+    const { id } = await params
+    const result = await deleteCustomerDiscount(id)
 
     if (!result.success) {
       return NextResponse.json({ success: false, error: result.error }, { status: 500 })

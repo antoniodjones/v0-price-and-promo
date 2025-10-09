@@ -22,9 +22,10 @@ const marketStrategies = [
   },
 ]
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const strategy = marketStrategies.find((s) => s.id === params.id)
+    const { id } = await params
+    const strategy = marketStrategies.find((s) => s.id === id)
 
     if (!strategy) {
       return NextResponse.json(createApiResponse(null, "Market pricing strategy not found", false), { status: 404 })
@@ -36,9 +37,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const strategy = marketStrategies.find((s) => s.id === params.id)
+    const { id } = await params
+    const strategy = marketStrategies.find((s) => s.id === id)
 
     if (!strategy) {
       return NextResponse.json(createApiResponse(null, "Market pricing strategy not found", false), { status: 404 })
@@ -66,9 +68,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const strategy = marketStrategies.find((s) => s.id === params.id)
+    const { id } = await params
+    const strategy = marketStrategies.find((s) => s.id === id)
 
     if (!strategy) {
       return NextResponse.json(createApiResponse(null, "Market pricing strategy not found", false), { status: 404 })

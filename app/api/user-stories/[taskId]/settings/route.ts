@@ -2,9 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createTaskEventsService } from "@/lib/services/task-events"
 
-export async function GET(request: NextRequest, { params }: { params: { taskId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
   try {
-    const { taskId } = params
+    const { taskId } = await params
 
     console.log("[v0] Fetching settings for task:", taskId)
 
@@ -51,9 +51,9 @@ export async function GET(request: NextRequest, { params }: { params: { taskId: 
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { taskId: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
   try {
-    const { taskId } = params
+    const { taskId } = await params
     const body = await request.json()
     const { mode, auto_commit_enabled, branch_naming_pattern, commit_message_template } = body
 
