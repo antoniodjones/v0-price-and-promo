@@ -12,9 +12,7 @@ const nextConfig = {
     unoptimized: process.env.NODE_ENV === 'development',
     domains: ['localhost'],
   },
-  experimental: {
-    serverComponentsExternalPackages: ['winston'],
-  },
+  serverExternalPackages: ['winston'],
   async headers() {
     return [
       {
@@ -30,8 +28,6 @@ const nextConfig = {
   },
   // Enable compression in production
   compress: process.env.NODE_ENV === 'production',
-  // Optimize bundle size
-  swcMinify: true,
 }
 
 export default nextConfig
