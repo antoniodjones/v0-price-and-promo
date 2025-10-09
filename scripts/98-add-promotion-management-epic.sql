@@ -30,7 +30,7 @@ VALUES
 5,
 'Promotion Management',
 '### Scenario 1: Create Simple BOGO Promotion
-```gherkin
+\`\`\`gherkin
 Given I am on the Promotions page
 When I click "Create BOGO Promotion"
 And I enter promotion details:

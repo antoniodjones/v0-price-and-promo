@@ -1125,7 +1125,7 @@ So that [benefit/value].
 ### Acceptance Criteria (Gherkin)
 
 #### Scenario 1: [Happy Path Scenario Name]
-```gherkin
+\`\`\`gherkin
 Given [initial context]
 And [additional context]
 When [action taken]

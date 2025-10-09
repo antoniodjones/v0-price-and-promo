@@ -30,7 +30,7 @@ VALUES
 5,
 'Reporting & Exports',
 '### Scenario 1: Create Custom Sales Report
-```gherkin
+\`\`\`gherkin
 Given I am on the Reports page
 When I click "Create Custom Report"
 And I select report type "Sales Analysis"

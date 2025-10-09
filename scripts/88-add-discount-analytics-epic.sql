@@ -41,7 +41,7 @@ INSERT INTO user_stories (
 5,
 'Discount Analytics',
 '### Scenario 1: View Discount Usage Overview
-```gherkin
+\`\`\`gherkin
 Given I am logged in as a business manager
 When I navigate to the Discount Analytics page
 Then I see discount usage metrics:

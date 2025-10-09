@@ -33,7 +33,7 @@ updated_at
 6,
 'Customer Management',
 '### Scenario 1: Create New Customer
-```gherkin
+\`\`\`gherkin
 Given I am on the Customer Management page
 When I click "Add Customer"
 And I enter customer details:

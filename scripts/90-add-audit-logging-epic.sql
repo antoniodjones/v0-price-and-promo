@@ -41,7 +41,7 @@ INSERT INTO user_stories (
 5,
 'Audit Logging',
 '### Scenario 1: View Audit Log
-```gherkin
+\`\`\`gherkin
 Given I am logged in as a system administrator
 When I navigate to the Audit Log page
 Then I see a chronological list of all system activities:

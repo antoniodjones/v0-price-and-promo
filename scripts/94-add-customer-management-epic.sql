@@ -24,7 +24,7 @@ created_at, updated_at
 5,
 'Customer Management',
 '### Scenario 1: View Customer List
-```gherkin
+\`\`\`gherkin
 Given I am logged in as a business manager
 When I navigate to the Customers page
 Then I see a list of all customers with:

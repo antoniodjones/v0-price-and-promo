@@ -42,7 +42,7 @@ INSERT INTO user_stories (
 8,
 'Bundle Deals',
 '### Scenario 1: Create Fixed-Price Bundle Deal
-```gherkin
+\`\`\`gherkin
 Given I am logged in as a pricing manager
 And I navigate to the Bundle Deals page
 When I click "Create New Bundle"

@@ -24,7 +24,7 @@ created_at, updated_at
 5,
 'Product Management',
 '### Scenario 1: View Product Catalog
-```gherkin
+\`\`\`gherkin
 Given I am logged in as a business manager
 When I navigate to the Products page
 Then I see a list of all products with:

@@ -42,7 +42,7 @@ INSERT INTO user_stories (
 8,
 'Rebate Reports',
 '### Scenario 1: Calculate Rebate for Single Vendor
-```gherkin
+\`\`\`gherkin
 Given I am logged in as a finance manager
 And I navigate to the Rebate Reports page
 When I select vendor "Rythm"

@@ -25,7 +25,7 @@ INSERT INTO user_stories (
 5,
 'System Configuration',
 '### Scenario 1: Configure Discount Limits
-```gherkin
+\`\`\`gherkin
 Given I am on the Settings page
 When I navigate to "Business Rules" > "Discounts"
 And I configure discount settings:

@@ -25,7 +25,7 @@ INSERT INTO user_stories (
 5,
 'API Documentation',
 '### Scenario 1: Browse API Endpoints
-```gherkin
+\`\`\`gherkin
 Given I am on the API Documentation page
 Then I see endpoint categories:
   - Authentication (5 endpoints)

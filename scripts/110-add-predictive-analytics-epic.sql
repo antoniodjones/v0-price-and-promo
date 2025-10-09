@@ -37,7 +37,7 @@ INSERT INTO user_stories (
 5,
 'Predictive Analytics',
 '### Scenario 1: View Sales Forecast
-```gherkin
+\`\`\`gherkin
 Given I am viewing sales forecasts
 When I select forecast period: Next 90 days
 Then I see revenue forecast:

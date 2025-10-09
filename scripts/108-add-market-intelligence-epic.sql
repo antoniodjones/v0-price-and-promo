@@ -37,7 +37,7 @@ INSERT INTO user_stories (
 5,
 'Market Intelligence',
 '### Scenario 1: Analyze Competitor Pricing Patterns
-```gherkin
+\`\`\`gherkin
 Given I am analyzing competitor "Green Leaf Dispensary"
 When I view their pricing strategy analysis
 Then I see pricing pattern insights:

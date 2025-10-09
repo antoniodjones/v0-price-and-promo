@@ -37,7 +37,7 @@ INSERT INTO user_stories (
 5,
 'Price Tracking',
 '### Scenario 1: View Product Price History
-```gherkin
+\`\`\`gherkin
 Given I am viewing product "Blue Dream 1g"
 When I click "Price History"
 Then I see complete price history:

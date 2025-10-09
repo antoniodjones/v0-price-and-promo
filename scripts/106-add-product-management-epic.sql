@@ -33,7 +33,7 @@ updated_at
 6,
 'Product Management',
 '### Scenario 1: Create New Product
-```gherkin
+\`\`\`gherkin
 Given I am on the Product Management page
 When I click "Add Product"
 And I enter product details:

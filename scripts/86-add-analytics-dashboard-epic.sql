@@ -36,7 +36,7 @@ INSERT INTO user_stories (
 8,
 'Analytics Dashboard',
 '### Scenario 1: View Dashboard Overview
-```gherkin
+\`\`\`gherkin
 Given I am logged in as a business manager
 When I navigate to the Analytics Dashboard
 Then I see key metrics displayed:

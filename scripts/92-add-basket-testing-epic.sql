@@ -24,7 +24,7 @@ created_at, updated_at
 5,
 'Basket Testing',
 '### Scenario 1: Create Basic Test Basket
-```gherkin
+\`\`\`gherkin
 Given I am logged in as a pricing manager
 And I navigate to the Basket Testing page
 When I click "Create Test Basket"

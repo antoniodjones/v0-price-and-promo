@@ -25,7 +25,7 @@ INSERT INTO user_stories (
 5,
 'User Management',
 '### Scenario 1: Create New User Account
-```gherkin
+\`\`\`gherkin
 Given I am on the User Management page
 When I click "Add User"
 And I enter user details:

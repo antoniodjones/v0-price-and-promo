@@ -42,7 +42,7 @@ INSERT INTO user_stories (
 8,
 'Pricing Simulator',
 '### Scenario 1: Simulate Basic Product Price
-```gherkin
+\`\`\`gherkin
 Given I am logged in as a pricing manager
 And I navigate to the Pricing Simulator
 When I select product "Blue Dream 1g"

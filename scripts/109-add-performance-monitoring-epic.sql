@@ -37,7 +37,7 @@ INSERT INTO user_stories (
 5,
 'Performance Monitoring',
 '### Scenario 1: View System Health Dashboard
-```gherkin
+\`\`\`gherkin
 Given I am on the Performance Monitoring dashboard
 Then I see system health overview:
   | Component | Status | Uptime | Last Check |
