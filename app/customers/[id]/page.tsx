@@ -2,11 +2,13 @@ import { Suspense } from "react"
 import { CustomerDetailView } from "@/components/customers/customer-detail-view"
 import { DocumentationLink } from "@/components/shared/documentation-link"
 
-export default function CustomerDetailPage({
+export default async function CustomerDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id } = await params
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -27,7 +29,7 @@ export default function CustomerDetailPage({
           </div>
         }
       >
-        <CustomerDetailView customerId={params.id} />
+        <CustomerDetailView customerId={id} />
       </Suspense>
     </div>
   )
