@@ -7,9 +7,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-export async function GET(request: NextRequest, { params }: { params: { commitSha: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ commitSha: string }> }) {
   try {
-    const { commitSha } = params
+    const { commitSha } = await params
 
     console.log(`[v0] Fetching commit details for: ${commitSha}`)
 

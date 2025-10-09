@@ -13,6 +13,9 @@ const nextConfig = {
     domains: ['localhost'],
   },
   serverExternalPackages: ['winston'],
+  experimental: {
+    nodeMiddleware: true,
+  },
   async headers() {
     return [
       {
