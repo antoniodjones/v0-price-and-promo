@@ -970,6 +970,582 @@ const slides = [
       ],
     },
   },
+  {
+    id: 21,
+    title: "Appendix: Application Screen Reference",
+    type: "appendix-intro",
+    content: {
+      headline: "Complete Visual Reference of All Application Screens",
+      description:
+        "The following slides provide a comprehensive visual reference of every screen in the GTI Promotions platform. Each screen includes the page path, description, and key features. This appendix is designed for easy export to Google Slides or Confluence documentation.",
+      exportInstructions: [
+        "Each screen is presented on its own slide for easy copying",
+        "Screenshots can be taken and inserted into your presentation",
+        "All text is formatted for copy-paste into documentation",
+        "Organized by functional area for easy navigation",
+      ],
+    },
+  },
+  {
+    id: 22,
+    title: "Dashboard & Home",
+    type: "screen-reference",
+    content: {
+      category: "Core Navigation",
+      screens: [
+        {
+          path: "/",
+          name: "Main Dashboard",
+          description: "Landing page with system overview, KPIs, and quick actions",
+          features: [
+            "System health metrics",
+            "Recent activity feed",
+            "Quick navigation cards",
+            "Active promotions summary",
+          ],
+          userRoles: ["All Users"],
+        },
+      ],
+    },
+  },
+  {
+    id: 23,
+    title: "Customer Management Screens",
+    type: "screen-reference",
+    content: {
+      category: "Customer Management",
+      screens: [
+        {
+          path: "/customers",
+          name: "Customer List",
+          description: "Browse and search all B2B wholesale customers",
+          features: [
+            "Customer search with autocomplete",
+            "Filter by type and tier",
+            "Customer tier assignments",
+            "Quick access to customer details",
+          ],
+          userRoles: ["Admin", "Customer Success", "Pricing Manager"],
+        },
+        {
+          path: "/customers/[id]",
+          name: "Customer Detail & Analytics",
+          description: "Comprehensive customer loyalty and pricing analytics",
+          features: [
+            "Purchase history with discounts",
+            "Total savings and loyalty metrics",
+            "Active promotions",
+            "Pricing comparison vs. standard rates",
+            "Lifetime value tracking",
+          ],
+          userRoles: ["Admin", "Customer Success", "Pricing Manager", "Analyst"],
+        },
+        {
+          path: "/customers/tiers",
+          name: "Customer Tier Management",
+          description: "Manage customer tier assignments and definitions",
+          features: [
+            "View tier distribution",
+            "Assign customers to tiers",
+            "Tier-based discount rules",
+            "Bulk tier updates",
+          ],
+          userRoles: ["Admin", "Pricing Manager"],
+        },
+        {
+          path: "/customers/tiers/bulk-upload",
+          name: "Bulk Tier Upload",
+          description: "CSV upload for mass customer tier assignments",
+          features: ["CSV file upload", "Data validation", "Preview before commit", "Error handling and reporting"],
+          userRoles: ["Admin"],
+        },
+      ],
+    },
+  },
+  {
+    id: 24,
+    title: "Discount Management Screens",
+    type: "screen-reference",
+    content: {
+      category: "Discount Management",
+      screens: [
+        {
+          path: "/customer-discounts",
+          name: "Customer Discounts List",
+          description: "View and manage all customer-specific discount rules",
+          features: [
+            "Active discount rules",
+            "Customer assignments",
+            "Brand/category mappings",
+            "Edit and delete actions",
+          ],
+          userRoles: ["Pricing Manager", "Admin"],
+        },
+        {
+          path: "/customer-discounts/new",
+          name: "New Customer Discount Wizard",
+          description: "Step-by-step wizard for creating customer discounts",
+          features: [
+            "Brand/category/size selection",
+            "Discount value configuration",
+            "Customer assignment",
+            "Date range scheduling",
+            "Preview before saving",
+          ],
+          userRoles: ["Pricing Manager", "Admin"],
+        },
+        {
+          path: "/inventory-discounts",
+          name: "Inventory Discounts List",
+          description: "Automated discounts for aged inventory management",
+          features: [
+            "Expiration-based rules",
+            "THC percentage rules",
+            "Batch-level targeting",
+            "Automatic application status",
+          ],
+          userRoles: ["Inventory Manager", "Pricing Manager"],
+        },
+        {
+          path: "/inventory-discounts/new",
+          name: "New Inventory Discount Wizard",
+          description: "Create automated inventory liquidation rules",
+          features: [
+            "Expiration date thresholds",
+            "THC percentage thresholds",
+            "Discount amount configuration",
+            "Automatic application settings",
+          ],
+          userRoles: ["Inventory Manager", "Pricing Manager"],
+        },
+      ],
+    },
+  },
+  {
+    id: 25,
+    title: "Promotions Screens",
+    type: "screen-reference",
+    content: {
+      category: "Promotions & Campaigns",
+      screens: [
+        {
+          path: "/promotions",
+          name: "Promotions List",
+          description: "View and manage all promotional campaigns",
+          features: ["Active promotions", "Performance metrics", "Campaign status", "Quick edit and delete"],
+          userRoles: ["Marketing Manager", "Pricing Manager"],
+        },
+        {
+          path: "/promotions/new",
+          name: "New BOGO Promotion Wizard",
+          description: "Create Buy-One-Get-One promotional campaigns",
+          features: [
+            "Product/brand/category targeting",
+            "BOGO type selection",
+            "Discount configuration",
+            "Date range scheduling",
+            "Customer segment targeting",
+          ],
+          userRoles: ["Marketing Manager", "Pricing Manager"],
+        },
+        {
+          path: "/promotions/dashboard",
+          name: "Promotions Performance Dashboard",
+          description: "Real-time promotional campaign analytics",
+          features: [
+            "Active campaign metrics",
+            "Conversion rates",
+            "Revenue attribution",
+            "Top performing promotions",
+            "Trend analysis",
+          ],
+          userRoles: ["Marketing Manager", "Analyst"],
+        },
+        {
+          path: "/promotions/history",
+          name: "Promotion History",
+          description: "Historical promotional campaign analysis",
+          features: ["Past campaign performance", "Comparison tools", "Trend identification", "Export capabilities"],
+          userRoles: ["Marketing Manager", "Analyst"],
+        },
+        {
+          path: "/promotions/manage",
+          name: "Manage Promotions",
+          description: "Centralized promotion management interface",
+          features: ["Bulk promotion actions", "Status updates", "Performance overview", "Quick filters"],
+          userRoles: ["Marketing Manager", "Pricing Manager"],
+        },
+        {
+          path: "/promo-codes",
+          name: "Promo Codes",
+          description: "Promotional code management and tracking",
+          features: ["Create promo codes", "Usage tracking", "Redemption analytics", "Expiration management"],
+          userRoles: ["Marketing Manager", "Pricing Manager"],
+        },
+      ],
+    },
+  },
+  {
+    id: 26,
+    title: "Bundle & Pricing Rules Screens",
+    type: "screen-reference",
+    content: {
+      category: "Bundle & Pricing Rules",
+      screens: [
+        {
+          path: "/bundle-deals",
+          name: "Bundle Deals List",
+          description: "Manage product bundle configurations",
+          features: ["Active bundles", "Bundle pricing", "Product combinations", "Performance metrics"],
+          userRoles: ["Pricing Manager", "Marketing Manager"],
+        },
+        {
+          path: "/bundle-deals/new",
+          name: "New Bundle Deal Wizard",
+          description: "Create new product bundle offers",
+          features: ["Product selection", "Bundle pricing rules", "Discount configuration", "Date range scheduling"],
+          userRoles: ["Pricing Manager", "Marketing Manager"],
+        },
+        {
+          path: "/pricing-rules",
+          name: "Volume & Tiered Pricing",
+          description: "Manage volume-based and customer tier pricing rules",
+          features: [
+            "Volume tier configuration",
+            "Customer tier pricing",
+            "Quantity breaks",
+            "Analytics and performance",
+          ],
+          userRoles: ["Pricing Manager", "Admin"],
+        },
+        {
+          path: "/tier-management",
+          name: "Tier Management Dashboard",
+          description: "Customer tier configuration and discount rules",
+          features: [
+            "Tier definitions",
+            "Discount rule assignments",
+            "Customer distribution",
+            "Tier performance metrics",
+          ],
+          userRoles: ["Admin", "Pricing Manager"],
+        },
+        {
+          path: "/tier-management/new",
+          name: "New Discount Rule Wizard",
+          description: "Create new tier-based discount rules",
+          features: ["Tier selection", "Discount configuration", "Product targeting", "Customer assignment"],
+          userRoles: ["Admin", "Pricing Manager"],
+        },
+      ],
+    },
+  },
+  {
+    id: 27,
+    title: "Market & Pricing Screens",
+    type: "screen-reference",
+    content: {
+      category: "Market & Pricing",
+      screens: [
+        {
+          path: "/market-pricing",
+          name: "Market Pricing Configuration",
+          description: "Market-specific pricing rules and configuration",
+          features: [
+            "Market definitions",
+            "Regional pricing rules",
+            "Market-specific discounts",
+            "Performance by market",
+          ],
+          userRoles: ["Pricing Manager", "Regional Manager"],
+        },
+        {
+          path: "/market-pricing/volume",
+          name: "Volume Pricing Configuration",
+          description: "Set up quantity-based discount tiers",
+          features: ["Volume break configuration", "Quantity thresholds", "Discount amounts", "Market-specific rules"],
+          userRoles: ["Pricing Manager"],
+        },
+        {
+          path: "/pricing",
+          name: "Pricing Dashboard",
+          description: "Comprehensive pricing overview and management",
+          features: ["Pricing rules overview", "Active discounts", "Price comparisons", "Analytics"],
+          userRoles: ["Pricing Manager", "Analyst"],
+        },
+        {
+          path: "/price-search",
+          name: "Price Search & Comparison",
+          description: "Search and compare product pricing across markets and tiers",
+          features: ["Product search", "Multi-market comparison", "Tier pricing view", "Discount application preview"],
+          userRoles: ["Pricing Manager", "Analyst"],
+        },
+        {
+          path: "/price-tracking",
+          name: "Price Tracking & History",
+          description: "Monitor price changes and identify trends",
+          features: ["Price history charts", "Change logs", "Anomaly detection", "Trend analysis"],
+          userRoles: ["Analyst", "Pricing Manager"],
+        },
+      ],
+    },
+  },
+  {
+    id: 28,
+    title: "Product Management Screens",
+    type: "screen-reference",
+    content: {
+      category: "Product Management",
+      screens: [
+        {
+          path: "/products",
+          name: "Product Catalog",
+          description: "View and manage product inventory and details",
+          features: ["Product list with search", "Inventory levels", "Pricing information", "Product details"],
+          userRoles: ["Inventory Manager", "Admin", "All Users"],
+        },
+        {
+          path: "/product/[id]",
+          name: "Product Detail Page",
+          description: "Individual product information and pricing analytics",
+          features: [
+            "Product specifications",
+            "Pricing history",
+            "Applied discounts",
+            "Performance metrics",
+            "Related products",
+          ],
+          userRoles: ["All Users"],
+        },
+      ],
+    },
+  },
+  {
+    id: 29,
+    title: "Analytics & Reporting Screens",
+    type: "screen-reference",
+    content: {
+      category: "Analytics & Reporting",
+      screens: [
+        {
+          path: "/analytics",
+          name: "Analytics Dashboard",
+          description: "Comprehensive pricing and promotional analytics",
+          features: [
+            "Revenue metrics",
+            "Discount effectiveness",
+            "Customer behavior analysis",
+            "Trend visualization",
+            "KPI tracking",
+          ],
+          userRoles: ["Analyst", "Manager", "Executive"],
+        },
+        {
+          path: "/analytics/code-sync",
+          name: "Code Sync Analytics",
+          description: "Development and code synchronization tracking",
+          features: ["Code change tracking", "Task completion metrics", "Integration status", "Development velocity"],
+          userRoles: ["Developer", "Project Manager"],
+        },
+        {
+          path: "/promotion-detection",
+          name: "Promotion Detection & Recommendations",
+          description: "AI-driven promotion opportunity identification",
+          features: [
+            "Inventory-based recommendations",
+            "Sales trend analysis",
+            "Promotional opportunities",
+            "Forecasting",
+          ],
+          userRoles: ["Marketing Manager", "Analyst"],
+        },
+        {
+          path: "/watchlist",
+          name: "Watchlist & Alerts",
+          description: "Monitor specific products or pricing rules",
+          features: ["Custom watchlists", "Price change alerts", "Rule update notifications", "Alert history"],
+          userRoles: ["Pricing Manager", "Analyst"],
+        },
+      ],
+    },
+  },
+  {
+    id: 30,
+    title: "Testing & Simulation Screens",
+    type: "screen-reference",
+    content: {
+      category: "Testing & Simulation",
+      screens: [
+        {
+          path: "/simulator",
+          name: "Pricing Simulator",
+          description: "Test pricing scenarios before deployment",
+          features: ["Scenario configuration", "Revenue impact forecasting", "What-if analysis", "Comparison tools"],
+          userRoles: ["Pricing Manager", "Analyst"],
+        },
+      ],
+    },
+  },
+  {
+    id: 31,
+    title: "Documentation Screens",
+    type: "screen-reference",
+    content: {
+      category: "Documentation & Help",
+      screens: [
+        {
+          path: "/api-docs",
+          name: "API Documentation",
+          description: "Complete API reference and integration guide",
+          features: ["Endpoint documentation", "Request/response schemas", "Code examples", "Interactive testing"],
+          userRoles: ["Developer", "Integration Specialist"],
+        },
+        {
+          path: "/user-docs",
+          name: "User Documentation",
+          description: "End-user guides and tutorials",
+          features: ["How-to guides", "Feature documentation", "Best practices", "FAQs", "Video tutorials"],
+          userRoles: ["All Users"],
+        },
+        {
+          path: "/tech-docs",
+          name: "Technical Documentation",
+          description: "System architecture and technical specifications",
+          features: ["Architecture diagrams", "Data models", "Integration guides", "Technical specifications"],
+          userRoles: ["Developer", "Admin", "Architect"],
+        },
+        {
+          path: "/demo-presentation",
+          name: "Demo Presentation",
+          description: "Executive presentation slides and screen reference",
+          features: ["Presentation slides", "KPI tracking", "Feature summaries", "Screen appendix"],
+          userRoles: ["Executive", "Sales", "Product Manager"],
+        },
+      ],
+    },
+  },
+  {
+    id: 32,
+    title: "Administration Screens",
+    type: "screen-reference",
+    content: {
+      category: "Administration",
+      screens: [
+        {
+          path: "/admin",
+          name: "Admin Dashboard",
+          description: "System administration and management",
+          features: ["User management", "System settings", "Database management", "Integration status"],
+          userRoles: ["Admin"],
+        },
+        {
+          path: "/admin/scripts",
+          name: "Database Scripts",
+          description: "Database management and maintenance scripts",
+          features: ["Run migrations", "Seed data", "System maintenance", "Script history"],
+          userRoles: ["Admin", "Developer"],
+        },
+        {
+          path: "/settings",
+          name: "Settings",
+          description: "System configuration and user preferences",
+          features: ["User preferences", "System settings", "Integration configuration", "Notification settings"],
+          userRoles: ["Admin", "All Users"],
+        },
+        {
+          path: "/settings/integrations",
+          name: "Integration Settings",
+          description: "Configure external system integrations",
+          features: ["ERP integration", "SSO configuration", "API keys", "Webhook management"],
+          userRoles: ["Admin"],
+        },
+        {
+          path: "/profile",
+          name: "User Profile",
+          description: "User account management and preferences",
+          features: ["Profile information", "Password management", "Activity history", "Preferences"],
+          userRoles: ["All Users"],
+        },
+        {
+          path: "/auth/login",
+          name: "Login",
+          description: "User authentication and access",
+          features: ["Email/password login", "SSO integration", "Password reset", "Remember me"],
+          userRoles: ["All Users"],
+        },
+      ],
+    },
+  },
+  {
+    id: 33,
+    title: "Project Management Screens",
+    type: "screen-reference",
+    content: {
+      category: "Project Management",
+      screens: [
+        {
+          path: "/task-planning",
+          name: "Task Planning",
+          description: "Project management and task tracking",
+          features: ["Task list", "Progress tracking", "Priority management", "Assignment tracking"],
+          userRoles: ["Developer", "Project Manager"],
+        },
+        {
+          path: "/task-planning/user-stories",
+          name: "User Stories",
+          description: "Feature requirements and user story management",
+          features: ["User story documentation", "Acceptance criteria", "Story status", "Code linkage"],
+          userRoles: ["Developer", "Product Manager"],
+        },
+        {
+          path: "/restoration-tracker",
+          name: "Restoration Tracker",
+          description: "System restoration and recovery tracking",
+          features: ["System health monitoring", "Recovery operations", "Status tracking", "Health metrics"],
+          userRoles: ["Admin", "DevOps"],
+        },
+      ],
+    },
+  },
+  {
+    id: 34,
+    title: "Export Instructions",
+    type: "export-guide",
+    content: {
+      headline: "How to Export to Google Slides or Confluence",
+      googleSlides: {
+        title: "Google Slides Export",
+        steps: [
+          "Navigate through each screen reference slide using the presentation controls",
+          "For each slide, take a screenshot or use browser print-to-PDF",
+          "Create a new Google Slides presentation",
+          "Insert screenshots as images on each slide",
+          "Copy and paste the text content from each slide",
+          "Maintain the same layout structure for consistency",
+          "Add your own screenshots of the actual application screens",
+        ],
+      },
+      confluence: {
+        title: "Confluence Export",
+        steps: [
+          "Create a new Confluence page for the application documentation",
+          "Use the 'Table of Contents' macro to create navigation",
+          "Create child pages for each functional area (Customer Management, Promotions, etc.)",
+          "Copy the screen descriptions and features into Confluence tables",
+          "Add screenshots of actual application screens using the 'Image' macro",
+          "Use the 'Expand' macro for detailed feature lists",
+          "Link related pages using Confluence page links",
+        ],
+      },
+      tips: [
+        "All text is formatted for easy copy-paste",
+        "Screen paths can be used as direct links in your documentation",
+        "Feature lists are already bulleted for easy transfer",
+        "User roles help with access control documentation",
+        "Consider adding actual screenshots from the live application",
+      ],
+    },
+  },
 ]
 
 export default function DemoPresentationPage() {
@@ -1560,6 +2136,113 @@ export default function DemoPresentationPage() {
               </>
             )}
 
+            {slide.type === "appendix-intro" && (
+              <>
+                <h2 className="mb-6 text-4xl font-bold text-slate-900">{slide.title}</h2>
+                <p className="mb-6 text-xl text-slate-600">{slide.content.headline}</p>
+                <p className="mb-8 text-lg text-slate-700">{slide.content.description}</p>
+                <div className="rounded-lg bg-blue-50 p-6">
+                  <h3 className="mb-4 text-lg font-semibold text-blue-900">Export Instructions</h3>
+                  <ul className="space-y-2">
+                    {slide.content.exportInstructions.map((instruction, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-blue-800">
+                        <Check className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
+                        {instruction}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
+
+            {slide.type === "screen-reference" && (
+              <>
+                <h2 className="mb-4 text-3xl font-bold text-slate-900">{slide.title}</h2>
+                <p className="mb-6 text-sm font-medium text-slate-600">{slide.content.category}</p>
+                <div className="space-y-4">
+                  {slide.content.screens.map((screen, idx) => (
+                    <div key={idx} className="rounded-lg border-2 border-slate-200 bg-white p-4">
+                      <div className="mb-3 flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="mb-1 text-xl font-semibold text-slate-900">{screen.name}</h3>
+                          <code className="rounded bg-slate-100 px-2 py-1 text-sm text-slate-700">{screen.path}</code>
+                        </div>
+                        <a
+                          href={screen.path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-4 rounded bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-200"
+                        >
+                          Open
+                        </a>
+                      </div>
+                      <p className="mb-3 text-sm text-slate-600">{screen.description}</p>
+                      <div className="mb-3">
+                        <p className="mb-1 text-xs font-semibold text-slate-700">Key Features:</p>
+                        <ul className="grid grid-cols-2 gap-1">
+                          {screen.features.map((feature, fIdx) => (
+                            <li key={fIdx} className="text-xs text-slate-600">
+                              • {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-semibold text-slate-700">User Roles:</p>
+                        <div className="flex gap-1">
+                          {screen.userRoles.map((role, rIdx) => (
+                            <span key={rIdx} className="rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
+                              {role}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {slide.type === "export-guide" && (
+              <>
+                <h2 className="mb-6 text-3xl font-bold text-slate-900">{slide.title}</h2>
+                <p className="mb-6 text-lg text-slate-600">{slide.content.headline}</p>
+                <div className="mb-6 grid grid-cols-2 gap-6">
+                  <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
+                    <h3 className="mb-3 text-lg font-semibold text-blue-900">{slide.content.googleSlides.title}</h3>
+                    <ol className="space-y-2">
+                      {slide.content.googleSlides.steps.map((step, idx) => (
+                        <li key={idx} className="text-sm text-blue-800">
+                          {idx + 1}. {step}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                  <div className="rounded-lg border-2 border-emerald-200 bg-emerald-50 p-4">
+                    <h3 className="mb-3 text-lg font-semibold text-emerald-900">{slide.content.confluence.title}</h3>
+                    <ol className="space-y-2">
+                      {slide.content.confluence.steps.map((step, idx) => (
+                        <li key={idx} className="text-sm text-emerald-800">
+                          {idx + 1}. {step}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-amber-50 p-4">
+                  <h3 className="mb-3 text-lg font-semibold text-amber-900">Pro Tips</h3>
+                  <ul className="space-y-1">
+                    {slide.content.tips.map((tip, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-amber-800">
+                        <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+                        {tip}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
+
             {/* Slide Number */}
             <div className="sticky bottom-0 right-0 mt-4 flex justify-end bg-white/80 py-2 backdrop-blur-sm">
               <span className="text-sm text-slate-400">
@@ -1594,12 +2277,12 @@ export default function DemoPresentationPage() {
           </Button>
         </div>
 
-        {/* Export Instructions */}
         <Card className="mt-6 bg-blue-50 p-6">
-          <h3 className="mb-2 font-semibold text-blue-900">Export to Google Slides</h3>
+          <h3 className="mb-2 font-semibold text-blue-900">Export to Google Slides or Confluence</h3>
           <p className="text-sm text-blue-700">
-            Use the navigation to view each slide, then recreate in Google Slides using the same layout and content. All
-            text, metrics, and structure are designed for easy manual transfer.
+            Navigate to the Appendix section (slides 21-34) for a complete screen reference guide. Each screen includes
+            the page path, description, key features, and user roles. All content is formatted for easy copy-paste into
+            Google Slides or Confluence. See slide 34 for detailed export instructions.
           </p>
         </Card>
       </div>
