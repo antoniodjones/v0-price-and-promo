@@ -4,13 +4,13 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "build:production": "pnpm run validate && pnpm run build",
+    "build:production": "npm run validate && npm run build",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start",
-    "test:build": "pnpm run validate && SKIP_ENV_VALIDATION=true pnpm run build",
+    "test:build": "npm run validate && SKIP_ENV_VALIDATION=true npm run build",
     "type-check": "tsc --noEmit",
-    "validate": "pnpm run type-check && pnpm run lint"
+    "validate": "npm run type-check && npm run lint"
   },
   "dependencies": {
     "@hookform/resolvers": "latest",
@@ -82,6 +82,5 @@
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "typescript": "^5"
-  },
-  "packageManager": "pnpm@9.15.0"
+  }
 }
