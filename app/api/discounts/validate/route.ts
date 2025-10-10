@@ -176,7 +176,13 @@ async function calculateSingleProductDiscount(
     }
 
     for (const discount of activeInventoryDiscounts) {
-      if (isInventoryDiscountApplicable(discount, product)) {
+      // Check if discount applies to this product
+      if (
+        discount.product_id === product.id ||
+        discount.scope === "all" ||
+        (discount.scope === "category" && product.category) ||
+        (discount.scope === "brand" && product.brand)
+      ) {
         applicableDiscounts.push({
           id: discount.id,
           name: `Inventory Discount - ${discount.reason}`,
@@ -267,27 +273,6 @@ function isDiscountApplicable(discount: Discount, product: DbProduct): boolean {
     default:
       return false
   }
-}
-
-function isInventoryDiscountApplicable(discount: Discount, product: DbProduct): boolean {
-  let triggerMet = false
-
-  if (discount.type === "expiration") {
-    const daysUntilExpiration = Math.ceil(
-      (new Date(product.expirationDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
-    )
-    triggerMet = daysUntilExpiration <= (discount.triggerValue || 0)
-  } else if (discount.type === "thc") {
-    triggerMet = product.thcPercentage <= (discount.triggerValue || 0)
-  }
-
-  if (!triggerMet) return false
-
-  return (
-    discount.scope === "all" ||
-    (discount.scope === "category" && discount.scopeValue === product.category) ||
-    (discount.scope === "brand" && discount.scopeValue === product.brand)
-  )
 }
 
 function isBogoApplicable(promo: BogoPromotion, product: DbProduct, quantity: number): boolean {
