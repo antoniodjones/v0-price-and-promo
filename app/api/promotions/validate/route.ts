@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
             return sum + (item?.quantity || 0)
           }, 0)
 
-          if (totalQuantity >= bundle.min_quantity) {
+          if (bundle.min_quantity !== undefined && totalQuantity >= bundle.min_quantity) {
             // Calculate bundle savings
             const bundleProducts = await Promise.all(bundle.products.map((id: string) => db.getProductById(id)))
             const totalBasePrice = bundleProducts.reduce((sum: number, product) => {
