@@ -118,10 +118,12 @@ export async function POST(request: NextRequest) {
             }, 0)
 
             let discountAmount = 0
-            if (bundle.discount_type === "percentage") {
-              discountAmount = totalBasePrice * (bundle.discount_value / 100)
-            } else {
-              discountAmount = bundle.discount_value
+            if (bundle.discount_type && bundle.discount_value !== undefined) {
+              if (bundle.discount_type === "percentage") {
+                discountAmount = totalBasePrice * (bundle.discount_value / 100)
+              } else {
+                discountAmount = bundle.discount_value
+              }
             }
 
             eligibleBundles.push({
