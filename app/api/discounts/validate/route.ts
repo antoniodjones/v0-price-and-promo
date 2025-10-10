@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { db, type Customer, type Product as DbProduct } from "@/lib/api/database"
+import { db, type Customer, type Product as DbProduct, type BogoPromotion } from "@/lib/api/database"
 import { createApiResponse, handleApiError } from "@/lib/api/utils"
 
 interface ValidationRequest {
@@ -52,20 +52,9 @@ interface Discount {
   scopeValue?: string
   triggerValue?: number
   priority?: number
+  buyQuantity?: number
+  discountPercentage?: number
   [key: string]: unknown
-}
-
-interface BogoPromotion {
-  id: string
-  name: string
-  status: string
-  buy_product_id: string
-  buy_quantity: number
-  rewardType: string
-  rewardValue?: number
-  start_date: string
-  end_date?: string
-  priority?: number
 }
 
 export async function POST(request: NextRequest) {
@@ -208,6 +197,9 @@ async function calculateSingleProductDiscount(
           status: promo.status,
           discountType: "bogo",
           priority: 3,
+          // Store BOGO-specific fields
+          buyQuantity: promo.buy_quantity,
+          discountPercentage: promo.discount_percentage,
         })
       }
     }
@@ -321,16 +313,10 @@ function calculateDiscountAmount(discount: Discount, product: DbProduct, quantit
       return (discount.discountValue || 0) * quantity
     }
   } else if (discount.discountType === "bogo") {
-    const discountableItems = Math.floor(quantity / promo.buy_quantity)
-    if (promo.rewardType === "percentage") {
-      \
-      return product.basePrice * discountableItems * ((promo.rewardValue || 0) / 100)
-      )
-    } else if (promo.rewardType === "free") {
-      return product.basePrice * discountableItems
-    } else {
-      return (promo.rewardValue || 0) * discountableItems
-    }
+    const buyQuantity = discount.buyQuantity || 2
+    const discountPercentage = discount.discountPercentage || 100
+    const discountableItems = Math.floor(quantity / buyQuantity)
+    return product.basePrice * discountableItems * (discountPercentage / 100)
   }
 
   return 0
