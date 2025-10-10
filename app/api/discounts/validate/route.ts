@@ -23,17 +23,6 @@ interface DiscountCalculation {
   priority: number
 }
 
-interface Product {
-  id: string
-  basePrice: number
-  brand: string
-  category: string
-  subCategory: string
-  expirationDate: string
-  thcPercentage: number
-  [key: string]: unknown
-}
-
 interface Discount {
   id: string
   name: string
@@ -222,7 +211,7 @@ async function calculateSingleProductDiscount(
       }
     }
 
-    const originalPrice = product.basePrice * quantity
+    const originalPrice = product.price * quantity // Changed from basePrice to price
     const finalPrice = Math.max(0, originalPrice - bestDiscountAmount)
 
     return {
@@ -281,7 +270,7 @@ function isBogoApplicable(promo: BogoPromotion, product: DbProduct, quantity: nu
 }
 
 function calculateDiscountAmount(discount: Discount, product: DbProduct, quantity: number): number {
-  const basePrice = product.basePrice * quantity
+  const basePrice = product.price * quantity // Changed from basePrice to price
 
   if (discount.discountType === "customer") {
     if (discount.type === "percentage") {
@@ -299,7 +288,7 @@ function calculateDiscountAmount(discount: Discount, product: DbProduct, quantit
     const buyQuantity = discount.buyQuantity || 2
     const discountPercentage = discount.discountPercentage || 100
     const discountableItems = Math.floor(quantity / buyQuantity)
-    return product.basePrice * discountableItems * (discountPercentage / 100)
+    return product.price * discountableItems * (discountPercentage / 100) // Changed from basePrice to price
   }
 
   return 0
