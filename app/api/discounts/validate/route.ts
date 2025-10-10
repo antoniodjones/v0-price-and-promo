@@ -268,8 +268,6 @@ function isDiscountApplicable(discount: Discount, product: DbProduct): boolean {
       return discount.target === product.brand
     case "category":
       return discount.target === product.category
-    case "subcategory":
-      return discount.target === product.subCategory
     default:
       return false
   }
