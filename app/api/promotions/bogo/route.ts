@@ -8,7 +8,6 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const status = searchParams.get("status")
-    const type = searchParams.get("type")
     const triggerLevel = searchParams.get("triggerLevel")
 
     const promotions = await getBogoPromotions()
@@ -17,9 +16,6 @@ export async function GET(request: NextRequest) {
     let filteredPromotions = promotions
     if (status) {
       filteredPromotions = filteredPromotions.filter((p) => p.status === status)
-    }
-    if (type) {
-      filteredPromotions = filteredPromotions.filter((p) => p.type === type)
     }
     if (triggerLevel) {
       filteredPromotions = filteredPromotions.filter((p) => p.triggerLevel === triggerLevel)
@@ -37,11 +33,11 @@ export async function POST(request: NextRequest) {
 
     const validationError = validateRequiredFields(body, [
       "name",
-      "type",
-      "triggerLevel",
-      "triggerValue",
-      "rewardType",
-      "rewardValue",
+      "buy_product_id",
+      "get_product_id",
+      "buy_quantity",
+      "get_quantity",
+      "discount_percentage",
       "startDate",
       "endDate",
     ])
@@ -49,36 +45,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(createApiResponse(null, validationError, false), { status: 400 })
     }
 
-    // Validate promotion type
-    if (!["traditional", "percentage", "fixed"].includes(body.type)) {
-      return NextResponse.json(createApiResponse(null, "Type must be 'traditional', 'percentage', or 'fixed'", false), {
+    if (
+      typeof body.discount_percentage !== "number" ||
+      body.discount_percentage < 0 ||
+      body.discount_percentage > 100
+    ) {
+      return NextResponse.json(createApiResponse(null, "Discount percentage must be between 0 and 100", false), {
         status: 400,
       })
     }
 
-    // Validate trigger level
-    if (!["item", "brand", "category"].includes(body.triggerLevel)) {
-      return NextResponse.json(createApiResponse(null, "Trigger level must be 'item', 'brand', or 'category'", false), {
+    if (typeof body.buy_quantity !== "number" || body.buy_quantity < 1) {
+      return NextResponse.json(createApiResponse(null, "Buy quantity must be at least 1", false), {
         status: 400,
       })
     }
 
-    // Validate reward type
-    if (!["free", "percentage", "fixed"].includes(body.rewardType)) {
-      return NextResponse.json(createApiResponse(null, "Reward type must be 'free', 'percentage', or 'fixed'", false), {
-        status: 400,
-      })
-    }
-
-    // Validate reward value
-    if (typeof body.rewardValue !== "number" || body.rewardValue < 0) {
-      return NextResponse.json(createApiResponse(null, "Reward value must be a non-negative number", false), {
-        status: 400,
-      })
-    }
-
-    if (body.rewardType === "percentage" && body.rewardValue > 100) {
-      return NextResponse.json(createApiResponse(null, "Percentage reward cannot exceed 100%", false), {
+    if (typeof body.get_quantity !== "number" || body.get_quantity < 1) {
+      return NextResponse.json(createApiResponse(null, "Get quantity must be at least 1", false), {
         status: 400,
       })
     }
@@ -96,14 +80,16 @@ export async function POST(request: NextRequest) {
 
     const promotion = await createBogoPromotion({
       name: body.name,
-      type: body.type,
-      triggerLevel: body.triggerLevel,
-      triggerValue: body.triggerValue,
-      rewardType: body.rewardType,
-      rewardValue: body.rewardValue,
+      buy_product_id: body.buy_product_id,
+      get_product_id: body.get_product_id,
+      buy_quantity: body.buy_quantity,
+      get_quantity: body.get_quantity,
+      discount_percentage: body.discount_percentage,
       startDate: body.startDate,
       endDate: body.endDate,
       status: body.status || "active",
+      customer_tiers: body.customer_tiers,
+      markets: body.markets,
     })
 
     return NextResponse.json(createApiResponse(promotion, "BOGO promotion created successfully"), { status: 201 })
