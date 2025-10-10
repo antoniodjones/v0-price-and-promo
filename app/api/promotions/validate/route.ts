@@ -24,58 +24,61 @@ export async function POST(request: NextRequest) {
     const bundleDeals = await db.getBundleDeals()
 
     const activeBogoPromotions = bogoPromotions.filter(
-      (p) => p.status === "active" && new Date(p.startDate) <= new Date() && new Date(p.endDate) >= new Date(),
+      (p) => p.status === "active" && new Date(p.start_date) <= new Date() && new Date(p.end_date) >= new Date(),
     )
 
     const activeBundleDeals = bundleDeals.filter(
-      (b) => b.status === "active" && new Date(b.startDate) <= new Date() && new Date(b.endDate) >= new Date(),
+      (b) => b.status === "active" && new Date(b.start_date) <= new Date() && new Date(b.end_date) >= new Date(),
     )
 
     const eligiblePromotions = []
     const eligibleBundles = []
 
-    // Check BOGO promotion eligibility
+    // BOGO promotions use buy_product_id, get_product_id, buy_quantity, get_quantity, discount_percentage
     for (const promotion of activeBogoPromotions) {
-      for (const item of body.items) {
-        const product = await db.getProductById(item.productId)
-        if (!product) continue
-
-        let eligible = false
-
-        switch (promotion.triggerLevel) {
-          case "item":
-            eligible = promotion.triggerValue === product.id
-            break
-          case "brand":
-            eligible = promotion.triggerValue === product.brand
-            break
-          case "category":
-            eligible = promotion.triggerValue === product.category
-            break
+      // Check if customer tier is eligible (if customer_tiers is specified)
+      if (promotion.customer_tiers && promotion.customer_tiers.length > 0) {
+        if (!promotion.customer_tiers.includes(customer.tier)) {
+          continue
         }
+      }
 
-        if (eligible && item.quantity >= 2) {
-          // BOGO requires at least 2 items
-          let rewardValue = 0
+      // Check if market is eligible (if markets is specified)
+      if (promotion.markets && promotion.markets.length > 0) {
+        if (!promotion.markets.includes(body.market)) {
+          continue
+        }
+      }
 
-          switch (promotion.rewardType) {
-            case "free":
-              rewardValue = product.basePrice
-              break
-            case "percentage":
-              rewardValue = product.basePrice * (promotion.rewardValue / 100)
-              break
-            case "fixed":
-              rewardValue = promotion.rewardValue
-              break
-          }
+      // Check if the buy product is in the cart
+      const buyItem = body.items.find((item: any) => item.productId === promotion.buy_product_id)
+      if (!buyItem || buyItem.quantity < promotion.buy_quantity) {
+        continue
+      }
+
+      // Check if the get product is in the cart
+      const getItem = body.items.find((item: any) => item.productId === promotion.get_product_id)
+      if (!getItem) {
+        continue
+      }
+
+      // Calculate how many times this promotion can be applied
+      const applicableSets = Math.floor(buyItem.quantity / promotion.buy_quantity)
+      const discountedItems = Math.min(applicableSets * promotion.get_quantity, getItem.quantity)
+
+      if (discountedItems > 0) {
+        const getProduct = await db.getProductById(promotion.get_product_id)
+        if (getProduct) {
+          const discountPerItem = getProduct.basePrice * (promotion.discount_percentage / 100)
+          const totalSavings = discountPerItem * discountedItems
 
           eligiblePromotions.push({
             ...promotion,
-            productId: item.productId,
-            applicableQuantity: Math.floor(item.quantity / 2), // Number of free/discounted items
-            rewardValue,
-            totalSavings: rewardValue * Math.floor(item.quantity / 2),
+            buyProductId: promotion.buy_product_id,
+            getProductId: promotion.get_product_id,
+            applicableQuantity: discountedItems,
+            discountPerItem,
+            totalSavings,
           })
         }
       }
@@ -83,32 +86,46 @@ export async function POST(request: NextRequest) {
 
     // Check bundle deal eligibility
     for (const bundle of activeBundleDeals) {
+      // Check if customer tier is eligible
+      if (bundle.customer_tiers && bundle.customer_tiers.length > 0) {
+        if (!bundle.customer_tiers.includes(customer.tier)) {
+          continue
+        }
+      }
+
+      // Check if market is eligible
+      if (bundle.markets && bundle.markets.length > 0) {
+        if (!bundle.markets.includes(body.market)) {
+          continue
+        }
+      }
+
       if (bundle.type === "fixed") {
         // Check if all required products are in the cart
-        const hasAllProducts = bundle.products.every((productId) =>
-          body.items.some((item) => item.productId === productId),
+        const hasAllProducts = bundle.products.every((productId: string) =>
+          body.items.some((item: any) => item.productId === productId),
         )
 
         if (hasAllProducts) {
-          const totalQuantity = bundle.products.reduce((sum, productId) => {
-            const item = body.items.find((i) => i.productId === productId)
+          const totalQuantity = bundle.products.reduce((sum: number, productId: string) => {
+            const item = body.items.find((i: any) => i.productId === productId)
             return sum + (item?.quantity || 0)
           }, 0)
 
-          if (totalQuantity >= bundle.minQuantity) {
+          if (totalQuantity >= bundle.min_quantity) {
             // Calculate bundle savings
-            const bundleProducts = await Promise.all(bundle.products.map((id) => db.getProductById(id)))
-            const totalBasePrice = bundleProducts.reduce((sum, product) => {
+            const bundleProducts = await Promise.all(bundle.products.map((id: string) => db.getProductById(id)))
+            const totalBasePrice = bundleProducts.reduce((sum: number, product) => {
               if (!product) return sum
-              const item = body.items.find((i) => i.productId === product.id)
+              const item = body.items.find((i: any) => i.productId === product.id)
               return sum + product.basePrice * (item?.quantity || 0)
             }, 0)
 
             let discountAmount = 0
-            if (bundle.discountType === "percentage") {
-              discountAmount = totalBasePrice * (bundle.discountValue / 100)
+            if (bundle.discount_type === "percentage") {
+              discountAmount = totalBasePrice * (bundle.discount_value / 100)
             } else {
-              discountAmount = bundle.discountValue
+              discountAmount = bundle.discount_value
             }
 
             eligibleBundles.push({
