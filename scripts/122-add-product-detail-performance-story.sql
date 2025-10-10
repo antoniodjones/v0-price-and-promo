@@ -18,7 +18,7 @@ VALUES (
   'High',
   13,
   '### Scenario 1: View Product Overview
-```gherkin
+\`\`\`gherkin
 Given I am logged into the system
 When I navigate to /products/[product-id]
 Then I see the product detail page

@@ -17,7 +17,7 @@ VALUES (
   'High',
   13,
   '### Scenario 1: View Webhook Dashboard
-```gherkin
+\`\`\`gherkin
 Given I am logged in as an administrator
 When I navigate to /admin/webhooks
 Then I see the webhook monitoring dashboard

@@ -23,7 +23,7 @@ VALUES (
   'Build Jira API Service Layer',
   'As a developer, I need a robust Jira API service layer so that I can programmatically interact with Jira issues from the pricing engine.',
   '### Scenario 1: Initialize Jira Client
-```gherkin
+\`\`\`gherkin
 Given valid Jira credentials are configured
 When the Jira API client initializes
 Then it should authenticate successfully with Jira

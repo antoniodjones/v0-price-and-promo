@@ -45,7 +45,7 @@ https://your-app-domain.vercel.app/api/webhooks/jira
 
 4. **Set JQL Filter** (Optional)
    To only sync specific issues:
-   ```jql
+   \`\`\`jql
    project = PRICE OR project = CM OR project = CS OR project = GL
    \`\`\`
 
