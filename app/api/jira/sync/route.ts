@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     if (taskId) {
       // Sync specific task
       if (direction === "pull") {
-        const log = await syncEngine.pullFromJira(taskId)
+        const log = await syncEngine.syncFromJira(taskId)
         return NextResponse.json({ success: true, log })
       } else {
         // Push to Jira - need to fetch story first
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: "Story not found" }, { status: 404 })
         }
 
-        const log = await syncEngine.pushToJira(story)
+        const log = await syncEngine.syncToJira(taskId)
         return NextResponse.json({ success: true, log })
       }
     } else {
