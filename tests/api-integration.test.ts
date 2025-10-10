@@ -25,4 +25,32 @@ export const apiIntegrationTests = {
       },
     },
   ],
+  run: async function (filter?: string) {
+    const testsToRun = filter
+      ? this.tests.filter((test) => test.name.toLowerCase().includes(filter.toLowerCase()))
+      : this.tests
+
+    const results = await Promise.all(
+      testsToRun.map(async (test) => {
+        try {
+          const result = await test.run()
+          return { name: test.name, ...result }
+        } catch (error) {
+          return {
+            name: test.name,
+            success: false,
+            message: error instanceof Error ? error.message : "Test failed",
+          }
+        }
+      }),
+    )
+
+    return {
+      suite: this.name,
+      total: results.length,
+      passed: results.filter((r) => r.success).length,
+      failed: results.filter((r) => !r.success).length,
+      results,
+    }
+  },
 }
