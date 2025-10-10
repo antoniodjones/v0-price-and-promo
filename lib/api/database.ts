@@ -153,6 +153,8 @@ export interface BundleDeal {
   products: string[] // Array of product IDs
   bundle_price: number
   discount_percentage: number
+  discount_type?: string
+  discount_value?: number
   start_date: string
   end_date?: string
   status: string
