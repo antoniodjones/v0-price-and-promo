@@ -4,19 +4,19 @@ import { JiraAPIClient } from "@/lib/services/jira-api"
 export async function GET() {
   try {
     const jiraClient = new JiraAPIClient()
-    const isConnected = await jiraClient.testConnection()
+    const result = await jiraClient.testConnection()
 
-    if (isConnected) {
+    if (result.success) {
       return NextResponse.json({
         success: true,
         message: "Successfully connected to Jira",
-        projectKey: jiraClient.getProjectKey(),
+        projectKey: process.env.JIRA_PROJECT_KEY || "PRICE",
       })
     } else {
       return NextResponse.json(
         {
           success: false,
-          message: "Failed to connect to Jira",
+          message: result.error || "Failed to connect to Jira",
         },
         { status: 500 },
       )
