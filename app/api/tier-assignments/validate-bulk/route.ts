@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 
 interface TierAssignment {
   customer_id: string
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid assignments data" }, { status: 400 })
     }
 
-    const supabase = await createServerClient()
+    const supabase = await createClient()
 
     const customerIds = [...new Set(assignments.map((a: TierAssignment) => a.customer_id))]
     const ruleIds = [...new Set(assignments.map((a: TierAssignment) => a.discount_rule_id))]
