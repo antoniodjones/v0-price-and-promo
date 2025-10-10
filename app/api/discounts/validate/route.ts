@@ -228,7 +228,7 @@ async function calculateSingleProductDiscount(
     return {
       discountId: bestDiscount?.id || "none",
       discountName: bestDiscount?.name || "No discount applied",
-      discountType: bestDiscount?.discountType || "none",
+      discountType: (bestDiscount?.discountType || "none") as DiscountCalculation["discountType"],
       originalPrice,
       discountAmount: bestDiscountAmount,
       finalPrice,
