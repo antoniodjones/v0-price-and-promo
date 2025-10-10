@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
       "buy_quantity",
       "get_quantity",
       "discount_percentage",
-      "startDate",
-      "endDate",
+      "start_date",
+      "end_date",
     ])
     if (validationError) {
       return NextResponse.json(createApiResponse(null, validationError, false), { status: 400 })
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate dates
-    const startDate = new Date(body.startDate)
-    const endDate = new Date(body.endDate)
+    const startDate = new Date(body.start_date)
+    const endDate = new Date(body.end_date)
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       return NextResponse.json(createApiResponse(null, "Invalid date format", false), { status: 400 })
     }
@@ -81,8 +81,8 @@ export async function POST(request: NextRequest) {
       buy_quantity: body.buy_quantity,
       get_quantity: body.get_quantity,
       discount_percentage: body.discount_percentage,
-      startDate: body.startDate,
-      endDate: body.endDate,
+      start_date: body.start_date,
+      end_date: body.end_date,
       status: body.status || "active",
       customer_tiers: body.customer_tiers,
       markets: body.markets,
