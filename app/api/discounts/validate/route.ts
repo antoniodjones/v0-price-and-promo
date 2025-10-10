@@ -13,7 +13,7 @@ interface ValidationRequest {
 interface DiscountCalculation {
   discountId: string
   discountName: string
-  discountType: "customer" | "inventory" | "bogo" | "bundle"
+  discountType: "customer" | "inventory" | "bogo" | "bundle" | "none"
   originalPrice: number
   discountAmount: number
   finalPrice: number
