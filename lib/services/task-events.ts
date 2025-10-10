@@ -16,7 +16,8 @@ export type TaskEventType =
   | "task_started"
   | "auto_commit_toggled"
   | "manual_sync"
-  | "task_updated" // Added task_updated event type
+  | "task_updated"
+  | "mode_changed" // Added mode_changed event type for tracking task mode changes
 
 export interface TaskEvent {
   id: string
@@ -39,6 +40,7 @@ export interface TaskEventMetadata {
   lines_added?: number
   lines_removed?: number
   auto_commit_enabled?: boolean
+  mode?: string // Added mode field for tracking task mode changes
   [key: string]: any
 }
 
