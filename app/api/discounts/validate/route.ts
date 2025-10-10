@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/api/database"
+import { db, type Customer, type Product as DbProduct } from "@/lib/api/database"
 import { createApiResponse, handleApiError } from "@/lib/api/utils"
 
 interface ValidationRequest {
@@ -21,13 +21,6 @@ interface DiscountCalculation {
   savingsPercentage: number
   appliedRule: string
   priority: number
-}
-
-interface Customer {
-  id: string
-  business_legal_name: string
-  tier: string
-  [key: string]: unknown
 }
 
 interface Product {
@@ -260,7 +253,7 @@ async function calculateBasketDiscounts(
   return results
 }
 
-function isDiscountApplicable(discount: Discount, product: Product): boolean {
+function isDiscountApplicable(discount: Discount, product: DbProduct): boolean {
   switch (discount.level) {
     case "item":
       return discount.target === product.id
@@ -275,7 +268,7 @@ function isDiscountApplicable(discount: Discount, product: Product): boolean {
   }
 }
 
-function isInventoryDiscountApplicable(discount: Discount, product: Product): boolean {
+function isInventoryDiscountApplicable(discount: Discount, product: DbProduct): boolean {
   let triggerMet = false
 
   if (discount.type === "expiration") {
@@ -296,7 +289,7 @@ function isInventoryDiscountApplicable(discount: Discount, product: Product): bo
   )
 }
 
-function isBogoApplicable(promo: BogoPromotion, product: Product, quantity: number): boolean {
+function isBogoApplicable(promo: BogoPromotion, product: DbProduct, quantity: number): boolean {
   if (quantity < 2) return false
 
   switch (promo.triggerLevel) {
@@ -311,7 +304,7 @@ function isBogoApplicable(promo: BogoPromotion, product: Product, quantity: numb
   }
 }
 
-function calculateDiscountAmount(discount: Discount, product: Product, quantity: number): number {
+function calculateDiscountAmount(discount: Discount, product: DbProduct, quantity: number): number {
   const basePrice = product.basePrice * quantity
 
   if (discount.discountType === "customer") {
