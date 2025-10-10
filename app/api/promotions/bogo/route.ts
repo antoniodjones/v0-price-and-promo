@@ -8,7 +8,6 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const status = searchParams.get("status")
-    const triggerLevel = searchParams.get("triggerLevel")
 
     const promotions = await getBogoPromotions()
 
@@ -16,9 +15,6 @@ export async function GET(request: NextRequest) {
     let filteredPromotions = promotions
     if (status) {
       filteredPromotions = filteredPromotions.filter((p) => p.status === status)
-    }
-    if (triggerLevel) {
-      filteredPromotions = filteredPromotions.filter((p) => p.triggerLevel === triggerLevel)
     }
 
     return NextResponse.json(createApiResponse(filteredPromotions, "BOGO promotions retrieved successfully"))
