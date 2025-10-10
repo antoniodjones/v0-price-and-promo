@@ -152,16 +152,15 @@ async function calculateSingleProductDiscount(
     ])
 
     const activeCustomerDiscounts = (customerDiscounts.status === "fulfilled" ? customerDiscounts.value : []).filter(
-      (d: Discount) =>
+      (d) =>
         d.status === "active" &&
-        d.customerTiers?.includes(customer.tier) &&
-        d.markets?.includes(market) &&
-        new Date(d.startDate || "") <= new Date() &&
-        (!d.endDate || new Date(d.endDate) >= new Date()),
+        d.customer_id === customer.id &&
+        new Date(d.start_date) <= new Date() &&
+        (!d.end_date || new Date(d.end_date) >= new Date()),
     )
 
     const activeInventoryDiscounts = (inventoryDiscounts.status === "fulfilled" ? inventoryDiscounts.value : []).filter(
-      (d: Discount) => d.status === "active",
+      (d) => d.status === "active",
     )
 
     const activeBogoPromotions = (bogoPromotions.status === "fulfilled" ? bogoPromotions.value : []).filter(
@@ -174,19 +173,27 @@ async function calculateSingleProductDiscount(
     const applicableDiscounts: Array<Discount & { discountType: string; priority: number }> = []
 
     for (const discount of activeCustomerDiscounts) {
-      if (isDiscountApplicable(discount, product)) {
-        applicableDiscounts.push({
-          ...discount,
-          discountType: "customer",
-          priority: 1,
-        })
-      }
+      applicableDiscounts.push({
+        id: discount.id,
+        name: `Customer Discount ${discount.discount_type}`,
+        status: discount.status,
+        type: discount.discount_type,
+        value: discount.discount_percentage,
+        discountType: "customer",
+        priority: 1,
+        startDate: discount.start_date,
+        endDate: discount.end_date,
+      })
     }
 
     for (const discount of activeInventoryDiscounts) {
       if (isInventoryDiscountApplicable(discount, product)) {
         applicableDiscounts.push({
-          ...discount,
+          id: discount.id,
+          name: `Inventory Discount - ${discount.reason}`,
+          status: discount.status,
+          type: discount.discount_type,
+          value: discount.discount_percentage,
           discountType: "inventory",
           priority: 2,
         })
@@ -196,7 +203,9 @@ async function calculateSingleProductDiscount(
     for (const promo of activeBogoPromotions) {
       if (isBogoApplicable(promo, product, quantity)) {
         applicableDiscounts.push({
-          ...promo,
+          id: promo.id,
+          name: promo.name,
+          status: promo.status,
           discountType: "bogo",
           priority: 3,
         })
@@ -354,11 +363,11 @@ export async function GET(request: NextRequest) {
     ])
 
     const activeCustomerDiscounts = (customerDiscounts.status === "fulfilled" ? customerDiscounts.value : []).filter(
-      (d: Discount) => d.status === "active" && d.customerTiers?.includes(customer.tier) && d.markets?.includes(market),
+      (d) => d.status === "active" && d.customer_id === customerId,
     ).length
 
     const activeInventoryDiscounts = (inventoryDiscounts.status === "fulfilled" ? inventoryDiscounts.value : []).filter(
-      (d: Discount) => d.status === "active",
+      (d) => d.status === "active",
     ).length
 
     return NextResponse.json(
