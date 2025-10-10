@@ -96,20 +96,6 @@ export async function POST(request: NextRequest) {
 
     // Check bundle deal eligibility
     for (const bundle of activeBundleDeals) {
-      // Check if customer tier is eligible
-      if (bundle.customer_tiers && bundle.customer_tiers.length > 0) {
-        if (!bundle.customer_tiers.includes(customer.tier)) {
-          continue
-        }
-      }
-
-      // Check if market is eligible
-      if (bundle.markets && bundle.markets.length > 0) {
-        if (!bundle.markets.includes(body.market)) {
-          continue
-        }
-      }
-
       if (bundle.type === "fixed") {
         // Check if all required products are in the cart
         const hasAllProducts = bundle.products.every((productId: string) =>
