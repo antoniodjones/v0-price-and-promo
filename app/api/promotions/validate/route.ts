@@ -24,11 +24,21 @@ export async function POST(request: NextRequest) {
     const bundleDeals = await db.getBundleDeals()
 
     const activeBogoPromotions = bogoPromotions.filter(
-      (p) => p.status === "active" && new Date(p.start_date) <= new Date() && new Date(p.end_date) >= new Date(),
+      (p) =>
+        p.status === "active" &&
+        p.start_date &&
+        p.end_date &&
+        new Date(p.start_date) <= new Date() &&
+        new Date(p.end_date) >= new Date(),
     )
 
     const activeBundleDeals = bundleDeals.filter(
-      (b) => b.status === "active" && new Date(b.start_date) <= new Date() && new Date(b.end_date) >= new Date(),
+      (b) =>
+        b.status === "active" &&
+        b.start_date &&
+        b.end_date &&
+        new Date(b.start_date) <= new Date() &&
+        new Date(b.end_date) >= new Date(),
     )
 
     const eligiblePromotions = []
