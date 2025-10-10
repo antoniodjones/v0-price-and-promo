@@ -59,13 +59,13 @@ interface BogoPromotion {
   id: string
   name: string
   status: string
-  startDate?: string
-  endDate?: string
-  triggerLevel?: string
-  triggerTarget?: string
-  rewardType?: string
+  buy_product_id: string
+  buy_quantity: number
+  rewardType: string
   rewardValue?: number
-  [key: string]: unknown
+  start_date: string
+  end_date?: string
+  priority?: number
 }
 
 export async function POST(request: NextRequest) {
@@ -164,10 +164,10 @@ async function calculateSingleProductDiscount(
     )
 
     const activeBogoPromotions = (bogoPromotions.status === "fulfilled" ? bogoPromotions.value : []).filter(
-      (p: BogoPromotion) =>
+      (p) =>
         p.status === "active" &&
-        (!p.startDate || new Date(p.startDate) <= new Date()) &&
-        (!p.endDate || new Date(p.endDate) >= new Date()),
+        new Date(p.start_date) <= new Date() &&
+        (!p.end_date || new Date(p.end_date) >= new Date()),
     )
 
     const applicableDiscounts: Array<Discount & { discountType: string; priority: number }> = []
@@ -299,18 +299,10 @@ function isInventoryDiscountApplicable(discount: Discount, product: DbProduct): 
 }
 
 function isBogoApplicable(promo: BogoPromotion, product: DbProduct, quantity: number): boolean {
-  if (quantity < 2) return false
+  if (quantity < promo.buy_quantity) return false
 
-  switch (promo.triggerLevel) {
-    case "item":
-      return promo.triggerTarget === product.id
-    case "brand":
-      return promo.triggerTarget === product.brand
-    case "category":
-      return promo.triggerTarget === product.category
-    default:
-      return false
-  }
+  // Check if the product matches the buy_product_id
+  return promo.buy_product_id === product.id
 }
 
 function calculateDiscountAmount(discount: Discount, product: DbProduct, quantity: number): number {
@@ -329,13 +321,15 @@ function calculateDiscountAmount(discount: Discount, product: DbProduct, quantit
       return (discount.discountValue || 0) * quantity
     }
   } else if (discount.discountType === "bogo") {
-    const discountableItems = Math.floor(quantity / 2)
-    if (discount.rewardType === "percentage") {
-      return product.basePrice * discountableItems * ((discount.rewardValue || 0) / 100)
-    } else if (discount.rewardType === "free") {
+    const discountableItems = Math.floor(quantity / promo.buy_quantity)
+    if (promo.rewardType === "percentage") {
+      \
+      return product.basePrice * discountableItems * ((promo.rewardValue || 0) / 100)
+      )
+    } else if (promo.rewardType === "free") {
       return product.basePrice * discountableItems
     } else {
-      return (discount.rewardValue || 0) * discountableItems
+      return (promo.rewardValue || 0) * discountableItems
     }
   }
 
